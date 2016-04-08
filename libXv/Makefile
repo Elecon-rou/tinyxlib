@@ -1,10 +1,8 @@
-include	../standard_definitions.mk
+include	../config.mk
 
 #DEFS=-DX11_t -DTRANS_CLIENT
 
-DEFINES=-Dlinux -D_POSIX_C_SOURCE=199309L -D_POSIX_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_GNU_SOURCE -DFUNCPROTO=15 -DNARROWPROTO -DXTHREADS -D_REENTRANT -DXUSE_MTSAFE_API -DMALLOC_0_RETURNS_NULL
-
-CFLAGS= -I../include -I../include/X11 $(COMMONDEFS) $(DEFS)
+CPPFLAGS=-D_SVID_SOURCE -DFUNCPROTO=15 -DNARROWPROTO -DXTHREADS -D_REENTRANT -DXUSE_MTSAFE_API -DMALLOC_0_RETURNS_NULL
 
 OBJS=$(wildcard *.c)
 
@@ -12,8 +10,8 @@ all:	$(OBJS:.c=.o)
 	ar cr libXv.a $(OBJS:.c=.o) 
 	$(CC) $(LDFLAGS) -o libXv.so.1.0~ -shared -Wl,-soname,libXv.so.1 $(OBJS:.c=.o)
 	mv -f libXv.so.1.0~ libXv.so.1.0
-	ln -s libXv.so.1.0 libXv.so.1
-	ln -s libXv.so.1.0 libXv.so	
+	test -e libXv.so.1 || ln -s libXv.so.1.0 libXv.so.1
+	test -e libXv.so || ln -s libXv.so.1.0 libXv.so	
 	
 clean:
 	rm -f *.o *.a *.so*
@@ -25,4 +23,4 @@ install:
 	cp -af libXv.so $(DESTDIR)$(LIBDIR)
 	
 depend:
-	gccmakedep -- $(CFLAGS) -- *.c
+	gccmakedep -- $(CFLAGS) $(CPPFLAGS) -- *.c

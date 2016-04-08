@@ -1,4 +1,4 @@
-include	../standard_definitions.mk
+include	../config.mk
 
 install:
 	cp -L -rf X11 $(DESTDIR)$(INCDIR)
