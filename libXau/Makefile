@@ -9,7 +9,7 @@ all:	$(OBJS:.c=.o) pkgconf
 	$(CC) $(LDFLAGS) -o libXau.so.6.0~ -shared -Wl,-soname,libXau.so.6 $(OBJS:.c=.o)
 	mv -f libXau.so.6.0~ libXau.so.6.0
 	test -e libXau.so.6 || ln -s libXau.so.6.0 libXau.so.6
-	test -e libXaus.so || ln -s libXau.so.6.0 libXau.so
+	test -e libXau.so || ln -s libXau.so.6.0 libXau.so
 pkgconf:
 	@echo "prefix=$(PREFIX)" > xau.pc 
 	@echo "exec_prefix=$(PREFIX)/bin" >> xau.pc
