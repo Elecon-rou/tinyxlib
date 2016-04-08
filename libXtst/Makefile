@@ -1,31 +1,30 @@
-include	../standard_definitions.mk
+include	../config.mk
 
-DEFS=-Dlinux -D_POSIX_SOURCE -D_POSIX_C_SOURCE=2 -D_BSD_SOURCE -D_SVID_SOURCE -D_GNU_SOURCE 
-
-CFLAGS= -I../include -I../include/X11 $(COMMONDEFS) $(DEFS)
+CPPFLAGS+=-D_POSIX_C_SOURCE=2 -D_SVID_SOURCE 
 
 OBJS=$(wildcard *.c)
 
-all:	$(OBJS:.c=.o) 
+all:	$(OBJS:.c=.o) pkgconf
 	ar cr libXtst.a $(OBJS:.c=.o) 
 	$(CC) $(LDFLAGS) -o libXtst.so.6.1~ -shared -Wl,-soname,libXtst.so.6 $(OBJS:.c=.o)
 	mv -f libXtst.so.6.1~ libXtst.so.6.1
-	ln -s libXtst.so.6.1 libXtst.so.6
-	ln -s libXtst.so.6.1 libXtst.so
-	
-	@echo "prefix=$(PREDIR)" > xtst.pc
-	@echo "exec_prefix=$(PREDIR)/bin" >> xtst.pc
-	@echo "libdir=$(PREDIR)/lib" >> xtst.pc
-	@echo "includedir=$(PREDIR)/include" >> xtst.pc
+	test -e libXtst.so.6 || ln -s libXtst.so.6.1 libXtst.so.6
+	test -e libXtst.so || ln -s libXtst.so.6.1 libXtst.so
+
+pkgconf:	
+	@echo "prefix=$(PREFIX)" > xtst.pc
+	@echo "exec_prefix=$(PREFIX)/bin" >> xtst.pc
+	@echo "libdir=$(PREFIX)/lib" >> xtst.pc
+	@echo "includedir=$(PREFIX)/include" >> xtst.pc
 	@echo "" >> xtst.pc
 	@echo "Name: Xtst" >> xtst.pc
 	@echo "Description: The Xtst Library" >> xtst.pc
 	@echo "Version: 1.0.3" >> xtst.pc
 	@echo "Requires: xx11 xext" >> xtst.pc
 	@echo "Requires.private: x11 xext" >> xtst.pc
-	@echo "Cflags: -I$(PREDIR)/include" >> xtst.pc
-	@echo "Libs: -L$(PREDIR)/lib -lXtst" >> xtst.pc
-	@echo "Libs.private: -L$(PREDIR)/lib -lXtst" >> xtst.pc
+	@echo "Cflags: -I$(PREFIX)/include" >> xtst.pc
+	@echo "Libs: -L$(PREFIX)/lib -lXtst" >> xtst.pc
+	@echo "Libs.private: -L$(PREFIX)/lib -lXtst" >> xtst.pc
 	
 clean:
 	rm -f *.o *.a *.so* xtst.pc
@@ -37,4 +36,4 @@ install:
 	cp -af libXtst.so $(DESTDIR)$(LIBDIR)
 	
 depend:
-	gccmakedep -- $(CFLAGS) -- *.c
+	gccmakedep -- $(CFLAGS) $(CPPFLAGS) -- *.c

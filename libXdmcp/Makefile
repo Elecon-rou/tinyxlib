@@ -1,8 +1,6 @@
-include	../standard_definitions.mk
+include	../config.mk
 
-DEFS=-Dlinux -D_POSIX_SOURCE -D_POSIX_C_SOURCE=2	-D_BSD_SOURCE -D_SVID_SOURCE -D_GNU_SOURCE  -DFUNCPROTO=15 -DNARROWPROTO
-
-CFLAGS= -I../include -I../include/X11 $(COMMONDEFS) $(DEFS)
+CPPFLAGS=-D_POSIX_C_SOURCE=2 -D_SVID_SOURCE -DFUNCPROTO=15 -DNARROWPROTO
 
 OBJS=$(wildcard *.c)
 
@@ -10,22 +8,23 @@ all:	$(OBJS:.c=.o)
 	ar cr libXdmcp.a $(OBJS:.c=.o)
 	$(CC) $(LDFLAGS) -o libXdmcp.so.6.0~ -shared -Wl,-soname,libXdmcp.so.6 $(OBJS:.c=.o)
 	mv -f libXdmcp.so.6.0~ libXdmcp.so.6.0
-	ln -s libXdmcp.so.6.0 libXdmcp.so.6
-	ln -s libXdmcp.so.6.0 libXdmcp.so
-	
-	@echo "prefix=$(PREDIR)" > xdmcp.pc
-	@echo "exec_prefix=$(PREDIR)/bin" >> xdmcp.pc
-	@echo "libdir=$(PREDIR)/lib" >> xdmcp.pc
-	@echo "includedir=$(PREDIR)/include" >> xdmcp.pc
+	test -e libXdmcp.so.6 || ln -s libXdmcp.so.6.0 libXdmcp.so.6
+	test -e libXdmcp.so || ln -s libXdmcp.so.6.0 libXdmcp.so
+
+pkgconf:	
+	@echo "prefix=$(PREFIX)" > xdmcp.pc
+	@echo "exec_prefix=$(PREFIX)/bin" >> xdmcp.pc
+	@echo "libdir=$(PREFIX)/lib" >> xdmcp.pc
+	@echo "includedir=$(PREFIX)/include" >> xdmcp.pc
 	@echo "" >> xdmcp.pc
 	@echo "Name: Xdmcp" >> xdmcp.pc
 	@echo "Description: X Display Manager Control Protocol library" >> xdmcp.pc
 	@echo "Version: 1.0.2" >> xdmcp.pc
 	@echo "Requires:" >> xdmcp.pc
 	@echo "Requires.private: " >> xdmcp.pc
-	@echo "Cflags: -I$(PREDIR)/include" >> xdmcp.pc
-	@echo "Libs: -L$(PREDIR)/lib -lXdmcp" >> xdmcp.pc
-	@echo "Libs.private: -L$(PREDIR)/lib -lXdmcp" >> xdmcp.pc
+	@echo "Cflags: -I$(PREFIX)/include" >> xdmcp.pc
+	@echo "Libs: -L$(PREFIX)/lib -lXdmcp" >> xdmcp.pc
+	@echo "Libs.private: -L$(PREFIX)/lib -lXdmcp" >> xdmcp.pc
 	
 clean:
 	rm -f *.o *.a *.so* xdmcp.pc

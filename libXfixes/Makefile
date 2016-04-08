@@ -1,31 +1,30 @@
-include	../standard_definitions.mk
+include	../config.mk
 
-DEFS=-Dlinux -D_POSIX_C_SOURCE=199309L -D_POSIX_SOURCE -D_BSD_SOURCE -D_SVID_SOURCE -D_GNU_SOURCE -DFUNCPROTO=15 -DNARROWPROTO -DXTHREADS -D_REENTRANT -DXUSE_MTSAFE_API -DUNIXCONN -DTCPCONN -DHAS_STICKY_DIR_BIT -DIPv6 -DICE_t
-
-CFLAGS= -I../include -I../include/X11 $(COMMONDEFS) $(DEFS)
+CPPFLAGS+=-D_SVID_SOURCE -DFUNCPROTO=15 -DNARROWPROTO -DXTHREADS -D_REENTRANT -DXUSE_MTSAFE_API -DUNIXCONN -DTCPCONN -DHAS_STICKY_DIR_BIT -DIPv6 -DICE_t
 
 OBJS=$(wildcard *.c)
 
-all:	$(OBJS:.c=.o) 
+all:	$(OBJS:.c=.o) pkgconf
 	ar cr libXfixes.a $(OBJS:.c=.o) 
 	$(CC) $(LDFLAGS) -o libXfixes.so.3.0~ -shared -Wl,-soname,libXfixes.so.3 $(OBJS:.c=.o) 
 	mv -f libXfixes.so.3.0~ libXfixes.so.3.0
-	ln -s libXfixes.so.3.0 libXfixes.so.3
-	ln -s libXfixes.so.3.0 libXfixes.so
-	
-	@echo "prefix=$(PREDIR)" > xfixes.pc
-	@echo "exec_prefix=$(PREDIR)/bin" >> xfixes.pc
-	@echo "libdir=$(PREDIR)/lib" >> xfixes.pc
-	@echo "includedir=$(PREDIR)/include" >> xfixes.pc
+	test -e libXfixes.so.3 || ln -s libXfixes.so.3.0 libXfixes.so.3
+	test -e libXfixes.so || ln -s libXfixes.so.3.0 libXfixes.so
+
+pkgconf:	
+	@echo "prefix=$(PREFIX)" > xfixes.pc
+	@echo "exec_prefix=$(PREFIX)/bin" >> xfixes.pc
+	@echo "libdir=$(PREFIX)/lib" >> xfixes.pc
+	@echo "includedir=$(PREFIX)/include" >> xfixes.pc
 	@echo "" >> xfixes.pc
 	@echo "Name: Xfixes" >> xfixes.pc
 	@echo "Description: X Fixes  Library" >> xfixes.pc
 	@echo "Version: 4.0.3" >> xfixes.pc
 	@echo "Requires: x11" >> xfixes.pc
 	@echo "Requires.private: x11" >> xfixes.pc
-	@echo "Cflags: -I$(PREDIR)/include" >> xfixes.pc
-	@echo "Libs: -L$(PREDIR)/lib -lXfixes" >> xfixes.pc
-	@echo "Libs.private: -L$(PREDIR)/lib -lXfixes" >> xfixes.pc
+	@echo "Cflags: -I$(PREFIX)/include" >> xfixes.pc
+	@echo "Libs: -L$(PREFIX)/lib -lXfixes" >> xfixes.pc
+	@echo "Libs.private: -L$(PREFIX)/lib -lXfixes" >> xfixes.pc
 	
 clean:
 	rm -f *.o *.a *.so* xfixes.pc
