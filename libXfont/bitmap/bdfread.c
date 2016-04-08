@@ -61,6 +61,10 @@ from The Open Group.
 #include "../include/bitmap.h"
 #include "bdfint.h"
 
+#ifndef INT32_MAX
+#include <stdint.h> 
+#endif
+
 #define INDICES 256
 #define MAXENCODING 0xFFFF
 #define BDFLINELEN  1024
