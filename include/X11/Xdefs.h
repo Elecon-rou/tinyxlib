@@ -1,5 +1,3 @@
-/* $XFree86: xc/include/Xdefs.h,v 1.3 2001/07/24 08:32:53 alanh Exp $ */
-
 /***********************************************************
 
 Copyright (c) 1999  The XFree86 Project Inc.
@@ -98,13 +96,13 @@ typedef CARD32 FSID;
 
 typedef FSID AccContext;
 
-/* OS independant time value 
+/* OS independent time value 
    XXX Should probably go in Xos.h */
 typedef struct timeval **OSTimePtr;
 
 
-typedef void (* BlockHandlerProcPtr)(pointer /* blockData */,
+typedef void (* BlockHandlerProcPtr)(void * /* blockData */,
 				     OSTimePtr /* pTimeout */,
-				     pointer /* pReadmask */);
+				     void * /* pReadmask */);
 
 #endif

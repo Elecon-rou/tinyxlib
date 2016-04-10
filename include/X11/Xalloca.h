@@ -1,5 +1,3 @@
-/* $Xorg: Xalloca.h,v 1.4 2001/02/09 02:03:22 xorgcvs Exp $ */
-
 /*
 
 Copyright 1995, 1998  The Open Group
@@ -27,8 +25,6 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/include/Xalloca.h,v 3.10 2001/12/14 19:53:25 dawes Exp $ */
-
 /*
  * The purpose of this header is to define the macros ALLOCATE_LOCAL and
  * DEALLOCATE_LOCAL appropriately for the platform being compiled on.
@@ -61,6 +57,13 @@ from The Open Group.
 #ifndef XALLOCA_H
 #define XALLOCA_H 1
 
+#ifndef INCLUDE_ALLOCA_H
+/* Need to add more here to match Imake *.cf's */
+# if defined(HAVE_ALLOCA_H) || defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+#  define INCLUDE_ALLOCA_H
+# endif
+#endif
+
 #ifdef INCLUDE_ALLOCA_H
 #  include <alloca.h>
 #endif
@@ -78,7 +81,6 @@ from The Open Group.
 #      define alloca __builtin_alloca
 #    endif /* !alloca */
 #    define ALLOCATE_LOCAL(size) alloca((int)(size))
-#    define DEALLOCATE_LOCAL(ptr)  /* as nothing */
 #  else /* ! __GNUC__ */
 
 /*
@@ -86,16 +88,17 @@ from The Open Group.
  * Test is easy, the new one is named __builtin_alloca and comes
  * from alloca.h which #defines alloca.
  */
-#      if defined(vax) || defined(sun) || defined(apollo) || defined(stellar) || defined(alloca)
+#      if defined(__sun) || defined(alloca)
 /*
  * Some System V boxes extract alloca.o from /lib/libPW.a; if you
  * decide that you don't want to use alloca, you might want to fix it here.
  */
 /* alloca might be a macro taking one arg (hi, Sun!), so give it one. */
+#        if !defined(__cplusplus)
 #          define __Xnullarg		/* as nothing */
-             extern void *alloca(__Xnullarg);
+           extern void *alloca(__Xnullarg);
+#        endif
 #        define ALLOCATE_LOCAL(size) alloca((int)(size))
-#        define DEALLOCATE_LOCAL(ptr)  /* as nothing */
 #      endif /* who does alloca */
 #  endif /* __GNUC__ */
 
@@ -109,6 +112,10 @@ from The Open Group.
 #    define ALLOCATE_LOCAL(_size)  ALLOCATE_LOCAL_FALLBACK undefined!
 #    define DEALLOCATE_LOCAL(_ptr) DEALLOCATE_LOCAL_FALLBACK undefined!
 #  endif /* defined(ALLOCATE_LOCAL_FALLBACK && DEALLOCATE_LOCAL_FALLBACK) */
-#endif /* !defined(ALLOCATE_LOCAL) */
+#else
+#  if !defined(DEALLOCATE_LOCAL)
+#    define DEALLOCATE_LOCAL(_ptr) do {} while(0)
+#  endif
+#endif /* defined(ALLOCATE_LOCAL) */
 
 #endif /* XALLOCA_H */

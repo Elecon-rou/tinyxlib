@@ -1,6 +1,4 @@
 /*
- * $Xorg: Xfuncs.h,v 1.4 2001/02/09 02:03:22 xorgcvs Exp $
- * 
  * 
 Copyright 1990, 1998  The Open Group
 
@@ -25,38 +23,47 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
  *
  */
-/* $XFree86: xc/include/Xfuncs.h,v 3.9 2001/12/14 19:53:25 dawes Exp $ */
 
 #ifndef _XFUNCS_H_
-#define _XFUNCS_H_
+# define _XFUNCS_H_
 
-#include "Xosdefs.h"
+# include <X11/Xosdefs.h>
 
 /* the old Xfuncs.h, for pre-R6 */
-#if !(defined(XFree86LOADER) && defined(IN_MODULE))
+# if !(defined(XFree86LOADER) && defined(IN_MODULE))
 
-#ifdef X_USEBFUNCS
+#  ifdef X_USEBFUNCS
 void bcopy();
 void bzero();
 int bcmp();
-#else
-#include <string.h>
-#define _XFUNCS_H_INCLUDED_STRING_H
-#define bcopy(b1,b2,len) memmove(b2, b1, (size_t)(len))
-#define bzero(b,len) memset(b, 0, (size_t)(len))
-#define bcmp(b1,b2,len) memcmp(b1, b2, (size_t)(len))
-#endif /* X_USEBFUNCS */
+#  else
+#   if defined(SYSV) && !defined(__SCO__) && !defined(__sun) && !defined(__UNIXWARE__) && !defined(_AIX)
+#    include <memory.h>
+void bcopy();
+#    define bzero(b,len) memset(b, 0, len)
+#    define bcmp(b1,b2,len) memcmp(b1, b2, len)
+#   else
+#    include <string.h>
+#    if defined(__SCO__) || defined(__sun) || defined(__UNIXWARE__) || defined(__CYGWIN__) || defined(_AIX) || defined(__APPLE__)
+#     include <strings.h>
+#    endif
+#    define _XFUNCS_H_INCLUDED_STRING_H
+#   endif
+#  endif /* X_USEBFUNCS */
 
 /* the new Xfuncs.h */
 
 /* the ANSI C way */
-#ifndef _XFUNCS_H_INCLUDED_STRING_H
-#include <string.h>
-#endif
-#undef bzero
-#define bzero(b,len) memset(b,0,len)
+#  ifndef _XFUNCS_H_INCLUDED_STRING_H
+#   include <string.h>
+#  endif
+#  undef bzero
+#  define bzero(b,len) memset(b,0,len)
 
+#  if defined WIN32 && defined __MINGW32__
+#   define bcopy(b1,b2,len) memmove(b2, b1, (size_t)(len))
+#  endif
 
-#endif /* !(defined(XFree86LOADER) && defined(IN_MODULE)) */
+# endif /* !(defined(XFree86LOADER) && defined(IN_MODULE)) */
 
 #endif /* _XFUNCS_H_ */

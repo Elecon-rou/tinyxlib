@@ -1,7 +1,3 @@
-/*
- *	$Xorg: X.h,v 1.4 2001/02/09 02:03:22 xorgcvs Exp $
- */
-
 /* Definitions for the X window system likely to be used by applications */
 
 #ifndef X_H
@@ -53,7 +49,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/include/X.h,v 1.5 2001/12/14 19:53:25 dawes Exp $ */
 
 #define X_PROTOCOL	11		/* current protocol version */
 #define X_PROTOCOL_REVISION 0		/* current minor version */
@@ -216,7 +211,8 @@ are reserved in the protocol for errors and replies. */
 #define ColormapNotify		32
 #define ClientMessage		33
 #define MappingNotify		34
-#define LASTEvent		35	/* must be bigger than any event # */
+#define GenericEvent		35
+#define LASTEvent		36	/* must be bigger than any event # */
 
 
 /* Key masks. Used as modifiers to GrabButton and GrabKey, results of QueryPointer,
@@ -299,9 +295,13 @@ are reserved in the protocol for errors and replies. */
 
 /* protocol families */
 
-#define FamilyInternet		0
+#define FamilyInternet		0	/* IPv4 */
 #define FamilyDECnet		1
 #define FamilyChaos		2
+#define FamilyInternet6		6	/* IPv6 */
+
+/* authentication families not tied to a specific protocol */
+#define FamilyServerInterpreted 5
 
 /* Property notification */
 
