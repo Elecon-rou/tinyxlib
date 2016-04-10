@@ -1,4 +1,3 @@
-/* $Xorg: iceauth.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,8 +25,10 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/iceauth.c,v 3.5 2001/12/14 19:53:36 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 #include <X11/ICE/ICEutil.h>
@@ -35,7 +36,9 @@ Author: Ralph Mor, X Consortium
 #include <time.h>
 #define Time_t time_t
 
-static int binaryEqual ();
+#ifdef HAVE_LIBBSD
+#include <bsd/stdlib.h>	/* for arc4random_buf() */
+#endif
 
 static int was_called_state;
 
@@ -46,20 +49,24 @@ static int was_called_state;
 
 
 char *
-IceGenerateMagicCookie (len)
-
-int len;
-
+IceGenerateMagicCookie (
+	int len
+)
 {
     char    *auth;
+#ifndef HAVE_ARC4RANDOM_BUF
     long    ldata[2];
     int	    seed;
     int	    value;
     int	    i;
-    
-    if ((auth = (char *) malloc (len + 1)) == NULL)
+#endif
+
+    if ((auth = malloc (len + 1)) == NULL)
 	return (NULL);
 
+#ifdef HAVE_ARC4RANDOM_BUF
+    arc4random_buf(auth, len);
+#else
 #ifdef ITIMER_REAL
     {
 	struct timeval  now;
@@ -81,27 +88,25 @@ int len;
 	value = rand ();
 	auth[i] = value & 0xff;
     }
+#endif
     auth[len] = '\0';
-
     return (auth);
 }
 
 
 
 IcePoAuthStatus
-_IcePoMagicCookie1Proc (iceConn, authStatePtr, cleanUp, swap,
-    authDataLen, authData, replyDataLenRet, replyDataRet, errorStringRet)
-
-IceConn		iceConn;
-IcePointer	*authStatePtr;
-Bool 		cleanUp;
-Bool		swap;
-int     	authDataLen;
-IcePointer	authData;
-int 		*replyDataLenRet;
-IcePointer	*replyDataRet;
-char    	**errorStringRet;
-
+_IcePoMagicCookie1Proc (
+	IceConn		iceConn,
+	IcePointer	*authStatePtr,
+	Bool 		cleanUp,
+	Bool		swap,
+	int     	authDataLen,
+	IcePointer	authData,
+	int 		*replyDataLenRet,
+	IcePointer	*replyDataRet,
+	char    	**errorStringRet
+)
 {
     if (cleanUp)
     {
@@ -130,12 +135,10 @@ char    	**errorStringRet;
 
 	if (!data)
 	{
-	    char *tempstr =
+	    const char *tempstr =
 		"Could not find correct MIT-MAGIC-COOKIE-1 authentication";
 
-	    *errorStringRet = (char *) malloc (strlen (tempstr) + 1);
-	    if (*errorStringRet)
-		strcpy (*errorStringRet, tempstr);
+	    *errorStringRet = strdup(tempstr);
 
 	    return (IcePoAuthFailed);
 	}
@@ -156,31 +159,29 @@ char    	**errorStringRet;
 	 * a single pass authentication method.
 	 */
 
-	char *tempstr = "MIT-MAGIC-COOKIE-1 authentication internal error";
+	const char *tempstr =
+	    "MIT-MAGIC-COOKIE-1 authentication internal error";
 
-	*errorStringRet = (char *) malloc (strlen (tempstr) + 1);
-	if (*errorStringRet)
-	    strcpy (*errorStringRet, tempstr);
+	*errorStringRet = strdup(tempstr);
 
 	return (IcePoAuthFailed);
     }
 }
 
+IcePoAuthProc	_IcePoAuthProcs[] = {_IcePoMagicCookie1Proc};
 
 
 IcePaAuthStatus
-_IcePaMagicCookie1Proc (iceConn, authStatePtr, swap,
-    authDataLen, authData, replyDataLenRet, replyDataRet, errorStringRet)
-
-IceConn		iceConn;
-IcePointer	*authStatePtr;
-Bool		swap;
-int     	authDataLen;
-IcePointer	authData;
-int 		*replyDataLenRet;
-IcePointer	*replyDataRet;
-char    	**errorStringRet;
-
+_IcePaMagicCookie1Proc (
+	IceConn		iceConn,
+	IcePointer	*authStatePtr,
+	Bool		swap,
+	int     	authDataLen,
+	IcePointer	authData,
+	int 		*replyDataLenRet,
+	IcePointer	*replyDataRet,
+	char    	**errorStringRet
+)
 {
     *errorStringRet = NULL;
     *replyDataLenRet = 0;
@@ -215,17 +216,16 @@ char    	**errorStringRet;
 	    IcePaAuthStatus stat;
 
 	    if (authDataLen == length &&
-	        binaryEqual ((char *) authData, data, authDataLen))
+	        memcmp (authData, data, authDataLen) == 0)
 	    {
 		stat = IcePaAuthAccepted;
 	    }
 	    else
 	    {
-		char *tempstr = "MIT-MAGIC-COOKIE-1 authentication rejected";
+		const char *tempstr
+		    = "MIT-MAGIC-COOKIE-1 authentication rejected";
 
-		*errorStringRet = (char *) malloc (strlen (tempstr) + 1);
-		if (*errorStringRet)
-		    strcpy (*errorStringRet, tempstr);
+		*errorStringRet = strdup(tempstr);
 
 		stat = IcePaAuthRejected;
 	    }
@@ -241,33 +241,14 @@ char    	**errorStringRet;
 	     * always find a valid entry.
 	     */
 
-	    char *tempstr =
+	    const char *tempstr =
 		"MIT-MAGIC-COOKIE-1 authentication internal error";
 
-	    *errorStringRet = (char *) malloc (strlen (tempstr) + 1);
-	    if (*errorStringRet)
-		strcpy (*errorStringRet, tempstr);
+	    *errorStringRet = strdup(tempstr);
 
 	    return (IcePaAuthFailed);
 	}
     }
 }
 
-
-
-/*
- * local routines
- */
-
-static int
-binaryEqual (a, b, len)
-
-register char		*a, *b;
-register unsigned	len;
-
-{
-    while (len--)
-	if (*a++ != *b++)
-	    return 0;
-    return 1;
-}
+IcePaAuthProc	_IcePaAuthProcs[] = {_IcePaMagicCookie1Proc};

@@ -1,4 +1,3 @@
-/* $Xorg: shutdown.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,19 +25,20 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/shutdown.c,v 3.3 2001/08/01 00:44:37 tsi Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
-#include <X11/Xtrans.h>
+#include <X11/Xtrans/Xtrans.h>
 
 
 Status
-IceProtocolShutdown (iceConn, majorOpcode)
-
-IceConn iceConn;
-int	majorOpcode;
-
+IceProtocolShutdown (
+	IceConn iceConn,
+	int	majorOpcode
+)
 {
     if (iceConn->proto_ref_count == 0 || iceConn->process_msg_info == NULL ||
         majorOpcode < 1 || majorOpcode > _IceLastMajorOpcode)
@@ -84,11 +84,10 @@ int	majorOpcode;
 
 
 void
-IceSetShutdownNegotiation (iceConn, negotiate)
-
-IceConn     	iceConn;
-Bool		negotiate;
-
+IceSetShutdownNegotiation (
+	IceConn     	iceConn,
+	Bool		negotiate
+)
 {
     iceConn->skip_want_to_close = negotiate ? False : True;
 }
@@ -96,10 +95,9 @@ Bool		negotiate;
 
 
 Bool
-IceCheckShutdownNegotiation (iceConn)
-
-IceConn     iceConn;
-
+IceCheckShutdownNegotiation (
+	IceConn     iceConn
+)
 {
     return (iceConn->skip_want_to_close ? False : True);
 }
@@ -107,10 +105,9 @@ IceConn     iceConn;
 
 
 IceCloseStatus
-IceCloseConnection (iceConn)
-
-IceConn     iceConn;
-
+IceCloseConnection (
+	IceConn     iceConn
+)
 {
     int refCountReachedZero;
     IceCloseStatus status;
@@ -148,7 +145,7 @@ IceConn     iceConn;
     IO	       free-      dispatch   protocol   shutdown
     error      asap bit   level      refcount   negotiation     ACTION
     occured    set        reached 0  reached 0
-    
+
         0          0          0          0          0		N
         0          0          0          0          1		N
         0          0          0          1          0		AB
@@ -250,10 +247,9 @@ IceConn     iceConn;
 
 
 void
-_IceFreeConnection (iceConn)
-
-IceConn iceConn;
-
+_IceFreeConnection (
+	IceConn iceConn
+)
 {
     if (iceConn->listen_obj == NULL)
     {
@@ -305,21 +301,21 @@ IceConn iceConn;
 	free (iceConn->scratch);
 
     if (iceConn->process_msg_info)
-	free ((char *) iceConn->process_msg_info);
+	free (iceConn->process_msg_info);
 
     if (iceConn->connect_to_you)
-	free ((char *) iceConn->connect_to_you);
+	free (iceConn->connect_to_you);
 
     if (iceConn->protosetup_to_you)
-	free ((char *) iceConn->protosetup_to_you);
+	free (iceConn->protosetup_to_you);
 
     if (iceConn->connect_to_me)
-	free ((char *) iceConn->connect_to_me);
+	free (iceConn->connect_to_me);
 
     if (iceConn->protosetup_to_me)
-	free ((char *) iceConn->protosetup_to_me);
+	free (iceConn->protosetup_to_me);
 
-    free ((char *) iceConn);
+    free (iceConn);
 }
 
 

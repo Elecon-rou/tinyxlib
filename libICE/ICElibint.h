@@ -1,4 +1,3 @@
-/* $Xorg: ICElibint.h,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,7 +25,6 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/ICElibint.h,v 1.6 2001/12/14 19:53:35 dawes Exp $ */
 
 #ifndef _ICELIBINT_H_
 #define _ICELIBINT_H_
@@ -37,6 +35,10 @@ Author: Ralph Mor, X Consortium
 #include <X11/ICE/ICEproto.h>
 #include <X11/ICE/ICEconn.h>
 #include <X11/ICE/ICEmsg.h>
+#include <X11/ICE/ICEutil.h>
+#ifdef WIN32
+#include <X11/Xwindows.h>
+#endif
 
 #include <stdlib.h>
 #include <stddef.h>
@@ -56,7 +58,7 @@ Author: Ralph Mor, X Consortium
 
 #define PAD64(_bytes) ((8 - ((unsigned int) (_bytes) % 8)) % 8)
 
-#define PADDED_BYTES64(_bytes) (_bytes + PAD64 (_bytes))
+#define PADDED_BYTES64(_bytes) ((unsigned int) _bytes + PAD64 (_bytes))
 
 
 /*
@@ -65,7 +67,7 @@ Author: Ralph Mor, X Consortium
 
 #define PAD32(_bytes) ((4 - ((unsigned int) (_bytes) % 4)) % 4)
 
-#define PADDED_BYTES32(_bytes) (_bytes + PAD32 (_bytes))
+#define PADDED_BYTES32(_bytes) ((unsigned int) _bytes + PAD32 (_bytes))
 
 
 /*
@@ -153,8 +155,6 @@ typedef struct {
     _pBuf += 1; \
 }
 
-#ifndef WORD64
-
 #define STORE_CARD16(_pBuf, _val) \
 { \
     *((CARD16 *) _pBuf) = _val; \
@@ -167,34 +167,10 @@ typedef struct {
     _pBuf += 4; \
 }
 
-#else /* WORD64 */
-
-#define STORE_CARD16(_pBuf, _val) \
-{ \
-    struct { \
-        int value   :16; \
-        int pad     :16; \
-    } _d; \
-    _d.value = _val; \
-    memcpy (_pBuf, &_d, 2); \
-    _pBuf += 2; \
-}
-
-#define STORE_CARD32(_pBuf, _val) \
-{ \
-    struct { \
-        int value   :32; \
-    } _d; \
-    _d.value = _val; \
-    memcpy (_pBuf, &_d, 4); \
-    _pBuf += 4; \
-}
-
-#endif /* WORD64 */
 
 #define STORE_STRING(_pBuf, _string) \
 { \
-    CARD16 _len = strlen (_string); \
+    CARD16 _len = (CARD16) strlen (_string); \
     STORE_CARD16 (_pBuf, _len); \
     memcpy (_pBuf, _string, _len); \
     _pBuf += _len; \
@@ -213,8 +189,6 @@ typedef struct {
     _pBuf += 1; \
 }
 
-#ifndef WORD64
-
 #define EXTRACT_CARD16(_pBuf, _swap, _val) \
 { \
     _val = *((CARD16 *) _pBuf); \
@@ -231,39 +205,12 @@ typedef struct {
         _val = lswapl (_val); \
 }
 
-#else /* WORD64 */
-
-#define EXTRACT_CARD16(_pBuf, _swap, _val) \
-{ \
-    _val = *(_pBuf + 0) & 0xff; 	/* 0xff incase _pBuf is signed */ \
-    _val <<= 8; \
-    _val |= *(_pBuf + 1) & 0xff;\
-    _pBuf += 2; \
-    if (_swap) \
-        _val = lswaps (_val); \
-}
-
-#define EXTRACT_CARD32(_pBuf, _swap, _val) \
-{ \
-    _val = *(_pBuf + 0) & 0xff; 	/* 0xff incase _pBuf is signed */ \
-    _val <<= 8; \
-    _val |= *(_pBuf + 1) & 0xff;\
-    _val <<= 8; \
-    _val |= *(_pBuf + 2) & 0xff;\
-    _val <<= 8; \
-    _val |= *(_pBuf + 3) & 0xff;\
-    _pBuf += 4; \
-    if (_swap) \
-        _val = lswapl (_val); \
-}
-
-#endif /* WORD64 */
 
 #define EXTRACT_STRING(_pBuf, _swap, _string) \
 { \
     CARD16 _len; \
     EXTRACT_CARD16 (_pBuf, _swap, _len); \
-    _string = (char *) malloc (_len + 1); \
+    _string = malloc (_len + 1); \
     memcpy (_string, _pBuf, _len); \
     _pBuf += _len; \
     _string[_len] = '\0'; \
@@ -287,7 +234,7 @@ typedef struct {
     if (_pBuf > _end) { \
 	_bail; \
     } \
-} 
+}
 
 #define SKIP_LISTOF_STRING(_pBuf, _swap, _count, _end, _bail) \
 { \
@@ -395,7 +342,7 @@ extern _IceProtocol	_IceProtocols[];
 extern int         	_IceLastMajorOpcode;
 
 extern int		_IceAuthCount;
-extern char		*_IceAuthNames[];
+extern const char	*_IceAuthNames[];
 extern IcePoAuthProc	_IcePoAuthProcs[];
 extern IcePaAuthProc	_IcePaAuthProcs[];
 
@@ -407,6 +354,8 @@ extern _IceWatchProc	*_IceWatchProcs;
 extern IceErrorHandler   _IceErrorHandler;
 extern IceIOErrorHandler _IceIOErrorHandler;
 
+extern IceAuthDataEntry	 _IcePaAuthDataEntries[];
+extern int		 _IcePaAuthDataEntryCount;
 
 extern void _IceErrorBadMajor (
     IceConn		/* iceConn */,
@@ -428,24 +377,24 @@ extern void _IceErrorNoVersion (
 extern void _IceErrorSetupFailed (
     IceConn		/* iceConn */,
     int			/* offendingMinor */,
-    char *		/* reason */
+    const char *	/* reason */
 );
 
 extern void _IceErrorAuthenticationRejected (
     IceConn		/* iceConn */,
     int			/* offendingMinor */,
-    char *		/* reason */
+    const char *	/* reason */
 );
 
 extern void _IceErrorAuthenticationFailed (
     IceConn		/* iceConn */,
     int			/* offendingMinor */,
-    char *		/* reason */
+    const char *	/* reason */
 );
 
 extern void _IceErrorProtocolDuplicate (
     IceConn		/* iceConn */,
-    char *		/* protocolName */
+    const char *	/* protocolName */
 );
 
 extern void _IceErrorMajorOpcodeDuplicate (
@@ -455,7 +404,7 @@ extern void _IceErrorMajorOpcodeDuplicate (
 
 extern void _IceErrorUnknownProtocol (
     IceConn		/* iceConn */,
-    char *		/* protocolName */
+    const char *	/* protocolName */
 );
 
 extern void _IceAddOpcodeMapping (
@@ -501,35 +450,35 @@ extern void _IceConnectionClosed (
 );
 
 extern void _IceGetPoAuthData (
-    char *		/* protocol_name */,
-    char *		/* address */,
-    char *		/* auth_name */,
+    const char *	/* protocol_name */,
+    const char *	/* address */,
+    const char *	/* auth_name */,
     unsigned short *	/* auth_data_length_ret */,
     char **		/* auth_data_ret */
 );
 
 extern void _IceGetPaAuthData (
-    char *		/* protocol_name */,
-    char *		/* address */,
-    char *		/* auth_name */,
+    const char *	/* protocol_name */,
+    const char *	/* address */,
+    const char *	/* auth_name */,
     unsigned short *	/* auth_data_length_ret */,
     char **		/* auth_data_ret */
 );
 
 extern void _IceGetPoValidAuthIndices (
-    char *		/* protocol_name */,
-    char *		/* address */,
+    const char *	/* protocol_name */,
+    const char *	/* address */,
     int			/* num_auth_names */,
-    char **		/* auth_names */,
+    const char **	/* auth_names */,
     int	*		/* num_indices_ret */,
     int	*		/* indices_ret */
 );
 
 extern void _IceGetPaValidAuthIndices (
-    char *		/* protocol_name */,
-    char *		/* address */,
+    const char *	/* protocol_name */,
+    const char *	/* address */,
     int			/* num_auth_names */,
-    char **		/* auth_names */,
+    const char **	/* auth_names */,
     int	*		/* num_indices_ret */,
     int	*		/* indices_ret */
 );

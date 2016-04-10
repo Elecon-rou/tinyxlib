@@ -1,4 +1,3 @@
-/* $Xorg: ICEmsg.h,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,7 +25,6 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/ICEmsg.h,v 1.4 2001/12/20 19:40:59 tsi Exp $ */
 
 #ifndef _ICEMSG_H_
 #define _ICEMSG_H_
@@ -89,6 +87,29 @@ extern void _IceErrorBadValue (
     IcePointer		/* value */
 );
 
+extern IcePoAuthStatus _IcePoMagicCookie1Proc (
+    IceConn		/* iceConn */,
+    IcePointer *	/* authStatePtr */,
+    Bool 		/* cleanUp */,
+    Bool		/* swap */,
+    int     		/* authDataLen */,
+    IcePointer		/* authData */,
+    int *		/* replyDataLenRet */,
+    IcePointer *	/* replyDataRet */,
+    char **		/* errorStringRet */
+);
+
+extern IcePaAuthStatus _IcePaMagicCookie1Proc (
+    IceConn		/* iceConn */,
+    IcePointer *	/* authStatePtr */,
+    Bool		/* swap */,
+    int     		/* authDataLen */,
+    IcePointer		/* authData */,
+    int *		/* replyDataLenRet */,
+    IcePointer *	/* replyDataRet */,
+    char **		/* errorStringRet */
+);
+
 
 /*
  * Macro to check if IO operations are valid on an ICE connection.
@@ -140,10 +161,10 @@ extern void _IceErrorBadValue (
     IceGetHeader (_iceConn, _offendingMajorOpcode, ICE_Error, \
 	SIZEOF (iceErrorMsg), iceErrorMsg, _pMsg); \
     _pMsg->length += (_dataLength); \
-    _pMsg->offendingMinorOpcode = _offendingMinorOpcode; \
-    _pMsg->severity = _severity; \
-    _pMsg->offendingSequenceNum = _offendingSequenceNum; \
-    _pMsg->errorClass = _errorClass; \
+    _pMsg->offendingMinorOpcode = (CARD8) _offendingMinorOpcode; \
+    _pMsg->severity = (CARD8) _severity; \
+    _pMsg->offendingSequenceNum = (CARD32) _offendingSequenceNum; \
+    _pMsg->errorClass = (CARD16) _errorClass; \
 }
 
 
@@ -165,19 +186,11 @@ extern void _IceErrorBadValue (
     } \
 }
 
-#ifndef WORD64
-
 #define IceWriteData16(_iceConn, _bytes, _data) \
     IceWriteData (_iceConn, _bytes, (char *) _data)
 
 #define IceWriteData32(_iceConn, _bytes, _data) \
     IceWriteData (_iceConn, _bytes, (char *) _data)
-
-#else /* WORD64 */
-
-/* IceWriteData16 and IceWriteData32 defined in misc.c for WORD64 */
-
-#endif /* WORD64 */
 
 
 /*
@@ -196,15 +209,15 @@ extern void _IceErrorBadValue (
 
 /*
  * Write pad bytes.  Used to force 32 or 64 bit alignment.
- * A maxium of 7 pad bytes can be specified.
+ * A maximum of 7 pad bytes can be specified.
  */
 
 #define IceWritePad(_iceConn, _bytes) \
 { \
     if ((_iceConn->outbufptr + (_bytes)) > _iceConn->outbufmax) \
     { \
-        char _dummy[7]; \
-	IceFlush (_iceConn); \
+        char _dummy[7] = { 0 }; \
+        IceFlush (_iceConn); \
         _IceWrite (_iceConn, (unsigned long) (_bytes), _dummy); \
     } \
     else \
@@ -231,7 +244,7 @@ extern void _IceErrorBadValue (
     } \
     else \
     { \
-	_pData = (char *) malloc ((unsigned) _bytes); \
+	_pData = malloc (_bytes); \
         if (_pData) \
 	    _IceRead (_iceConn, _bytes, _pData); \
         else \
@@ -242,7 +255,7 @@ extern void _IceErrorBadValue (
 #define IceDisposeCompleteMessage(_iceConn, _pData) \
     if ((char *) _pData < _iceConn->inbuf || \
 	(char *) _pData >= _iceConn->inbufmax) \
-        free ((char *) _pData);
+        free (_pData);
 
 
 #define IceReadSimpleMessage(_iceConn, _msgType, _pMsg) \
@@ -260,8 +273,6 @@ extern void _IceErrorBadValue (
 #define IceReadData(_iceConn, _bytes, _pData) \
     _IceRead (_iceConn, (unsigned long) (_bytes), (char *) _pData); \
 
-#ifndef WORD64
-
 #define IceReadData16(_iceConn, _swap, _bytes, _pData) \
 { \
     _IceRead (_iceConn, (unsigned long) (_bytes), (char *) _pData); \
@@ -271,12 +282,6 @@ extern void _IceErrorBadValue (
 { \
     _IceRead (_iceConn, (unsigned long) (_bytes), (char *) _pData); \
 }
-
-#else /* WORD64 */
-
-/* IceReadData16 and IceReadData32 defined in misc.c for WORD64 */
-
-#endif /* WORD64 */
 
 
 /*

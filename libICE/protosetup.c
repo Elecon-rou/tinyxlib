@@ -1,4 +1,3 @@
-/* $Xorg: protosetup.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,28 +25,27 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/protosetup.c,v 1.2 2001/10/28 03:32:28 tsi Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 
 
 IceProtocolSetupStatus
-IceProtocolSetup (iceConn, myOpcode, clientData, mustAuthenticate,
-    majorVersionRet, minorVersionRet, vendorRet, releaseRet,
-    errorLength, errorStringRet)
-
-IceConn	   iceConn;
-int 	   myOpcode;
-IcePointer clientData;
-Bool       mustAuthenticate;
-int	   *majorVersionRet;
-int	   *minorVersionRet;
-char	   **vendorRet;
-char	   **releaseRet;
-int  	   errorLength;
-char 	   *errorStringRet;
-
+IceProtocolSetup (
+	IceConn	   iceConn,
+	int 	   myOpcode,
+	IcePointer clientData,
+	Bool       mustAuthenticate,
+	int	   *majorVersionRet,
+	int	   *minorVersionRet,
+	char	   **vendorRet,
+	char	   **releaseRet,
+	int  	   errorLength,
+	char 	   *errorStringRet
+)
 {
     iceProtocolSetupMsg	*pMsg;
     char		*pData;
@@ -114,13 +112,13 @@ char 	   *errorStringRet;
 
     if (myProtocol->orig_client->auth_count > 0)
     {
-	authIndices = (int *) malloc (
+	authIndices = malloc (
 	    myProtocol->orig_client->auth_count * sizeof (int));
 
 	_IceGetPoValidAuthIndices (myProtocol->protocol_name,
 	    iceConn->connection_string,
 	    myProtocol->orig_client->auth_count,
-	    myProtocol->orig_client->auth_names,
+	    (const char **) myProtocol->orig_client->auth_names,
             &authCount, authIndices);
 
     }
@@ -183,8 +181,7 @@ char 	   *errorStringRet;
     replyWait.minor_opcode_of_request = ICE_ProtocolSetup;
     replyWait.reply = (IcePointer) &reply;
 
-    iceConn->protosetup_to_you = (_IceProtoSetupToYouInfo *) malloc (
-	sizeof (_IceProtoSetupToYouInfo));
+    iceConn->protosetup_to_you = malloc (sizeof (_IceProtoSetupToYouInfo));
     iceConn->protosetup_to_you->my_opcode = myOpcode;
     iceConn->protosetup_to_you->my_auth_count = authCount;
     iceConn->protosetup_to_you->auth_active = 0;
@@ -231,7 +228,7 @@ char 	   *errorStringRet;
 	    else /* reply.type == ICE_PROTOCOL_ERROR */
 	    {
 		/* Protocol Setup failed */
-		
+
 		strncpy (errorStringRet, reply.protocol_error.error_message,
 		    errorLength);
 
@@ -239,8 +236,8 @@ char 	   *errorStringRet;
 	    }
 
 	    if (iceConn->protosetup_to_you->my_auth_indices)
-		free ((char *) iceConn->protosetup_to_you->my_auth_indices);
-	    free ((char *) iceConn->protosetup_to_you);
+		free (iceConn->protosetup_to_you->my_auth_indices);
+	    free (iceConn->protosetup_to_you);
 	    iceConn->protosetup_to_you = NULL;
 	}
     }
@@ -253,7 +250,7 @@ char 	   *errorStringRet;
 	*minorVersionRet = versionRec->minor_version;
 	*vendorRet = reply.protocol_reply.vendor;
 	*releaseRet = reply.protocol_reply.release;
-	
+
 
 	/*
 	 * Increase the reference count for the number of active protocols.

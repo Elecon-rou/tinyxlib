@@ -1,4 +1,3 @@
-/* $Xorg: setauth.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,8 +25,10 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/setauth.c,v 1.4 2001/12/14 19:53:36 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 #include <X11/ICE/ICEutil.h>
@@ -53,11 +54,10 @@ IceAuthDataEntry _IcePaAuthDataEntries[ICE_MAX_AUTH_DATA_ENTRIES];
 
 
 void
-IceSetPaAuthData (numEntries, entries)
-
-int			numEntries;
-IceAuthDataEntry	*entries;
-
+IceSetPaAuthData (
+	int			numEntries,
+	IceAuthDataEntry	*entries
+)
 {
     /*
      * _IcePaAuthDataEntries should really be a linked list.
@@ -89,24 +89,18 @@ IceAuthDataEntry	*entries;
 	    _IcePaAuthDataEntryCount++;
 	}
 
-	_IcePaAuthDataEntries[j].protocol_name = (char *) malloc (
-	    strlen (entries[i].protocol_name) + 1);
-	strcpy (_IcePaAuthDataEntries[j].protocol_name,
-	    entries[i].protocol_name);
+	_IcePaAuthDataEntries[j].protocol_name
+	    = strdup(entries[i].protocol_name);
 
-	_IcePaAuthDataEntries[j].network_id = (char *) malloc (
-	    strlen (entries[i].network_id) + 1);
-	strcpy (_IcePaAuthDataEntries[j].network_id,
-	    entries[i].network_id);
+	_IcePaAuthDataEntries[j].network_id
+	    = strdup(entries[i].network_id);
 
-	_IcePaAuthDataEntries[j].auth_name = (char *) malloc (
-            strlen (entries[i].auth_name) + 1);
-	strcpy (_IcePaAuthDataEntries[j].auth_name,
-	    entries[i].auth_name);
+	_IcePaAuthDataEntries[j].auth_name
+            = strdup(entries[i].auth_name);
 
 	_IcePaAuthDataEntries[j].auth_data_length =
             entries[i].auth_data_length;
-	_IcePaAuthDataEntries[j].auth_data = (char *) malloc (
+	_IcePaAuthDataEntries[j].auth_data = malloc (
             entries[i].auth_data_length);
 	memcpy (_IcePaAuthDataEntries[j].auth_data,
             entries[i].auth_data, entries[i].auth_data_length);

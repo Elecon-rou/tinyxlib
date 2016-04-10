@@ -1,4 +1,3 @@
-/* $Xorg: misc.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,12 +25,21 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/misc.c,v 1.3 2001/01/17 19:41:29 dawes Exp $ */
 
+#ifdef WIN32
+#define _WILLWINSOCK_
+#endif
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
-#include <X11/Xtrans.h>
+#include <X11/Xtrans/Xtrans.h>
 #include <stdio.h>
+#ifdef WIN32
+#include <X11/Xwinsock.h>
+#include <X11/Xw32defs.h>
+#endif
 
 
 /*
@@ -39,18 +47,17 @@ Author: Ralph Mor, X Consortium
  */
 
 char *
-IceAllocScratch (iceConn, size)
-
-IceConn		iceConn;
-unsigned long	size;
-
+IceAllocScratch (
+	IceConn		iceConn,
+	unsigned long	size
+)
 {
     if (!iceConn->scratch || size > iceConn->scratch_size)
     {
 	if (iceConn->scratch)
 	    free (iceConn->scratch);
 
-	iceConn->scratch = (char *) malloc ((unsigned) size);
+	iceConn->scratch = malloc (size);
 	iceConn->scratch_size = size;
     }
 
@@ -64,10 +71,9 @@ unsigned long	size;
  */
 
 int
-IceFlush (iceConn)
-     
-IceConn iceConn;
-
+IceFlush (
+	IceConn iceConn
+)
 {
     _IceWrite (iceConn,
 	(unsigned long) (iceConn->outbufptr - iceConn->outbuf),
@@ -79,20 +85,18 @@ IceConn iceConn;
 
 
 int
-IceGetOutBufSize (iceConn)
-
-IceConn iceConn;
-
+IceGetOutBufSize (
+	IceConn iceConn
+)
 {
     return (iceConn->outbufmax - iceConn->outbuf);
 }
 
 
 int
-IceGetInBufSize (iceConn)
-
-IceConn iceConn;
-
+IceGetInBufSize (
+	IceConn iceConn
+)
 {
     return (iceConn->inbufmax - iceConn->inbuf);
 }
@@ -104,90 +108,67 @@ IceConn iceConn;
  */
 
 IceConnectStatus
-IceConnectionStatus (iceConn)
-
-IceConn iceConn;
-
+IceConnectionStatus (
+	IceConn iceConn
+)
 {
     return (iceConn->connection_status);
 }
 
 
 char *
-IceVendor (iceConn)
-
-IceConn iceConn;
-
+IceVendor (
+	IceConn iceConn
+)
 {
-    char *string = (char *) malloc (strlen (iceConn->vendor) + 1);
-
-    if (string)
-	strcpy (string, iceConn->vendor);
-
-    return (string);
+    return strdup(iceConn->vendor);
 }
 
 
 char *
-IceRelease (iceConn)
-
-IceConn iceConn;
-
+IceRelease (
+	IceConn iceConn
+)
 {
-    char *string = (char *) malloc (strlen (iceConn->release) + 1);
-
-    if (string)
-	strcpy (string, iceConn->release);
-
-    return (string);
+    return strdup(iceConn->release);
 }
 
 
 int
-IceProtocolVersion (iceConn)
-
-IceConn iceConn;
-
+IceProtocolVersion (
+	IceConn iceConn
+)
 {
     return (_IceVersions[iceConn->my_ice_version_index].major_version);
 }
 
 
 int
-IceProtocolRevision (iceConn)
-
-IceConn iceConn;
-
+IceProtocolRevision (
+	IceConn iceConn
+)
 {
     return (_IceVersions[iceConn->my_ice_version_index].minor_version);
 }
 
 
 int
-IceConnectionNumber (iceConn)
-
-IceConn iceConn;
-
+IceConnectionNumber (
+	IceConn iceConn
+)
 {
     return (_IceTransGetConnectionNumber (iceConn->trans_conn));
 }
 
 
 char *
-IceConnectionString (iceConn)
-
-IceConn iceConn;
-
+IceConnectionString (
+	IceConn iceConn
+)
 {
     if (iceConn->connection_string)
     {
-	char *string = (char *) malloc (
-	    strlen (iceConn->connection_string) + 1);
-
-	if (string)
-	    strcpy (string, iceConn->connection_string);
-
-	return (string);
+	return strdup(iceConn->connection_string);
     }
     else
 	return (NULL);
@@ -195,30 +176,27 @@ IceConn iceConn;
 
 
 unsigned long
-IceLastSentSequenceNumber (iceConn)
-
-IceConn iceConn;
-
+IceLastSentSequenceNumber (
+	IceConn iceConn
+)
 {
     return (iceConn->send_sequence);
 }
 
 
 unsigned long
-IceLastReceivedSequenceNumber (iceConn)
-
-IceConn iceConn;
-
+IceLastReceivedSequenceNumber (
+	IceConn iceConn
+)
 {
     return (iceConn->receive_sequence);
 }
 
 
 Bool
-IceSwapping (iceConn)
-
-IceConn iceConn;
-
+IceSwapping (
+	IceConn iceConn
+)
 {
     return (iceConn->swap);
 }
@@ -233,12 +211,11 @@ IceConn iceConn;
  */
 
 Status
-_IceRead (iceConn, nbytes, ptr)
-
-register IceConn iceConn;
-unsigned long	 nbytes;
-register char	 *ptr;
-
+_IceRead (
+	register IceConn iceConn,
+	unsigned long	 nbytes,
+	register char	 *ptr
+)
 {
     register unsigned long nleft;
 
@@ -254,6 +231,9 @@ register char	 *ptr;
 
 	if (nread <= 0)
 	{
+#ifdef WIN32
+	    errno = WSAGetLastError();
+#endif
 	    if (iceConn->want_to_close)
 	    {
 		/*
@@ -266,7 +246,7 @@ register char	 *ptr;
 
 		return (0);
 	    }
-	    else 
+	    else
 	    {
 		/*
 		 * Fatal IO error.  First notify each protocol's IceIOErrorProc
@@ -297,7 +277,7 @@ register char	 *ptr;
 			process = &iceConn->process_msg_info[
 			    i - iceConn->his_min_opcode];
 
-			if (process->in_use)
+			if ((process != NULL) && process->in_use)
 			{
 			    IceIOErrorProc IOErrProc = process->accept_flag ?
 			      process->protocol->accept_client->io_error_proc :
@@ -330,11 +310,10 @@ register char	 *ptr;
  */
 
 void
-_IceReadSkip (iceConn, nbytes)
-
-register IceConn	iceConn;
-register unsigned long	nbytes;
-
+_IceReadSkip (
+	register IceConn	iceConn,
+	register unsigned long	nbytes
+)
 {
     char temp[512];
 
@@ -354,12 +333,11 @@ register unsigned long	nbytes;
  */
 
 void
-_IceWrite (iceConn, nbytes, ptr)
-
-register IceConn iceConn;
-unsigned long	 nbytes;
-register char	 *ptr;
-
+_IceWrite (
+	register IceConn iceConn,
+	unsigned long	 nbytes,
+	register char	 *ptr
+)
 {
     register unsigned long nleft;
 
@@ -375,6 +353,9 @@ register char	 *ptr;
 
 	if (nwritten <= 0)
 	{
+#ifdef WIN32
+	    errno = WSAGetLastError();
+#endif
 	    /*
 	     * Fatal IO error.  First notify each protocol's IceIOErrorProc
 	     * callback, then invoke the application IO error handler.
@@ -425,104 +406,14 @@ register char	 *ptr;
     }
 }
 
-#ifdef WORD64
-
-IceWriteData16 (iceConn, nbytes, data)
-
-IceConn 	iceConn;
-unsigned long 	nbytes;
-short  		*data;
-
-{
-    int numShorts = nbytes / 2;
-    int index = 0;
-
-    while (index < numShorts)
-    {
-	int spaceLeft, count, i;
-	int shortsLeft = numShorts - index;
-
-	spaceLeft = iceConn->outbufmax - iceConn->outbufptr - 1;
-
-	if (spaceLeft < 2)
-	{
-	    IceFlush (iceConn);
-	    spaceLeft = iceConn->outbufmax - iceConn->outbufptr - 1;
-	}
-
-	count = (shortsLeft < spaceLeft / 2) ? shortsLeft : spaceLeft / 2;
-
-	for (i = 0; i < count; i++)
-	    STORE_CARD16 (iceConn->outbufptr, data[index++]);
-    }
-}
-
-
-IceWriteData32 (iceConn, nbytes, data)
-
-IceConn 	iceConn;
-unsigned long  	nbytes;
-int	 	*data;
-
-{
-    int numLongs = nbytes / 4;
-    int index = 0;
-
-    while (index < numLongs)
-    {
-	int spaceLeft, count, i;
-	int longsLeft = numLongs - index;
-
-	spaceLeft = iceConn->outbufmax - iceConn->outbufptr - 1;
-
-	if (spaceLeft < 4)
-	{
-	    IceFlush (iceConn);
-	    spaceLeft = iceConn->outbufmax - iceConn->outbufptr - 1;
-	}
-
-	count = (longsLeft < spaceLeft / 4) ? longsLeft : spaceLeft / 4;
-
-	for (i = 0; i < count; i++)
-	    STORE_CARD32 (iceConn->outbufptr, data[index++]);
-    }
-}
-
-
-IceReadData16 (iceConn, swap, nbytes, data)
-
-IceConn 	iceConn;
-Bool		swap;
-unsigned long 	nbytes;
-short  		*data;
-
-{
-    /* NOT IMPLEMENTED YET */
-}
-
-
-IceReadData32 (iceConn, swap, nbytes, data)
-
-IceConn 	iceConn;
-Bool		swap;
-unsigned long  	nbytes;
-int	 	*data;
-
-{
-    /* NOT IMPLEMENTED YET */
-}
-
-#endif  /* WORD64 */
-
 
 
 void
-_IceAddOpcodeMapping (iceConn, hisOpcode, myOpcode)
-
-IceConn	iceConn;
-int 	hisOpcode;
-int 	myOpcode;
-
+_IceAddOpcodeMapping (
+	IceConn	iceConn,
+	int 	hisOpcode,
+	int 	myOpcode
+)
 {
     if (hisOpcode <= 0 || hisOpcode > 255)
     {
@@ -530,8 +421,7 @@ int 	myOpcode;
     }
     else if (iceConn->process_msg_info == NULL)
     {
-	iceConn->process_msg_info = (_IceProcessMsgInfo *) malloc (
-	    sizeof (_IceProcessMsgInfo));
+	iceConn->process_msg_info = malloc (sizeof (_IceProcessMsgInfo));
 	iceConn->his_min_opcode = iceConn->his_max_opcode = hisOpcode;
     }
     else if (hisOpcode < iceConn->his_min_opcode)
@@ -541,14 +431,14 @@ int 	myOpcode;
 	int newsize = iceConn->his_max_opcode - hisOpcode + 1;
 	int i;
 
-	iceConn->process_msg_info = (_IceProcessMsgInfo *) malloc (
+	iceConn->process_msg_info = malloc (
 	    newsize * sizeof (_IceProcessMsgInfo));
 
 	memcpy (&iceConn->process_msg_info[
 	    iceConn->his_min_opcode - hisOpcode], oldVec,
 	    oldsize * sizeof (_IceProcessMsgInfo));
 
-	free ((char *) oldVec);
+	free (oldVec);
 
 	for (i = hisOpcode + 1; i < iceConn->his_min_opcode; i++)
 	{
@@ -568,13 +458,13 @@ int 	myOpcode;
 	int newsize = hisOpcode - iceConn->his_min_opcode + 1;
 	int i;
 
-	iceConn->process_msg_info = (_IceProcessMsgInfo *) malloc (
+	iceConn->process_msg_info = malloc (
 	    newsize * sizeof (_IceProcessMsgInfo));
 
 	memcpy (iceConn->process_msg_info, oldVec,
 	    oldsize * sizeof (_IceProcessMsgInfo));
 
-	free ((char *) oldVec);
+	free (oldVec);
 
 	for (i = iceConn->his_max_opcode + 1; i < hisOpcode; i++)
 	{
@@ -601,10 +491,14 @@ int 	myOpcode;
 
 
 char *
-_IceGetPeerName (iceConn)
-
-IceConn iceConn;
-
+IceGetPeerName (IceConn iceConn)
 {
     return (_IceTransGetPeerNetworkId (iceConn->trans_conn));
+}
+
+
+char *
+_IceGetPeerName (IceConn iceConn)
+{
+    return (IceGetPeerName(iceConn));
 }

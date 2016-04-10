@@ -1,4 +1,3 @@
-/* $Xorg: watch.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -27,16 +26,18 @@ in this Software without prior written authorization from The Open Group.
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 
 
 Status
-IceAddConnectionWatch (watchProc, clientData)
-
-IceWatchProc	watchProc;
-IcePointer	clientData;
-
+IceAddConnectionWatch (
+	IceWatchProc	watchProc,
+	IcePointer	clientData
+)
 {
     /*
      * watchProc will be called each time an ICE connection is
@@ -47,8 +48,7 @@ IcePointer	clientData;
     _IceWatchProc	*newWatchProc;
     int			i;
 
-    if ((newWatchProc = (_IceWatchProc *) malloc (
-	sizeof (_IceWatchProc))) == NULL)
+    if ((newWatchProc = malloc (sizeof (_IceWatchProc))) == NULL)
     {
 	return (0);
     }
@@ -70,10 +70,10 @@ IcePointer	clientData;
     /*
      * Invoke the watch proc with any previously opened ICE connections.
      */
-     
+
     for (i = 0; i < _IceConnectionCount; i++)
     {
-	_IceWatchedConnection *newWatchedConn = (_IceWatchedConnection *)
+	_IceWatchedConnection *newWatchedConn =
 	    malloc (sizeof (_IceWatchedConnection));
 
 	newWatchedConn->iceConn = _IceConnectionObjs[i];
@@ -91,11 +91,10 @@ IcePointer	clientData;
 
 
 void
-IceRemoveConnectionWatch (watchProc, clientData)
-
-IceWatchProc	watchProc;
-IcePointer	clientData;
-
+IceRemoveConnectionWatch (
+	IceWatchProc	watchProc,
+	IcePointer	clientData
+)
 {
     _IceWatchProc	*currWatchProc = _IceWatchProcs;
     _IceWatchProc	*prevWatchProc = NULL;
@@ -116,7 +115,7 @@ IcePointer	clientData;
 	while (watchedConn)
 	{
 	    _IceWatchedConnection *nextWatchedConn = watchedConn->next;
-	    free ((char *) watchedConn);
+	    free (watchedConn);
 	    watchedConn = nextWatchedConn;
 	}
 
@@ -125,23 +124,22 @@ IcePointer	clientData;
 	else
 	    prevWatchProc->next = nextWatchProc;
 
-	free ((char *) currWatchProc);
+	free (currWatchProc);
     }
 }
 
 
 
 void
-_IceConnectionOpened (iceConn)
-
-IceConn	iceConn;
-
+_IceConnectionOpened (
+	IceConn	iceConn
+)
 {
     _IceWatchProc *watchProc = _IceWatchProcs;
 
     while (watchProc)
     {
-	_IceWatchedConnection *newWatchedConn = (_IceWatchedConnection *)
+	_IceWatchedConnection *newWatchedConn =
 	    malloc (sizeof (_IceWatchedConnection));
 	_IceWatchedConnection *watchedConn;
 
@@ -167,10 +165,9 @@ IceConn	iceConn;
 
 
 void
-_IceConnectionClosed (iceConn)
-
-IceConn	iceConn;
-
+_IceConnectionClosed (
+	IceConn	iceConn
+)
 {
     _IceWatchProc *watchProc = _IceWatchProcs;
 
@@ -195,7 +192,7 @@ IceConn	iceConn;
 	    else
 		prev->next = watchedConn->next;
 
-	    free ((char *) watchedConn);
+	    free (watchedConn);
 	}
 
 	watchProc = watchProc->next;

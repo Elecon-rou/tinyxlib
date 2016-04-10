@@ -1,4 +1,3 @@
-/* $Xorg: replywait.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -27,16 +26,18 @@ in this Software without prior written authorization from The Open Group.
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 
 
 void
-_IceAddReplyWait (iceConn, replyWait)
-
-IceConn			iceConn;
-IceReplyWaitInfo	*replyWait;
-
+_IceAddReplyWait (
+	IceConn			iceConn,
+	IceReplyWaitInfo	*replyWait
+)
 {
     /*
      * Add this replyWait to the end of the list (only if the
@@ -57,9 +58,8 @@ IceReplyWaitInfo	*replyWait;
 	prev = last;
 	last = last->next;
     }
-	
-    savedReplyWait = (_IceSavedReplyWait *) malloc (
-	sizeof (_IceSavedReplyWait));
+
+    savedReplyWait = malloc (sizeof (_IceSavedReplyWait));
 
     savedReplyWait->reply_wait = replyWait;
     savedReplyWait->reply_ready = False;
@@ -74,11 +74,10 @@ IceReplyWaitInfo	*replyWait;
 
 
 IceReplyWaitInfo *
-_IceSearchReplyWaits (iceConn, majorOpcode)
-
-IceConn	iceConn;
-int	majorOpcode;
-
+_IceSearchReplyWaits (
+	IceConn	iceConn,
+	int	majorOpcode
+)
 {
     /*
      * Return the first replyWait in the list with the given majorOpcode
@@ -98,11 +97,10 @@ int	majorOpcode;
 
 
 void
-_IceSetReplyReady (iceConn, replyWait)
-
-IceConn			iceConn;
-IceReplyWaitInfo	*replyWait;
-
+_IceSetReplyReady (
+	IceConn			iceConn,
+	IceReplyWaitInfo	*replyWait
+)
 {
     /*
      * The replyWait specified has a reply ready.
@@ -120,11 +118,10 @@ IceReplyWaitInfo	*replyWait;
 
 
 Bool
-_IceCheckReplyReady (iceConn, replyWait)
-
-IceConn			iceConn;
-IceReplyWaitInfo	*replyWait;
-
+_IceCheckReplyReady (
+	IceConn			iceConn,
+	IceReplyWaitInfo	*replyWait
+)
 {
     _IceSavedReplyWait	*savedReplyWait = iceConn->saved_reply_waits;
     _IceSavedReplyWait	*prev = NULL;
@@ -150,8 +147,8 @@ IceReplyWaitInfo	*replyWait;
 	    iceConn->saved_reply_waits = savedReplyWait->next;
 	else
 	    prev->next = savedReplyWait->next;
-	
-	free ((char *) savedReplyWait);
+
+	free (savedReplyWait);
     }
 
     return (ready);

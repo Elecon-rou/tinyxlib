@@ -1,4 +1,3 @@
-/* $Xorg: register.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -27,23 +26,24 @@ in this Software without prior written authorization from The Open Group.
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
 
 int
-IceRegisterForProtocolSetup (protocolName, vendor, release,
-    versionCount, versionRecs, authCount, authNames, authProcs, IOErrorProc)
-
-char			*protocolName;
-char			*vendor;
-char			*release;
-int			versionCount;
-IcePoVersionRec		*versionRecs;
-int			authCount;
-char		        **authNames;
-IcePoAuthProc		*authProcs;
-IceIOErrorProc		IOErrorProc;
-
+IceRegisterForProtocolSetup (
+	const char		*protocolName,
+	const char		*vendor,
+	const char		*release,
+	int			versionCount,
+	IcePoVersionRec		*versionRecs,
+	int			authCount,
+	const char	        **authNames,
+	IcePoAuthProc		*authProcs,
+	IceIOErrorProc		IOErrorProc
+)
 {
     _IcePoProtocol 	*p;
     int			opcodeRet, i;
@@ -56,7 +56,7 @@ IceIOErrorProc		IOErrorProc;
 		/*
 		 * We've already registered this protocol.
 		 */
-		
+
 		return (i);
 	    }
 	    else
@@ -64,11 +64,10 @@ IceIOErrorProc		IOErrorProc;
 		break;
 	    }
 	}
-	    
+
     if (i <= _IceLastMajorOpcode)
     {
-	p = _IceProtocols[i - 1].orig_client =
-	    (_IcePoProtocol *) malloc (sizeof (_IcePoProtocol));
+	p = _IceProtocols[i - 1].orig_client = malloc (sizeof(_IcePoProtocol));
 	opcodeRet = i;
     }
     else if (_IceLastMajorOpcode == 255 ||
@@ -79,47 +78,35 @@ IceIOErrorProc		IOErrorProc;
     }
     else
     {
-	char *name;
-
-	_IceProtocols[_IceLastMajorOpcode].protocol_name = name =
-	    (char *) malloc (strlen (protocolName) + 1);
-	strcpy (name, protocolName);
+	_IceProtocols[_IceLastMajorOpcode].protocol_name =
+	    strdup(protocolName);
 
 	p = _IceProtocols[_IceLastMajorOpcode].orig_client =
-	    (_IcePoProtocol *) malloc (sizeof (_IcePoProtocol));
+	    malloc (sizeof (_IcePoProtocol));
 
 	_IceProtocols[_IceLastMajorOpcode].accept_client = NULL;
 
 	opcodeRet = ++_IceLastMajorOpcode;
     }
 
-    p->vendor = (char *) malloc (strlen (vendor) + 1);
-    strcpy (p->vendor, vendor);
-
-    p->release = (char *) malloc (strlen (release) + 1);
-    strcpy (p->release, release);
+    p->vendor = strdup(vendor);
+    p->release = strdup(release);
 
     p->version_count = versionCount;
 
-    p->version_recs = (IcePoVersionRec *) malloc (
-	versionCount * sizeof (IcePoVersionRec));
+    p->version_recs = malloc (versionCount * sizeof (IcePoVersionRec));
     memcpy (p->version_recs, versionRecs,
 	versionCount * sizeof (IcePoVersionRec));
 
     if ((p->auth_count = authCount) > 0)
     {
-	p->auth_names = (char **) malloc (
-	    authCount * sizeof (char *));
+	p->auth_names = malloc (authCount * sizeof (char *));
 
-	p->auth_procs = (IcePoAuthProc *) malloc (
-	    authCount * sizeof (IcePoAuthProc));
+	p->auth_procs = malloc (authCount * sizeof (IcePoAuthProc));
 
 	for (i = 0; i < authCount; i++)
 	{
-	    p->auth_names[i] =
-	        (char *) malloc (strlen (authNames[i]) + 1);
-	    strcpy (p->auth_names[i], authNames[i]);
-
+	    p->auth_names[i] = strdup(authNames[i]);
 	    p->auth_procs[i] = authProcs[i];
 	}
     }
@@ -137,24 +124,20 @@ IceIOErrorProc		IOErrorProc;
 
 
 int
-IceRegisterForProtocolReply (protocolName, vendor, release,
-    versionCount, versionRecs, authCount, authNames, authProcs,
-    hostBasedAuthProc, protocolSetupProc, protocolActivateProc,
-    IOErrorProc)
-
-char				*protocolName;
-char				*vendor;
-char				*release;
-int				versionCount;
-IcePaVersionRec			*versionRecs;
-int				authCount;
-char				**authNames;
-IcePaAuthProc			*authProcs;
-IceHostBasedAuthProc		hostBasedAuthProc;
-IceProtocolSetupProc		protocolSetupProc;
-IceProtocolActivateProc		protocolActivateProc;
-IceIOErrorProc			IOErrorProc;
-
+IceRegisterForProtocolReply (
+	const char			*protocolName,
+	const char			*vendor,
+	const char			*release,
+	int				versionCount,
+	IcePaVersionRec			*versionRecs,
+	int				authCount,
+	const char			**authNames,
+	IcePaAuthProc			*authProcs,
+	IceHostBasedAuthProc		hostBasedAuthProc,
+	IceProtocolSetupProc		protocolSetupProc,
+	IceProtocolActivateProc		protocolActivateProc,
+	IceIOErrorProc			IOErrorProc
+)
 {
     _IcePaProtocol 	*p;
     int			opcodeRet, i;
@@ -167,7 +150,7 @@ IceIOErrorProc			IOErrorProc;
 		/*
 		 * We've already registered this protocol.
 		 */
-		
+
 		return (i);
 	    }
 	    else
@@ -175,12 +158,12 @@ IceIOErrorProc			IOErrorProc;
 		break;
 	    }
 	}
-	    
+
 
     if (i <= _IceLastMajorOpcode)
     {
 	p = _IceProtocols[i - 1].accept_client =
-	    (_IcePaProtocol *) malloc (sizeof (_IcePaProtocol));
+	    malloc (sizeof (_IcePaProtocol));
 	opcodeRet = i;
     }
     else if (_IceLastMajorOpcode == 255 ||
@@ -191,30 +174,23 @@ IceIOErrorProc			IOErrorProc;
     }
     else
     {
-	char *name;
-
-	_IceProtocols[_IceLastMajorOpcode].protocol_name = name =
-	    (char *) malloc (strlen (protocolName) + 1);
-	strcpy (name, protocolName);
+	_IceProtocols[_IceLastMajorOpcode].protocol_name =
+	    strdup(protocolName);
 
 	_IceProtocols[_IceLastMajorOpcode].orig_client = NULL;
 
 	p = _IceProtocols[_IceLastMajorOpcode].accept_client =
-	    (_IcePaProtocol *) malloc (sizeof (_IcePaProtocol));
+	    malloc (sizeof (_IcePaProtocol));
 
 	opcodeRet = ++_IceLastMajorOpcode;
     }
 
-    p->vendor = (char *) malloc (strlen (vendor) + 1);
-    strcpy (p->vendor, vendor);
-
-    p->release = (char *) malloc (strlen (release) + 1);
-    strcpy (p->release, release);
+    p->vendor = strdup(vendor);
+    p->release = strdup(release);
 
     p->version_count = versionCount;
 
-    p->version_recs = (IcePaVersionRec *) malloc (
-	versionCount * sizeof (IcePaVersionRec));
+    p->version_recs = malloc (versionCount * sizeof (IcePaVersionRec));
     memcpy (p->version_recs, versionRecs,
 	versionCount * sizeof (IcePaVersionRec));
 
@@ -223,18 +199,13 @@ IceIOErrorProc			IOErrorProc;
 
     if ((p->auth_count = authCount) > 0)
     {
-	p->auth_names = (char **) malloc (
-	    authCount * sizeof (char *));
+	p->auth_names = malloc (authCount * sizeof (char *));
 
-	p->auth_procs = (IcePaAuthProc *) malloc (
-	    authCount * sizeof (IcePaAuthProc));
+	p->auth_procs = malloc (authCount * sizeof (IcePaAuthProc));
 
 	for (i = 0; i < authCount; i++)
 	{
-	    p->auth_names[i] =
-	        (char *) malloc (strlen (authNames[i]) + 1);
-	    strcpy (p->auth_names[i], authNames[i]);
-
+	    p->auth_names[i] = strdup(authNames[i]);
 	    p->auth_procs[i] = authProcs[i];
 	}
     }

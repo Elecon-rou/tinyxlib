@@ -1,4 +1,3 @@
-/* $Xorg: getauth.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,16 +25,15 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/getauth.c,v 1.2 2001/10/28 03:32:28 tsi Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
-#include <X11/ICE/ICEutil.h>
 
-static Bool auth_valid ();
-
-extern int		_IcePaAuthDataEntryCount;
-extern IceAuthDataEntry _IcePaAuthDataEntries[];
+static Bool auth_valid (const char *auth_name, int num_auth_names,
+			const char **auth_names, int *index_ret);
 
 
 /*
@@ -56,15 +54,13 @@ extern IceAuthDataEntry _IcePaAuthDataEntries[];
  */
 
 void
-_IceGetPoAuthData (protocolName, networkId, authName,
-    authDataLenRet, authDataRet)
-
-char		*protocolName;
-char		*networkId;
-char		*authName;
-unsigned short	*authDataLenRet;
-char		**authDataRet;
-
+_IceGetPoAuthData (
+	const char	*protocolName,
+	const char	*networkId,
+	const char	*authName,
+	unsigned short	*authDataLenRet,
+	char		**authDataRet
+)
 {
     IceAuthFileEntry    *entry;
 
@@ -74,7 +70,7 @@ char		**authDataRet;
     {
 	*authDataLenRet = entry->auth_data_length;
 
-	if ((*authDataRet = (char *) malloc (entry->auth_data_length)) != NULL)
+	if ((*authDataRet = malloc (entry->auth_data_length)) != NULL)
 	    memcpy (*authDataRet, entry->auth_data, entry->auth_data_length);
     }
     else
@@ -89,15 +85,13 @@ char		**authDataRet;
 
 
 void
-_IceGetPaAuthData (protocolName, networkId, authName,
-    authDataLenRet, authDataRet)
-
-char		*protocolName;
-char		*networkId;
-char		*authName;
-unsigned short	*authDataLenRet;
-char		**authDataRet;
-
+_IceGetPaAuthData (
+	const char	*protocolName,
+	const char	*networkId,
+	const char	*authName,
+	unsigned short	*authDataLenRet,
+	char		**authDataRet
+)
 {
     IceAuthDataEntry	*entry = NULL;
     int			found = 0;
@@ -117,7 +111,7 @@ char		**authDataRet;
     {
 	*authDataLenRet = entry->auth_data_length;
 
-	if ((*authDataRet = (char *) malloc (entry->auth_data_length)) != NULL)
+	if ((*authDataRet = malloc (entry->auth_data_length)) != NULL)
 	    memcpy (*authDataRet, entry->auth_data, entry->auth_data_length);
     }
     else
@@ -130,16 +124,14 @@ char		**authDataRet;
 
 
 void
-_IceGetPoValidAuthIndices (protocol_name, network_id,
-    num_auth_names, auth_names, num_indices_ret, indices_ret)
-
-char	*protocol_name;
-char	*network_id;
-int	num_auth_names;
-char	**auth_names;
-int	*num_indices_ret;
-int	*indices_ret;		/* in/out arg */
-
+_IceGetPoValidAuthIndices (
+	const char	*protocol_name,
+	const char	*network_id,
+	int		num_auth_names,
+	const char	**auth_names,
+	int		*num_indices_ret,
+	int		*indices_ret		/* in/out arg */
+)
 {
     FILE    		*auth_file;
     char    		*filename;
@@ -191,16 +183,14 @@ int	*indices_ret;		/* in/out arg */
 
 
 void
-_IceGetPaValidAuthIndices (protocol_name, network_id,
-    num_auth_names, auth_names, num_indices_ret, indices_ret)
-
-char	*protocol_name;
-char	*network_id;
-int	num_auth_names;
-char	**auth_names;
-int	*num_indices_ret;
-int	*indices_ret;		/* in/out arg */
-
+_IceGetPaValidAuthIndices (
+	const char	*protocol_name,
+	const char	*network_id,
+	int		num_auth_names,
+	const char	**auth_names,
+	int		*num_indices_ret,
+	int		*indices_ret		/* in/out arg */
+)
 {
     int			index_ret;
     int			i, j;
@@ -241,12 +231,8 @@ int	*indices_ret;		/* in/out arg */
  */
 
 static Bool
-auth_valid (auth_name, num_auth_names, auth_names, index_ret)
-
-char	*auth_name;
-int	num_auth_names;
-char	**auth_names;
-int	*index_ret;
+auth_valid (const char *auth_name, int num_auth_names,
+	    const char **auth_names, int *index_ret)
 
 {
     /*
@@ -260,7 +246,7 @@ int	*index_ret;
 	{
 	    break;
 	}
-   
+
     if (i < num_auth_names)
     {
 	*index_ret = i;

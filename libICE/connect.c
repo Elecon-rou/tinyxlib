@@ -1,4 +1,3 @@
-/* $Xorg: connect.c,v 1.4 2001/02/09 02:03:26 xorgcvs Exp $ */
 /******************************************************************************
 
 
@@ -26,28 +25,29 @@ in this Software without prior written authorization from The Open Group.
 
 Author: Ralph Mor, X Consortium
 ******************************************************************************/
-/* $XFree86: xc/lib/ICE/connect.c,v 3.9 2001/12/14 19:53:35 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/ICE/ICElib.h>
 #include "ICElibint.h"
-#include <X11/Xtrans.h>
+#include <X11/Xtrans/Xtrans.h>
 #include "globals.h"
 
-static XtransConnInfo ConnectToPeer();
+static XtransConnInfo ConnectToPeer(char *networkIdsList,
+				    char **actualConnectionRet);
 
 #define Strstr strstr
 
 IceConn
-IceOpenConnection (networkIdsList, context, mustAuthenticate, majorOpcodeCheck,
-    errorLength, errorStringRet)
-
-char 	   *networkIdsList;
-IcePointer context;
-Bool 	   mustAuthenticate;
-int  	   majorOpcodeCheck;
-int  	   errorLength;
-char 	   *errorStringRet;
-
+IceOpenConnection (
+	char 	   *networkIdsList,
+	IcePointer context,
+	Bool 	   mustAuthenticate,
+	int  	   majorOpcodeCheck,
+	int  	   errorLength,
+	char 	   *errorStringRet
+)
 {
     IceConn			iceConn;
     int				extra, i, j;
@@ -83,7 +83,7 @@ char 	   *errorStringRet;
      * connection if the specified 'context' is equal to the context
      * associated with the ICE connection, or if the context associated
      * with the ICE connection is NULL.
-     * 
+     *
      * If 'majorOpcodeCheck' is non-zero, it will contain a protocol major
      * opcode that we should make sure is not already active on the ICE
      * connection.  Some clients will want two seperate connections for the
@@ -144,7 +144,7 @@ char 	   *errorStringRet;
 	}
     }
 
-    if ((iceConn = (IceConn) malloc (sizeof (struct _IceConn))) == NULL)
+    if ((iceConn = malloc (sizeof (struct _IceConn))) == NULL)
     {
 	strncpy (errorStringRet, "Can't malloc", errorLength);
 	return (NULL);
@@ -158,7 +158,7 @@ char 	   *errorStringRet;
     if ((iceConn->trans_conn = ConnectToPeer (networkIdsList,
 	&iceConn->connection_string)) == NULL)
     {
-	free ((char *) iceConn);
+	free (iceConn);
 	strncpy (errorStringRet, "Could not open network socket", errorLength);
 	return (NULL);
     }
@@ -194,8 +194,7 @@ char 	   *errorStringRet;
     iceConn->connect_to_me = NULL;
     iceConn->protosetup_to_me = NULL;
 
-    if ((iceConn->inbuf = iceConn->inbufptr =
-	(char *) malloc (ICE_INBUFSIZE)) == NULL)
+    if ((iceConn->inbuf = iceConn->inbufptr = malloc (ICE_INBUFSIZE)) == NULL)
     {
 	_IceFreeConnection (iceConn);
 	strncpy (errorStringRet, "Can't malloc", errorLength);
@@ -204,8 +203,7 @@ char 	   *errorStringRet;
 
     iceConn->inbufmax = iceConn->inbuf + ICE_INBUFSIZE;
 
-    if ((iceConn->outbuf = iceConn->outbufptr =
-	(char *) calloc (1, ICE_OUTBUFSIZE)) == NULL)
+    if ((iceConn->outbuf = iceConn->outbufptr = calloc (1, ICE_OUTBUFSIZE)) == NULL)
     {
 	_IceFreeConnection (iceConn);
 	strncpy (errorStringRet, "Can't malloc", errorLength);
@@ -224,8 +222,7 @@ char 	   *errorStringRet;
     iceConn->saved_reply_waits = NULL;
     iceConn->ping_waits = NULL;
 
-    iceConn->connect_to_you = (_IceConnectToYouInfo *) malloc (
-	sizeof (_IceConnectToYouInfo));
+    iceConn->connect_to_you = malloc (sizeof (_IceConnectToYouInfo));
     iceConn->connect_to_you->auth_active = 0;
 
     /*
@@ -392,7 +389,7 @@ char 	   *errorStringRet;
 			iceConn->connection_string;
 		    _IceConnectionCount++;
 
-		    free ((char *) iceConn->connect_to_you);
+		    free (iceConn->connect_to_you);
 		    iceConn->connect_to_you = NULL;
 
 		    iceConn->connection_status = IceConnectAccepted;
@@ -428,10 +425,9 @@ char 	   *errorStringRet;
 
 
 IcePointer
-IceGetConnectionContext (iceConn)
-
-IceConn    iceConn;
-
+IceGetConnectionContext (
+	IceConn    iceConn
+)
 {
     return (iceConn->context);
 }
@@ -446,19 +442,15 @@ IceConn    iceConn;
 
 
 static XtransConnInfo
-ConnectToPeer (networkIdsList, actualConnectionRet)
-
-char *networkIdsList;
-char **actualConnectionRet;
-
+ConnectToPeer (char *networkIdsList, char **actualConnectionRet)
 {
     char addrbuf[256];
     char* address;
     char *ptr, *endptr, *delim;
     int  madeConnection = 0;
-    int  len, retry;
-    int  connect_stat;
-    int  address_size;
+    size_t  len;
+    int  retry, connect_stat;
+    size_t  address_size;
     XtransConnInfo trans_conn = NULL;
 
     *actualConnectionRet = NULL;
@@ -476,7 +468,7 @@ char **actualConnectionRet;
     {
        address = malloc (len + 1);
        address_size = len;
-    }    
+    }
 
     while (ptr < endptr && !madeConnection)
     {
@@ -518,20 +510,18 @@ char **actualConnectionRet;
 	}
     }
 
-    if (madeConnection) 
+    if (madeConnection)
     {
 	/*
 	 * We need to return the actual network connection string
 	 */
 
-	*actualConnectionRet = (char *) malloc (strlen (address) + 1);
-	strcpy (*actualConnectionRet, address);
+	*actualConnectionRet = strdup(address);
 
-	
 	/*
 	 * Return the file descriptor
 	 */
-    } 
+    }
     else trans_conn = NULL;
 
     if (address != addrbuf) free (address);
