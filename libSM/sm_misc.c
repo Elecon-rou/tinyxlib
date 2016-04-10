@@ -1,5 +1,3 @@
-/* $Xorg: sm_misc.c,v 1.4 2001/02/09 02:03:30 xorgcvs Exp $ */
-
 /*
 
 Copyright 1993, 1998  The Open Group
@@ -30,6 +28,9 @@ in this Software without prior written authorization from The Open Group.
  * Author: Ralph Mor, X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/SM/SMlib.h>
 #include "SMlibint.h"
 #include <stdio.h>
@@ -39,10 +40,7 @@ in this Software without prior written authorization from The Open Group.
  */
 
 void
-SmFreeProperty (prop)
-
-SmProp	*prop;
-
+SmFreeProperty(SmProp *prop)
 {
     if (prop)
     {
@@ -56,11 +54,11 @@ SmProp	*prop;
 	{
 	    for (i = 0; i < prop->num_vals; i++)
 		if (prop->vals[i].value)
-		    free ((char *) prop->vals[i].value);
-	    free ((char *) prop->vals);
+		    free (prop->vals[i].value);
+	    free (prop->vals);
 	}
 
-	free ((char *) prop);
+	free (prop);
     }
 }
 
@@ -70,11 +68,7 @@ SmProp	*prop;
  */
 
 void
-SmFreeReasons (count, reasonMsgs)
-
-int 	count;
-char 	**reasonMsgs;
-
+SmFreeReasons(int count, char **reasonMsgs)
 {
     if (reasonMsgs)
     {
@@ -83,7 +77,7 @@ char 	**reasonMsgs;
 	for (i = 0; i < count; i++)
 	    free (reasonMsgs[i]);
 
-	free ((char *) reasonMsgs);
+	free (reasonMsgs);
     }
 }
 
@@ -94,72 +88,42 @@ char 	**reasonMsgs;
  */
 
 int
-SmcProtocolVersion (smcConn)
-
-SmcConn smcConn;
-
+SmcProtocolVersion(SmcConn smcConn)
 {
     return (smcConn->proto_major_version);
 }
 
 
 int
-SmcProtocolRevision (smcConn)
-
-SmcConn smcConn;
-
+SmcProtocolRevision(SmcConn smcConn)
 {
     return (smcConn->proto_minor_version);
 }
 
 
 char *
-SmcVendor (smcConn)
-
-SmcConn smcConn;
-
+SmcVendor(SmcConn smcConn)
 {
-    char *string = (char *) malloc (strlen (smcConn->vendor) + 1);
-
-    strcpy (string, smcConn->vendor);
-
-    return (string);
+    return strdup(smcConn->vendor);
 }
 
 
 char *
-SmcRelease (smcConn)
-
-SmcConn smcConn;
-
+SmcRelease(SmcConn smcConn)
 {
-    char *string = (char *) malloc (strlen (smcConn->release) + 1);
-
-    strcpy (string, smcConn->release);
-
-    return (string);
+    return strdup(smcConn->release);
 }
 
 
 char *
-SmcClientID (smcConn)
-
-SmcConn smcConn;
-
+SmcClientID(SmcConn smcConn)
 {
-    char *clientId = (char *) malloc (strlen (smcConn->client_id) + 1);
-
-    strcpy (clientId, smcConn->client_id);
-
-    return (clientId);
+    return strdup(smcConn->client_id);
 }
 
 
 IceConn
-SmcGetIceConnection (smcConn)
-
-SmcConn smcConn;
-
+SmcGetIceConnection(SmcConn smcConn)
 {
     return (smcConn->iceConn);
 }
@@ -171,44 +135,28 @@ SmcConn smcConn;
  */
 
 int
-SmsProtocolVersion (smsConn)
-
-SmsConn smsConn;
-
+SmsProtocolVersion(SmsConn smsConn)
 {
     return (smsConn->proto_major_version);
 }
 
 
 int
-SmsProtocolRevision (smsConn)
-
-SmsConn smsConn;
-
+SmsProtocolRevision(SmsConn smsConn)
 {
     return (smsConn->proto_minor_version);
 }
 
 
 char *
-SmsClientID (smsConn)
-
-SmsConn smsConn;
-
+SmsClientID(SmsConn smsConn)
 {
-    char *clientId = (char *) malloc (strlen (smsConn->client_id) + 1);
-
-    strcpy (clientId, smsConn->client_id);
-
-    return (clientId);
+    return strdup(smsConn->client_id);
 }
 
 
 IceConn
-SmsGetIceConnection (smsConn)
-
-SmsConn smsConn;
-
+SmsGetIceConnection(SmsConn smsConn)
 {
     return (smsConn->iceConn);
 }

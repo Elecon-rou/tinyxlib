@@ -1,5 +1,3 @@
-/* $Xorg: SMlibint.h,v 1.4 2001/02/09 02:03:30 xorgcvs Exp $ */
-
 /*
 
 Copyright 1993, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/SM/SMlibint.h,v 1.3 2001/07/29 05:01:11 tsi Exp $ */
 
 /*
  * Author: Ralph Mor, X Consortium
@@ -107,34 +104,16 @@ in this Software without prior written authorization from The Open Group.
  * STORE macros
  */
 
-#ifndef WORD64
-
 #define STORE_CARD32(_pBuf, _val) \
 { \
     *((CARD32 *) _pBuf) = _val; \
     _pBuf += 4; \
 }
 
-#else /* WORD64 */
-
-#define STORE_CARD32(_pBuf, _val) \
-{ \
-    struct { \
-        int value   :32; \
-    } _d; \
-    _d.value = _val; \
-    memcpy (_pBuf, &_d, 4); \
-    _pBuf += 4; \
-}
-
-#endif /* WORD64 */
-
 
 /*
  * EXTRACT macros
  */
-
-#ifndef WORD64
 
 #define EXTRACT_CARD16(_pBuf, _swap, _val) \
 { \
@@ -151,34 +130,6 @@ in this Software without prior written authorization from The Open Group.
     if (_swap) \
         _val = lswapl (_val); \
 }
-
-#else /* WORD64 */
-
-#define EXTRACT_CARD16(_pBuf, _swap, _val) \
-{ \
-    _val = *(_pBuf + 0) & 0xff; 	/* 0xff incase _pBuf is signed */ \
-    _val <<= 8; \
-    _val |= *(_pBuf + 1) & 0xff;\
-    _pBuf += 2; \
-    if (_swap) \
-        _val = lswaps (_val); \
-}
-
-#define EXTRACT_CARD32(_pBuf, _swap, _val) \
-{ \
-    _val = *(_pBuf + 0) & 0xff; 	/* 0xff incase _pBuf is signed */ \
-    _val <<= 8; \
-    _val |= *(_pBuf + 1) & 0xff;\
-    _val <<= 8; \
-    _val |= *(_pBuf + 2) & 0xff;\
-    _val <<= 8; \
-    _val |= *(_pBuf + 3) & 0xff;\
-    _pBuf += 4; \
-    if (_swap) \
-        _val = lswapl (_val); \
-}
-
-#endif /* WORD64 */
 
 
 /*
@@ -206,11 +157,10 @@ in this Software without prior written authorization from The Open Group.
 
 #define STORE_ARRAY8(_pBuf, _len, _array8) \
 { \
-    STORE_CARD32 (_pBuf, _len); \
-    memcpy (_pBuf, _array8, _len); \
-    _pBuf += _len; \
-    if (PAD64 (4 + _len)) \
-        _pBuf += PAD64 (4 + _len); \
+    STORE_CARD32 (_pBuf, (CARD32) _len); \
+    if (_len) \
+        memcpy (_pBuf, _array8, _len); \
+    _pBuf += _len + PAD64 (4 + _len); \
 }
 
 #define STORE_LISTOF_PROPERTY(_pBuf, _count, _props) \
@@ -240,24 +190,20 @@ in this Software without prior written authorization from The Open Group.
 #define EXTRACT_ARRAY8(_pBuf, _swap, _len, _array8) \
 { \
     EXTRACT_CARD32 (_pBuf, _swap, _len); \
-    _array8 = (char *) malloc (_len + 1); \
+    _array8 = malloc (_len + 1); \
     memcpy (_array8, _pBuf, _len); \
     _array8[_len] = '\0'; \
-    _pBuf += _len; \
-    if (PAD64 (4 + _len)) \
-        _pBuf += PAD64 (4 + _len); \
+    _pBuf += _len + PAD64 (4 + _len); \
 }
 
 #define EXTRACT_ARRAY8_AS_STRING(_pBuf, _swap, _string) \
 { \
     CARD32 _len; \
     EXTRACT_CARD32 (_pBuf, _swap, _len); \
-    _string = (char *) malloc (_len + 1); \
+    _string = malloc (_len + 1); \
     memcpy (_string, _pBuf, _len); \
     _string[_len] = '\0'; \
-    _pBuf += _len; \
-    if (PAD64 (4 + _len)) \
-        _pBuf += PAD64 (4 + _len); \
+    _pBuf += _len + PAD64 (4 + _len); \
 }
 
 #define EXTRACT_LISTOF_PROPERTY(_pBuf, _swap, _count, _props) \
@@ -265,15 +211,15 @@ in this Software without prior written authorization from The Open Group.
     int _i, _j; \
     EXTRACT_CARD32 (_pBuf, _swap, _count); \
     _pBuf += 4; \
-    _props = (SmProp **) malloc (_count * sizeof (SmProp *)); \
+    _props = malloc (_count * sizeof (SmProp *)); \
     for (_i = 0; _i < _count; _i++) \
     { \
-        _props[_i] = (SmProp *) malloc (sizeof (SmProp)); \
+        _props[_i] = malloc (sizeof (SmProp)); \
         EXTRACT_ARRAY8_AS_STRING (_pBuf, _swap, _props[_i]->name); \
         EXTRACT_ARRAY8_AS_STRING (_pBuf, _swap, _props[_i]->type); \
         EXTRACT_CARD32 (_pBuf, _swap, _props[_i]->num_vals); \
         _pBuf += 4; \
-        _props[_i]->vals = (SmPropValue *) malloc ( \
+        _props[_i]->vals = malloc ( \
 	    _props[_i]->num_vals * sizeof (SmPropValue)); \
         for (_j = 0; _j < _props[_i]->num_vals; _j++) \
 	{ \
@@ -289,14 +235,12 @@ in this Software without prior written authorization from The Open Group.
 { \
     CARD32 _len; \
     EXTRACT_CARD32 (_pBuf, _swap, _len); \
-    _pBuf += _len; \
-    if (PAD64 (4 + _len)) \
-        _pBuf += PAD64 (4 + _len); \
+    _pBuf += _len + PAD64 (4 + _len); \
 }
 
 #define SKIP_LISTOF_PROPERTY(_pBuf, _swap) \
 { \
-    int _i, _j; \
+    CARD32 _i, _j; \
     CARD32 _count; \
     EXTRACT_CARD32 (_pBuf, _swap, _count); \
     _pBuf += 4; \
@@ -495,18 +439,27 @@ struct _SmsConn {
 /*
  * Extern declarations
  */
+extern void
+_SmcProcessMessage(IceConn iceConn, IcePointer clientData, int opcode,
+		   unsigned long length, Bool swap,
+		   IceReplyWaitInfo *replyWait, Bool *replyReadyRet);
+
+extern void
+_SmsProcessMessage(IceConn iceConn, IcePointer clientData, int opcode,
+		   unsigned long length, Bool swap);
+
+extern void
+_SmcDefaultErrorHandler(SmcConn smcConn, Bool swap, int offendingMinorOpcode,
+			unsigned long offendingSequence, int errorClass,
+			int severity, SmPointer values);
+
+extern void
+_SmsDefaultErrorHandler(SmsConn smsConn, Bool swap, int offendingMinorOpcode,
+			unsigned long offendingSequence, int errorClass,
+			int severity, SmPointer values);
 
 extern int     _SmcOpcode;
 extern int     _SmsOpcode;
-
-extern int		_SmVersionCount;
-extern IcePoVersionRec	_SmcVersions[];
-extern IcePaVersionRec	_SmsVersions[];
-
-extern int	        _SmAuthCount;
-extern char		*_SmAuthNames[];
-extern IcePoAuthProc	_SmcAuthProcs[];
-extern IcePaAuthProc	_SmsAuthProcs[];
 
 extern SmsNewClientProc	_SmsNewClientProc;
 extern SmPointer	_SmsNewClientData;

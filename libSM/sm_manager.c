@@ -1,5 +1,3 @@
-/* $Xorg: sm_manager.c,v 1.4 2001/02/09 02:03:30 xorgcvs Exp $ */
-
 /*
 
 Copyright 1993, 1998  The Open Group
@@ -30,78 +28,27 @@ in this Software without prior written authorization from The Open Group.
  * Author: Ralph Mor, X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/SM/SMlib.h>
 #include "SMlibint.h"
+#include <X11/Xtrans/Xtrans.h>
 
-
-
-Status
-SmsInitialize (vendor, release, newClientProc, managerData,
-    hostBasedAuthProc, errorLength, errorStringRet)
-
-char 		 		*vendor;
-char 		 		*release;
-SmsNewClientProc 		newClientProc;
-SmPointer	 		managerData;
-IceHostBasedAuthProc		hostBasedAuthProc;
-int  		 		errorLength;
-char 		 		*errorStringRet;
-
-{
-    if (errorStringRet && errorLength > 0)
-	*errorStringRet = '\0';
-
-    if (!newClientProc)
-    {
-	strncpy (errorStringRet,
-	    "The SmsNewClientProc callback can't be NULL", errorLength);
-
-	return (0);
-    }
-
-    if (!_SmsOpcode)
-    {
-	Status _SmsProtocolSetupProc ();
-
-	if ((_SmsOpcode = IceRegisterForProtocolReply ("XSMP",
-	    vendor, release, _SmVersionCount, _SmsVersions,
-	    _SmAuthCount, _SmAuthNames, _SmsAuthProcs, hostBasedAuthProc,
-	    _SmsProtocolSetupProc,
-	    NULL,	/* IceProtocolActivateProc - we don't care about
-			   when the Protocol Reply is sent, because the
-			   session manager can not immediately send a
-			   message - it must wait for RegisterClient. */
-	    NULL	/* IceIOErrorProc */
-            )) < 0)
-	{
-	    strncpy (errorStringRet,
-	        "Could not register XSMP protocol with ICE", errorLength);
-
-	    return (0);
-	}
-    }
-
-    _SmsNewClientProc = newClientProc;
-    _SmsNewClientData = managerData;
-
-    return (1);
-}
-
+#ifdef __UNIXWARE__
+#undef shutdown
+#endif
 
 
-Status
-_SmsProtocolSetupProc (iceConn,
-    majorVersion, minorVersion, vendor, release,
-    clientDataRet, failureReasonRet)
 
-IceConn    iceConn;
-int	   majorVersion;
-int	   minorVersion;
-char  	   *vendor;
-char 	   *release;
-IcePointer *clientDataRet;
-char	   **failureReasonRet;
-
+static Status
+_SmsProtocolSetupProc (IceConn    iceConn,
+		       int majorVersion,
+		       int minorVersion,
+		       char *vendor,
+		       char *release,
+		       IcePointer *clientDataRet,
+		       char **failureReasonRet)
 {
     SmsConn  		smsConn;
     unsigned long 	mask;
@@ -121,12 +68,11 @@ char	   **failureReasonRet;
      * Allocate new SmsConn.
      */
 
-    if ((smsConn = (SmsConn) malloc (sizeof (struct _SmsConn))) == NULL)
+    if ((smsConn = malloc (sizeof (struct _SmsConn))) == NULL)
     {
-	char *str = "Memory allocation failed";
+	const char *str = "Memory allocation failed";
 
-	if ((*failureReasonRet = (char *) malloc (strlen (str) + 1)) != NULL)
-	    strcpy (*failureReasonRet, str);
+	*failureReasonRet = strdup (str);
 
 	return (0);
     }
@@ -162,38 +108,89 @@ char	   **failureReasonRet;
 
 
 
-/* Using private API from libICE. */
-extern char *_IceGetPeerName (IceConn /* iceConn */);
 
-char *
-SmsClientHostName (smsConn)
-
-SmsConn smsConn;
-
+Status
+SmsInitialize(const char *vendor, const char *release,
+	      SmsNewClientProc newClientProc,
+	      SmPointer managerData, IceHostBasedAuthProc hostBasedAuthProc,
+	      int errorLength, char *errorStringRet)
 {
-    return (_IceGetPeerName (smsConn->iceConn));
+    const char *auth_names[] = {"MIT-MAGIC-COOKIE-1"};
+    IcePaAuthProc auth_procs[] = {_IcePaMagicCookie1Proc};
+    int auth_count = 1;
+
+    IcePaVersionRec versions[] = {
+        {SmProtoMajor, SmProtoMinor, _SmsProcessMessage}
+    };
+    int version_count = 1;
+
+    if (errorStringRet && errorLength > 0)
+	*errorStringRet = '\0';
+
+    if (!newClientProc)
+    {
+	if (errorStringRet && errorLength > 0) {
+	    strncpy (errorStringRet,
+		     "The SmsNewClientProc callback can't be NULL",
+		     errorLength);
+	    errorStringRet[errorLength - 1] = '\0';
+	}
+
+	return (0);
+    }
+
+    if (!_SmsOpcode)
+    {
+
+	if ((_SmsOpcode = IceRegisterForProtocolReply ("XSMP",
+	    vendor, release, version_count, versions,
+	    auth_count, auth_names, auth_procs, hostBasedAuthProc,
+	    _SmsProtocolSetupProc,
+	    NULL,	/* IceProtocolActivateProc - we don't care about
+			   when the Protocol Reply is sent, because the
+			   session manager can not immediately send a
+			   message - it must wait for RegisterClient. */
+	    NULL	/* IceIOErrorProc */
+            )) < 0)
+	{
+	    if (errorStringRet && errorLength > 0) {
+		strncpy (errorStringRet,
+			 "Could not register XSMP protocol with ICE",
+			 errorLength);
+		errorStringRet[errorLength - 1] = '\0';
+	    }
+	    return (0);
+	}
+    }
+
+    _SmsNewClientProc = newClientProc;
+    _SmsNewClientData = managerData;
+
+    return (1);
+}
+
+
+
+char *
+SmsClientHostName(SmsConn smsConn)
+{
+    return (IceGetPeerName (smsConn->iceConn));
 }
 
 
 
 Status
-SmsRegisterClientReply (smsConn, clientId)
-
-SmsConn smsConn;
-char	*clientId;
-
+SmsRegisterClientReply(SmsConn smsConn, char *clientId)
 {
     IceConn			iceConn = smsConn->iceConn;
-    int				extra;
+    size_t			extra;
     smRegisterClientReplyMsg 	*pMsg;
     char 			*pData;
 
-    if ((smsConn->client_id = (char *) malloc (strlen (clientId) + 1)) == NULL)
+    if ((smsConn->client_id = strdup (clientId)) == NULL)
     {
 	return (0);
     }
-
-    strcpy (smsConn->client_id, clientId);
 
     extra = ARRAY8_BYTES (strlen (clientId));
 
@@ -211,14 +208,8 @@ char	*clientId;
 
 
 void
-SmsSaveYourself (smsConn, saveType, shutdown, interactStyle, fast)
-
-SmsConn smsConn;
-int	saveType;
-Bool 	shutdown;
-int	interactStyle;
-Bool	fast;
-
+SmsSaveYourself(SmsConn smsConn, int saveType, Bool shutdown,
+		int interactStyle, Bool fast)
 {
     IceConn		iceConn = smsConn->iceConn;
     smSaveYourselfMsg	*pMsg;
@@ -254,10 +245,7 @@ Bool	fast;
 
 
 void
-SmsSaveYourselfPhase2 (smsConn)
-
-SmsConn smsConn;
-
+SmsSaveYourselfPhase2(SmsConn smsConn)
 {
     IceConn	iceConn = smsConn->iceConn;
 
@@ -268,10 +256,7 @@ SmsConn smsConn;
 
 
 void
-SmsInteract (smsConn)
-
-SmsConn smsConn;
-
+SmsInteract(SmsConn smsConn)
 {
     IceConn	iceConn = smsConn->iceConn;
 
@@ -284,10 +269,7 @@ SmsConn smsConn;
 
 
 void
-SmsDie (smsConn)
-
-SmsConn smsConn;
-
+SmsDie(SmsConn smsConn)
 {
     IceConn	iceConn = smsConn->iceConn;
 
@@ -298,10 +280,7 @@ SmsConn smsConn;
 
 
 void
-SmsSaveComplete (smsConn)
-
-SmsConn smsConn;
-
+SmsSaveComplete(SmsConn smsConn)
 {
     IceConn	iceConn = smsConn->iceConn;
 
@@ -312,10 +291,7 @@ SmsConn smsConn;
 
 
 void
-SmsShutdownCancelled (smsConn)
-
-SmsConn smsConn;
-
+SmsShutdownCancelled(SmsConn smsConn)
 {
     IceConn	iceConn = smsConn->iceConn;
 
@@ -328,15 +304,10 @@ SmsConn smsConn;
 
 
 void
-SmsReturnProperties (smsConn, numProps, props)
-
-SmsConn	smsConn;
-int	numProps;
-SmProp  **props;
-
+SmsReturnProperties(SmsConn smsConn, int numProps, SmProp **props)
 {
     IceConn			iceConn = smsConn->iceConn;
-    int 			bytes;
+    unsigned int		bytes;
     smPropertiesReplyMsg	*pMsg;
     char 			*pBuf;
     char			*pStart;
@@ -358,15 +329,12 @@ SmProp  **props;
 
 
 void
-SmsCleanUp (smsConn)
-
-SmsConn smsConn;
-
+SmsCleanUp(SmsConn smsConn)
 {
     IceProtocolShutdown (smsConn->iceConn, _SmsOpcode);
 
     if (smsConn->client_id)
 	free (smsConn->client_id);
 
-    free ((char *) smsConn);
+    free (smsConn);
 }
