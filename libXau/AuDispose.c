@@ -1,5 +1,3 @@
-/* $Xorg: AuDispose.c,v 1.4 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,14 +23,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xau/AuDispose.c,v 1.4 2001/07/25 15:04:48 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xauth.h>
 #include <stdlib.h>
 
 void
-XauDisposeAuth (auth)
-Xauth	*auth;
+XauDisposeAuth (Xauth *auth)
 {
     if (auth) {
 	if (auth->address) (void) free (auth->address);

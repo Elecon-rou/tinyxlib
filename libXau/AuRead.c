@@ -1,5 +1,3 @@
-/* $Xorg: AuRead.c,v 1.4 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xau/AuRead.c,v 1.5 2001/07/25 15:04:48 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xauth.h>
 #include <stdlib.h>
 
@@ -35,7 +35,7 @@ read_short (unsigned short *shortp, FILE *file)
 {
     unsigned char   file_short[2];
 
-    if (fread ((char *) file_short, (int) sizeof (file_short), 1, file) != 1)
+    if (fread ((char *) file_short, sizeof (file_short), 1, file) != 1)
 	return 0;
     *shortp = file_short[0] * 256 + file_short[1];
     return 1;
@@ -50,12 +50,12 @@ read_counted_string (unsigned short *countp, char **stringp, FILE *file)
     if (read_short (&len, file) == 0)
 	return 0;
     if (len == 0) {
-	data = 0;
+	data = NULL;
     } else {
     	data = malloc ((unsigned) len);
     	if (!data)
 	    return 0;
-    	if (fread (data, (int) sizeof (char), (int) len, file) != len) {
+	if (fread (data, sizeof (char), len, file) != len) {
 	    bzero (data, len);
 	    free (data);
 	    return 0;
@@ -67,30 +67,29 @@ read_counted_string (unsigned short *countp, char **stringp, FILE *file)
 }
 
 Xauth *
-XauReadAuth (auth_file)
-FILE	*auth_file;
+XauReadAuth (FILE *auth_file)
 {
     Xauth   local;
     Xauth   *ret;
 
     if (read_short (&local.family, auth_file) == 0)
-	return 0;
+	return NULL;
     if (read_counted_string (&local.address_length, &local.address, auth_file) == 0)
-	return 0;
+	return NULL;
     if (read_counted_string (&local.number_length, &local.number, auth_file) == 0) {
 	if (local.address) free (local.address);
-	return 0;
+	return NULL;
     }
     if (read_counted_string (&local.name_length, &local.name, auth_file) == 0) {
 	if (local.address) free (local.address);
 	if (local.number) free (local.number);
-	return 0;
+	return NULL;
     }
     if (read_counted_string (&local.data_length, &local.data, auth_file) == 0) {
 	if (local.address) free (local.address);
 	if (local.number) free (local.number);
 	if (local.name) free (local.name);
-	return 0;
+	return NULL;
     }
     ret = (Xauth *) malloc (sizeof (Xauth));
     if (!ret) {
@@ -101,7 +100,7 @@ FILE	*auth_file;
 	    bzero (local.data, local.data_length);
 	    free (local.data);
 	}
-	return 0;
+	return NULL;
     }
     *ret = local;
     return ret;

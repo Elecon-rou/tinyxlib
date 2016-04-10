@@ -1,5 +1,3 @@
-/* $Xorg: AuWrite.c,v 1.4 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xau/AuWrite.c,v 1.3 2001/01/17 19:42:24 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xauth.h>
 
 static int
@@ -36,7 +36,7 @@ write_short (unsigned short s, FILE *file)
 
     file_short[0] = (s & (unsigned)0xff00) >> 8;
     file_short[1] = s & 0xff;
-    if (fwrite ((char *) file_short, (int) sizeof (file_short), 1, file) != 1)
+    if (fwrite ((char *) file_short, sizeof (file_short), 1, file) != 1)
 	return 0;
     return 1;
 }
@@ -46,15 +46,13 @@ write_counted_string (unsigned short count, char *string, FILE *file)
 {
     if (write_short (count, file) == 0)
 	return 0;
-    if (fwrite (string, (int) sizeof (char), (int) count, file) != count)
+    if (fwrite (string, sizeof (char), count, file) != count)
 	return 0;
     return 1;
 }
 
 int
-XauWriteAuth (auth_file, auth)
-FILE	*auth_file;
-Xauth	*auth;
+XauWriteAuth (FILE *auth_file, Xauth *auth)
 {
     if (write_short (auth->family, auth_file) == 0)
 	return 0;

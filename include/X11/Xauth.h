@@ -1,5 +1,3 @@
-/* $Xorg: Xauth.h,v 1.4 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -26,10 +24,16 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-/* $XFree86: xc/lib/Xau/Xauth.h,v 1.5 2001/12/14 19:54:36 dawes Exp $ */
-
 #ifndef _Xauth_h
 #define _Xauth_h
+
+/* struct xauth is full of implicit padding to properly align the pointers
+   after the length fields.   We can't clean that up without breaking ABI,
+   so tell clang not to bother complaining about it. */
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpadded"
+#endif
 
 typedef struct xauth {
     unsigned short   family;
@@ -42,6 +46,10 @@ typedef struct xauth {
     unsigned short   data_length;
     char   	    *data;
 } Xauth;
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #ifndef _XAUTH_STRUCT_ONLY
 
@@ -62,41 +70,26 @@ _XFUNCPROTOBEGIN
 char *XauFileName(void);
 
 Xauth *XauReadAuth(
-#if NeedFunctionPrototypes
 FILE*	/* auth_file */
-#endif
 );
 
 int XauLockAuth(
-#if NeedFunctionPrototypes
 _Xconst char*	/* file_name */,
 int		/* retries */,
 int		/* timeout */,
 long		/* dead */
-#endif
 );
 
 int XauUnlockAuth(
-#if NeedFunctionPrototypes
 _Xconst char*	/* file_name */
-#endif
 );
 
 int XauWriteAuth(
-#if NeedFunctionPrototypes
 FILE*		/* auth_file */,
 Xauth*		/* auth */
-#endif
-);
-
-Xauth *XauGetAuthByName(
-#if NeedFunctionPrototypes
-_Xconst char*	/* display_name */
-#endif
 );
 
 Xauth *XauGetAuthByAddr(
-#if NeedFunctionPrototypes
 #if NeedWidePrototypes
 unsigned int	/* family */,
 unsigned int	/* address_length */,
@@ -117,11 +110,9 @@ unsigned int	/* name_length */,
 unsigned short	/* name_length */,
 #endif
 _Xconst char*	/* name */
-#endif
 );
 
 Xauth *XauGetBestAuthByAddr(
-#if NeedFunctionPrototypes
 #if NeedWidePrototypes
 unsigned int	/* family */,
 unsigned int	/* address_length */,
@@ -139,35 +130,11 @@ _Xconst char*	/* number */,
 int		/* types_length */,
 char**		/* type_names */,
 _Xconst int*	/* type_lengths */
-#endif
 );
 
 void XauDisposeAuth(
-#if NeedFunctionPrototypes
 Xauth*		/* auth */
-#endif
 );
-
-#ifdef K5AUTH
-#include <krb5/krb5.h>
-/* 9/93: krb5.h leaks some symbols */
-#undef BITS32
-#undef xfree
-
-int XauKrb5Encode(
-#if NeedFunctionPrototypes
-     krb5_principal	/* princ */,
-     krb5_data *	/* outbuf */
-#endif
-);
-
-int XauKrb5Decode(
-#if NeedFunctionPrototypes
-     krb5_data		/* inbuf */,
-     krb5_principal *	/* princ */
-#endif
-);
-#endif /* K5AUTH */
 
 _XFUNCPROTOEND
 

@@ -1,5 +1,3 @@
-/* $Xorg: AuFileName.c,v 1.5 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,37 +23,64 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xau/AuFileName.c,v 3.6 2001/07/25 15:04:48 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xauth.h>
 #include <X11/Xos.h>
 #include <stdlib.h>
 
-char *
-XauFileName ()
+static char *buf = NULL;
+
+static void
+free_filename_buffer(void)
 {
-    char *slashDotXauthority = "/.Xauthority";
+    free(buf);
+    buf = NULL;
+}
+
+char *
+XauFileName (void)
+{
+    const char *slashDotXauthority = "/.Xauthority";
     char    *name;
-    static char	*buf;
-    static int	bsize;
-    int	    size;
+    static size_t	bsize;
+    static int atexit_registered = 0;
+#ifdef WIN32
+    char    dir[128];
+#endif
+    size_t  size;
 
     if ((name = getenv ("XAUTHORITY")))
 	return name;
     name = getenv ("HOME");
     if (!name) {
-	return 0;
+#ifdef WIN32
+	if ((name = getenv("USERNAME"))) {
+	    snprintf(dir, sizeof(dir), "/users/%s", name);
+	    name = dir;
+	}
+	if (!name)
+#endif
+	return NULL;
     }
     size = strlen (name) + strlen(&slashDotXauthority[1]) + 2;
     if (size > bsize) {
 	if (buf)
 	    free (buf);
-	buf = malloc ((unsigned) size);
+	buf = malloc (size);
 	if (!buf)
-	    return 0;
+	    return NULL;
+
+        if (!atexit_registered) {
+            atexit(free_filename_buffer);
+            atexit_registered = 1;
+        }
+
 	bsize = size;
     }
-    strcpy (buf, name);
-    strcat (buf, slashDotXauthority + (name[1] == '\0' ? 1 : 0));
+    snprintf (buf, bsize, "%s%s", name,
+              slashDotXauthority + (name[1] == '\0' ? 1 : 0));
     return buf;
 }

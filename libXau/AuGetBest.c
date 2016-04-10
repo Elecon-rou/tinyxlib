@@ -1,5 +1,3 @@
-/* $Xorg: AuGetBest.c,v 1.4 2001/02/09 02:03:42 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,22 +23,22 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xau/AuGetBest.c,v 1.7 2001/12/14 19:54:36 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xauth.h>
 #include <X11/Xos.h>
 #ifdef XTHREADS
 #include <X11/Xthreads.h>
 #endif
+#ifdef hpux
+#define X_INCLUDE_NETDB_H
+#define XOS_USE_NO_LOCKING
+#include <X11/Xos_r.h>
+#endif
 
-static int
-binaryEqual (_Xconst char *a, _Xconst char *b, int len)
-{
-    while (len--)
-	if (*a++ != *b++)
-	    return 0;
-    return 1;
-}
+#define binaryEqual(a, b, len) (memcmp(a, b, len) == 0)
 
 Xauth *
 XauGetBestAuthByAddr (
@@ -68,18 +66,41 @@ XauGetBestAuthByAddr (
     Xauth   *best;
     int	    best_type;
     int	    type;
+#ifdef hpux
+    char		*fully_qual_address;
+    unsigned short	fully_qual_address_length;
+#endif
 
     auth_name = XauFileName ();
     if (!auth_name)
-	return 0;
+	return NULL;
     if (access (auth_name, R_OK) != 0)		/* checks REAL id */
-	return 0;
+	return NULL;
     auth_file = fopen (auth_name, "rb");
     if (!auth_file)
-	return 0;
+	return NULL;
 
+#ifdef hpux
+    if (family == FamilyLocal) {
+#ifdef XTHREADS_NEEDS_BYNAMEPARAMS
+	_Xgethostbynameparams hparams;
+#endif
+	struct hostent *hostp;
 
-    best = 0;
+	/* make sure we try fully-qualified hostname */
+	if ((hostp = _XGethostbyname(address,hparams)) != NULL) {
+	    fully_qual_address = hostp->h_name;
+	    fully_qual_address_length = strlen(fully_qual_address);
+	}
+	else
+	{
+	    fully_qual_address = NULL;
+	    fully_qual_address_length = 0;
+	}
+    }
+#endif /* hpux */
+
+    best = NULL;
     best_type = types_length;
     for (;;) {
 	entry = XauReadAuth (auth_file);
@@ -101,11 +122,17 @@ XauGetBestAuthByAddr (
 	if ((family == FamilyWild || entry->family == FamilyWild ||
 	     (entry->family == family &&
 	     ((address_length == entry->address_length &&
-	      binaryEqual (entry->address, address, (int)address_length))
+	      binaryEqual (entry->address, address, address_length))
+#ifdef hpux
+	     || (family == FamilyLocal &&
+		fully_qual_address_length == entry->address_length &&
+	     	binaryEqual (entry->address, fully_qual_address,
+		    fully_qual_address_length))
+#endif
 	    ))) &&
 	    (number_length == 0 || entry->number_length == 0 ||
 	     (number_length == entry->number_length &&
-	      binaryEqual (entry->number, number, (int)number_length))))
+	      binaryEqual (entry->number, number, number_length))))
 	{
 	    if (best_type == 0)
 	    {
