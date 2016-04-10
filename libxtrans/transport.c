@@ -1,4 +1,3 @@
-/* $Xorg: transport.c,v 1.4 2001/02/09 02:04:07 xorgcvs Exp $ */
 /*
 
 Copyright 1993, 1994, 1998  The Open Group
@@ -25,10 +24,7 @@ not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
 from The Open Group.
 
-*/
-/* $XFree86: xc/lib/xtrans/transport.c,v 3.8 2001/12/14 19:57:07 dawes Exp $ */
-
-/* Copyright 1993, 1994 NCR Corporation - Dayton, Ohio, USA
+ * Copyright 1993, 1994 NCR Corporation - Dayton, Ohio, USA
  *
  * All Rights Reserved
  *
@@ -51,17 +47,18 @@ from The Open Group.
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifdef XSERV_t
-#include "os.h"
-#else
 #include <stdlib.h>
-#define xalloc(_size)		malloc(_size)
-#define xcalloc(_num,_size)	calloc(_num,_size)
-#define xrealloc(_ptr,_size)	realloc(_ptr,_size)
-#define xfree(_ptr)		free(_ptr)
-#endif
 
-#include <X11/Xtrans/Xtransint.h>
+#define XTRANS_TRANSPORT_C  /* used to flag Xtransint.h that it's being used
+			       here, not just #included in another file */
+
+#include "Xtransint.h"
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-nonliteral"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 
 #ifdef LOCALCONN
 #include "Xtranslcl.c"
@@ -71,3 +68,7 @@ from The Open Group.
 #endif
 #include "Xtrans.c"
 #include "Xtransutil.c"
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
