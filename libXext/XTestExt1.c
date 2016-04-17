@@ -1,4 +1,3 @@
-/* $Xorg: XTestExt1.c,v 1.4 2001/02/09 02:03:49 xorgcvs Exp $ */
 /*
  *	File:  xtestext1lib.c
  *
@@ -42,8 +41,8 @@ documentation, and that the name of Hewlett-Packard not be used in
 advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
-Hewlett-Packard makes no representations about the 
-suitability of this software for any purpose.  It is provided 
+Hewlett-Packard makes no representations about the
+suitability of this software for any purpose.  It is provided
 "as is" without express or implied warranty.
 
 This software is not subject to any license of the American
@@ -51,19 +50,19 @@ Telephone and Telegraph Company or of the Regents of the
 University of California.
 
 */
-/* $XFree86: xc/lib/Xext/XTestExt1.c,v 1.3 2001/01/17 19:42:46 dawes Exp $ */
 
 /******************************************************************************
  * include files
  *****************************************************************************/
 
-#define NEED_REPLIES
-#define NEED_EVENTS
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xproto.h>
 #include <X11/Xlibint.h>
 #include <X11/extensions/xtestext1.h>
+#include <X11/extensions/xtestext1proto.h>
 
 /******************************************************************************
  * variables
@@ -73,14 +72,14 @@ University of California.
  * Holds the request type code for this extension.  The request type code
  * for this extension may vary depending on how many extensions are installed
  * already, so the initial value given below will be added to the base request
- * code that is aquired when this extension is installed.
+ * code that is acquired when this extension is installed.
  */
 static int		XTestReqCode = 0;
 /*
  * Holds the two event type codes for this extension.  The event type codes
  * for this extension may vary depending on how many extensions are installed
  * already, so the initial values given below will be added to the base event
- * code that is aquired when this extension is installed.
+ * code that is acquired when this extension is installed.
  *
  * These two variables must be available to programs that use this extension.
  */
@@ -113,14 +112,14 @@ static unsigned long	action_count = 0;
  * function declarations
  *****************************************************************************/
 
-static int	XTestWireToEvent();
-static int	XTestCheckExtInit();
-static Bool	XTestIdentifyMyEvent();
-static int	XTestInitExtension();
-static int	XTestKeyOrButton();
-static int	XTestCheckDelay();
-static int	XTestPackInputAction();
-static int	XTestWriteInputActions();
+static int	XTestWireToEvent(Display *dpy, XEvent *reTemp, xEvent *eventTemp);
+static int	XTestCheckExtInit(register Display *dpy);
+static Bool	XTestIdentifyMyEvent(Display *display, XEvent *event_ptr, char *args);
+static int	XTestInitExtension(register Display *dpy);
+static int	XTestKeyOrButton(Display *display, int device_id, long unsigned int delay, unsigned int code, unsigned int action);
+static int	XTestCheckDelay(Display *display, long unsigned int *delay_addr);
+static int	XTestPackInputAction(Display *display, CARD8 *action_addr, int action_size);
+static int	XTestWriteInputActions(Display *display, char *action_list_addr, int action_list_size, int ack_flag);
 
 /******************************************************************************
  *
@@ -130,25 +129,25 @@ static int	XTestWriteInputActions();
  *	to the server by this extension.
  */
 int
-XTestFakeInput(dpy, action_list_addr, action_list_size, ack_flag)
+XTestFakeInput(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
+register Display	*dpy,
 /*
  * the address of a list of input actions to be sent to the server
  */
-char			*action_list_addr;
+char			*action_list_addr,
 /*
  * the size (in bytes) of the list of input actions
  */
-int			action_list_size;
+int			action_list_size,
 /*
  * specifies whether the server needs to send an event to indicate that its
  * input action buffer is empty
  */
-int			ack_flag;
-{	
+int			ack_flag)
+{
 	/*
 	 * pointer to xTestFakeInputReq structure
 	 */
@@ -163,7 +162,7 @@ int			ack_flag;
 	    (action_list_size > XTestMAX_ACTION_LIST_SIZE))
 	{
 		/*
-		 * if the extension is not installed in the server or the 
+		 * if the extension is not installed in the server or the
 		 * action list will not fit in the request, then unlock
 		 * the display and return -1.
 		 */
@@ -180,7 +179,7 @@ int			ack_flag;
 		 *
 		 * GetReq is a macro defined in Xlibint.h.
 		 */
-		GetReq(TestFakeInput, req);		
+		GetReq(TestFakeInput, req);
 		/*
 		 * fix up the request type code to what is needed
 		 */
@@ -224,16 +223,16 @@ int			ack_flag;
  *	to be sent to the client that called this function.
  */
 int
-XTestGetInput(dpy, action_handling)
+XTestGetInput(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
+register Display	*dpy,
 /*
  * tells the server what to do with the user input actions
  */
-int			action_handling;
-{	
+int			action_handling)
+{
 	/*
 	 * pointer to xTestGetInputReq structure
 	 */
@@ -259,7 +258,7 @@ int			action_handling;
 		 *
 		 * GetReq is a macro defined in Xlibint.h.
 		 */
-		GetReq(TestGetInput, req);		
+		GetReq(TestGetInput, req);
 		/*
 		 * fix up the request type code to what is needed
 		 */
@@ -286,12 +285,12 @@ int			action_handling;
  *	into events.
  */
 int
-XTestStopInput(dpy)
+XTestStopInput(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
-{	
+register Display	*dpy)
+{
 	/*
 	 * pointer to xTestStopInputReq structure
 	 */
@@ -317,7 +316,7 @@ register Display	*dpy;
 		 *
 		 * GetReq is a macro defined in Xlibint.h.
 		 */
-		GetReq(TestStopInput, req);		
+		GetReq(TestStopInput, req);
 		/*
 		 * fix up the request type code to what is needed
 		 */
@@ -340,12 +339,12 @@ register Display	*dpy;
  *	back to its initial state.
  */
 int
-XTestReset(dpy)
+XTestReset(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
-{	
+register Display	*dpy)
+{
 	/*
 	 * pointer to xTestReset structure
 	 */
@@ -371,7 +370,7 @@ register Display	*dpy;
 		 *
 		 * GetReq is a macro defined in Xlibint.h.
 		 */
-		GetReq(TestReset, req);		
+		GetReq(TestReset, req);
 		/*
 		 * fix up the request type code to what is needed
 		 */
@@ -393,17 +392,17 @@ register Display	*dpy;
  *	Returns the number of input actions in the server's input action buffer.
  */
 int
-XTestQueryInputSize(dpy, size_return)
+XTestQueryInputSize(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
+register Display	*dpy,
 /*
  * the address of the place to put the number of input actions in the
  * server's input action buffer
  */
-unsigned long		*size_return;
-{	
+unsigned long		*size_return)
+{
 	/*
 	 * pointer to xTestQueryInputSize structure
 	 */
@@ -433,7 +432,7 @@ unsigned long		*size_return;
 		 *
 		 * GetReq is a macro defined in Xlibint.h.
 		 */
-		GetReq(TestQueryInputSize, req);		
+		GetReq(TestQueryInputSize, req);
 		/*
 		 * fix up the request type code to what is needed
 		 */
@@ -463,16 +462,16 @@ unsigned long		*size_return;
  *	Check to see if the XTest extension is installed in the server.
  */
 static int
-XTestCheckExtInit(dpy)
+XTestCheckExtInit(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
+register Display	*dpy)
 {
 	/*
 	 * if the extension has not been initialized, then do so
 	 */
-	if (!XTestReqCode) 
+	if (!XTestReqCode)
 	{
 		return(XTestInitExtension(dpy));
 	}
@@ -487,11 +486,11 @@ register Display	*dpy;
  *	succeeds, -1 if it does not succeed.
  */
 static int
-XTestInitExtension(dpy)
+XTestInitExtension(
 /*
  * the connection to the X server
  */
-register Display	*dpy;
+register Display	*dpy)
 {
 	/*
 	 * loop index
@@ -519,7 +518,7 @@ register Display	*dpy;
 	 */
 	XTestReqCode = ret->major_opcode;
 	/*
-	 * set up the event handler for any events from 
+	 * set up the event handler for any events from
 	 * this extension
 	 */
 	for (i = 0; i < XTestEVENT_COUNT; i++)
@@ -548,20 +547,20 @@ register Display	*dpy;
  *	Reformat a wire event into an XEvent structure of the right type.
  */
 static Bool
-XTestWireToEvent(dpy, reTemp, eventTemp)
+XTestWireToEvent(
 /*
  * the connection to the X server
  */
-Display	*dpy;
+Display	*dpy,
 /*
  * a pointer to where a host formatted event should be stored
  * with the information copied to it
  */
-XEvent	*reTemp;
+XEvent	*reTemp,
 /*
  * a pointer to the wire event
  */
-xEvent	*eventTemp;
+xEvent	*eventTemp)
 {
 	XTestInputActionEvent *re    = (XTestInputActionEvent *) reTemp;
 	xTestInputActionEvent *event = (xTestInputActionEvent *) eventTemp;
@@ -632,12 +631,12 @@ xEvent	*eventTemp;
  *	that the specified key on the keyboard was moved as specified.
  */
 int
-XTestPressKey(display, device_id, delay, keycode, key_action)
-Display		*display;
-int		device_id;
-unsigned long	delay;
-unsigned int	keycode;
-unsigned int	key_action;
+XTestPressKey(
+Display		*display,
+int		device_id,
+unsigned long	delay,
+unsigned int	keycode,
+unsigned int	key_action)
 {
 	/*
 	 * bounds check the key code
@@ -664,12 +663,12 @@ unsigned int	key_action;
  *	that the specified button on the mouse was moved as specified.
  */
 int
-XTestPressButton(display, device_id, delay, button_number, button_action)
-Display		*display;
-int		device_id;
-unsigned long	delay;
-unsigned int	button_number;
-unsigned int	button_action;
+XTestPressButton(
+Display		*display,
+int		device_id,
+unsigned long	delay,
+unsigned int	button_number,
+unsigned int	button_action)
 {
 	/*
 	 * bounds check the button number
@@ -696,12 +695,12 @@ unsigned int	button_action;
  *	that the specified key/button was moved as specified.
  */
 static int
-XTestKeyOrButton(display, device_id, delay, code, action)
-Display		*display;
-int		device_id;
-unsigned long	delay;
-unsigned int	code;
-unsigned int	action;
+XTestKeyOrButton(
+Display		*display,
+int		device_id,
+unsigned long	delay,
+unsigned int	code,
+unsigned int	action)
 {
 	/*
 	 * holds a key input action to be filled out and sent to the server
@@ -733,7 +732,7 @@ unsigned int	action;
 			return(-1);
 		}
 		/*
-		 * create the header 
+		 * create the header
 		 */
 		keyinfo.header = XTestPackDeviceID(device_id) |
 				 XTestKEY_ACTION |
@@ -766,7 +765,7 @@ unsigned int	action;
 			return(-1);
 		}
 		/*
-		 * create the header 
+		 * create the header
 		 */
 		keyinfo.header = XTestPackDeviceID(device_id) |
 				 XTestKEY_ACTION |
@@ -877,13 +876,13 @@ unsigned int	action;
  *	that the mouse was moved as specified.
  */
 int
-XTestMovePointer(display, device_id, delay, x, y, count)
-Display		*display;
-int		device_id;
-unsigned long	delay[];
-int		x[];
-int		y[];
-unsigned int	count;
+XTestMovePointer(
+Display		*display,
+int		device_id,
+unsigned long	delay[],
+int		x[],
+int		y[],
+unsigned int	count)
 {
 	/*
 	 * holds a motion input action to be filled out and sent to the server
@@ -1039,9 +1038,9 @@ unsigned int	count;
  *	will fit in a normal input action, then send a delay input action.
  */
 static int
-XTestCheckDelay(display, delay_addr)
-Display		*display;
-unsigned long	*delay_addr;
+XTestCheckDelay(
+Display		*display,
+unsigned long	*delay_addr)
 {
 	/*
 	 * holds a delay input action to be filled out and sent to the server
@@ -1084,10 +1083,10 @@ unsigned long	*delay_addr;
  *	then send the input actions to the server using XTestFakeInput.
  */
 static int
-XTestPackInputAction(display, action_addr, action_size)
-Display	*display;
-CARD8	*action_addr;
-int	action_size;
+XTestPackInputAction(
+Display	*display,
+CARD8	*action_addr,
+int	action_size)
 {
 	/*
 	 * loop index
@@ -1139,7 +1138,7 @@ int	action_size;
 	/*
 	 * We have to write input actions to the server.  If the server's
 	 * input action capacity will be reached, then ask for an
-	 * acknowledge event when the server has processed all of the 
+	 * acknowledge event when the server has processed all of the
 	 * input actions.  Otherwise, an acknowledge event is not needed.
 	 */
 	if (action_count >= action_array_size)
@@ -1184,11 +1183,11 @@ int	action_size;
  *	Send input actions to the server.
  */
 static int
-XTestWriteInputActions(display, action_list_addr, action_list_size, ack_flag)
-Display	*display;
-char	*action_list_addr;
-int	action_list_size;
-int	ack_flag;
+XTestWriteInputActions(
+Display	*display,
+char	*action_list_addr,
+int	action_list_size,
+int	ack_flag)
 {
 	/*
 	 * Holds an event.  Used while waiting for an acknowledge event
@@ -1197,7 +1196,7 @@ int	ack_flag;
 	/*
 	 * points to XTestIdentifyMyEvent
 	 */
-	Bool	(*func_ptr)();
+	Bool	(*func_ptr)(Display *, XEvent *, XPointer);
 
 	/*
 	 * write the input actions to the server
@@ -1256,16 +1255,16 @@ int	ack_flag;
  *	it is of XTestFakeAckType.
  */
 static	Bool
-XTestIdentifyMyEvent(display, event_ptr, args)
-Display	*display;
+XTestIdentifyMyEvent(
+Display	*display,
 /*
- * Holds the event that this routiine is supposed to look at.
+ * Holds the event that this routine is supposed to look at.
  */
-XEvent	*event_ptr;
+XEvent	*event_ptr,
 /*
  * this points to any user-specified arguments (ignored)
  */
-char	*args;
+char	*args)
 {
 	/*
 	 * if the event if of the correct type, return the Bool True,
@@ -1288,8 +1287,7 @@ char	*args;
  *	Send any input actions in the input action buffer to the server.
  */
 int
-XTestFlush(display)
-Display	*display;
+XTestFlush(Display *display)
 {
 	/*
 	 * acknowledge flag

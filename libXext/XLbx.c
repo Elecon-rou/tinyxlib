@@ -1,6 +1,4 @@
 /*
- * $Xorg: XLbx.c,v 1.3 2000/08/17 19:45:51 cpqbld Exp $
- *
  * Copyright 1992 Network Computing Devices
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -17,25 +15,25 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL NCD.
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  * Author:  Keith Packard, Network Computing Devices
  */
-/* $XFree86: xc/lib/Xext/XLbx.c,v 1.4 2002/10/16 00:37:27 dawes Exp $ */
 
-#define NEED_EVENTS
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xlibint.h>
 #include <X11/extensions/XLbx.h>
-#include <X11/extensions/lbxstr.h>
+#include <X11/extensions/lbxproto.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
 
 static XExtensionInfo _lbx_info_data;
 static XExtensionInfo *lbx_info = &_lbx_info_data;
-static /* const */ char *lbx_extension_name = LBXNAME;
+static const char *lbx_extension_name = LBXNAME;
 
 #define LbxCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, lbx_extension_name, val)
@@ -57,11 +55,11 @@ static /* const */ XExtensionHooks lbx_extension_hooks = {
     error_string,			/* error_string */
 };
 
-static /* const */ char *lbx_error_list[] = {
+static const char *lbx_error_list[] = {
     "BadLbxClient",			/* BadLbxClient */
 };
 
-static XEXT_GENERATE_FIND_DISPLAY (find_display, lbx_info, lbx_extension_name, 
+static XEXT_GENERATE_FIND_DISPLAY (find_display, lbx_info, lbx_extension_name,
 				   &lbx_extension_hooks, LbxNumberEvents, NULL)
 
 static XEXT_GENERATE_CLOSE_DISPLAY (close_display, lbx_info)
@@ -70,9 +68,9 @@ static XEXT_GENERATE_ERROR_STRING (error_string, lbx_extension_name,
 				   LbxNumberErrors, lbx_error_list)
 
 
-Bool XLbxQueryExtension (dpy, requestp, event_basep, error_basep)
-    Display *dpy;
-    int *requestp, *event_basep, *error_basep;
+Bool XLbxQueryExtension (
+    Display *dpy,
+    int *requestp, int *event_basep, int *error_basep)
 {
     XExtDisplayInfo *info = find_display (dpy);
 
@@ -99,9 +97,7 @@ int XLbxGetEventBase(Display *dpy)
 }
 
 
-Bool XLbxQueryVersion(dpy, majorVersion, minorVersion)
-    Display *dpy;
-    int	    *majorVersion, *minorVersion;
+Bool XLbxQueryVersion(Display *dpy, int *majorVersion, int *minorVersion)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xLbxQueryVersionReply rep;

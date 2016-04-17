@@ -1,4 +1,3 @@
-/* $Xorg: globals.c,v 1.4 2001/02/09 02:03:50 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -26,11 +25,13 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xext/globals.c,v 3.4 2001/07/29 05:01:12 tsi Exp $ */
 
 /*
  * This file should contain only those objects which must be predefined.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlib.h>
 #include <X11/extensions/Xext.h>
 #include <stddef.h>			/* for definition of NULL */
@@ -42,7 +43,7 @@ from The Open Group.
  */
 #ifdef NULL_NOT_ZERO			/* then need to initialize */
 #define SetZero(t,var,z) t var = z
-#else 
+#else
 #define SetZero(t,var,z) t var
 #endif
 
@@ -50,15 +51,9 @@ from The Open Group.
 /*
  * If we need to define extra variables for each global
  */
-#if !defined(UNIXCPP) || defined(ANSICPP)
 #define ZEROINIT(t,var,val) SetZero(t,var,val); \
   SetZero (long, _libX_##var##Flag, 0); \
   SetZero (void *, _libX_##var##Ptr, NULL)
-#else /* else pcc concatenation */
-#define ZEROINIT(t,var,val) SetZero(t,var,val); \
-  SetZero (long, _libX_/**/var/**/Flag, 0); \
-  SetZero (void *, _libX_/**/var/**/Ptr, NULL)
-#endif /* concat ANSI C vs. pcc */
 
 #else /* else not ATTSHAREDLIB */
 /*
@@ -72,8 +67,7 @@ from The Open Group.
 /*
  * Error handlers; used to be in XlibInt.c
  */
-typedef int (*funcptr)();
-ZEROINIT (funcptr, _XExtensionErrorFunction, NULL);
+ZEROINIT (XextErrorHandler, _XExtensionErrorFunction, NULL);
 
 /*
  * NOTE: any additional external definition NEED

@@ -1,5 +1,4 @@
 /*
- * $Xorg: MITMisc.c,v 1.4 2001/02/09 02:03:49 xorgcvs Exp $
  *
 Copyright 1989, 1998  The Open Group
 
@@ -24,20 +23,21 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
  *
  */
-/* $XFree86: xc/lib/Xext/MITMisc.c,v 1.3 2002/10/16 00:37:27 dawes Exp $ */
 
 /* RANDOM CRUFT! THIS HAS NO OFFICIAL X CONSORTIUM BLESSING */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/extensions/MITMisc.h>
-#include <X11/extensions/mitmiscstr.h>
+#include <X11/extensions/mitmiscproto.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
 
 static XExtensionInfo _mit_info_data;
 static XExtensionInfo *mit_info = &_mit_info_data;
-static /* const */ char *mit_extension_name = MITMISCNAME;
+static const char *mit_extension_name = MITMISCNAME;
 
 #define MITCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, mit_extension_name, val)
@@ -63,7 +63,7 @@ static /* const */ XExtensionHooks mit_extension_hooks = {
     NULL				/* error_string */
 };
 
-static XEXT_GENERATE_FIND_DISPLAY (find_display, mit_info, mit_extension_name, 
+static XEXT_GENERATE_FIND_DISPLAY (find_display, mit_info, mit_extension_name,
 				   &mit_extension_hooks, MITMiscNumberEvents,
 				   NULL)
 
@@ -76,9 +76,7 @@ static XEXT_GENERATE_CLOSE_DISPLAY (close_display, mit_info)
  *                                                                           *
  *****************************************************************************/
 
-Bool XMITMiscQueryExtension (dpy, event_basep, error_basep)
-    Display *dpy;
-    int *event_basep, *error_basep;
+Bool XMITMiscQueryExtension (Display *dpy, int *event_basep, int *error_basep)
 {
     XExtDisplayInfo *info = find_display (dpy);
 
@@ -92,9 +90,7 @@ Bool XMITMiscQueryExtension (dpy, event_basep, error_basep)
 }
 
 
-Status XMITMiscSetBugMode(dpy, onOff)
-    Display *dpy;
-    Bool onOff;
+Status XMITMiscSetBugMode(Display *dpy, Bool onOff)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMITSetBugModeReq *req;
@@ -111,8 +107,7 @@ Status XMITMiscSetBugMode(dpy, onOff)
     return 1;
 }
 
-Bool XMITMiscGetBugMode(dpy)
-    Display *dpy;
+Bool XMITMiscGetBugMode(Display *dpy)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMITGetBugModeReq *req;

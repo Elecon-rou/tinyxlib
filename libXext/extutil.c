@@ -1,5 +1,4 @@
 /*
- * $Xorg: extutil.c,v 1.4 2001/02/09 02:03:49 xorgcvs Exp $
  *
 Copyright 1989, 1998  The Open Group
 
@@ -25,40 +24,46 @@ in this Software without prior written authorization from The Open Group.
  *
  * Author:  Jim Fulton, MIT X Consortium
  *
- * 
+ *
  * 		       Xlib Extension-Writing Utilities
- * 
+ *
  * This package contains utilities for writing the client API for various
  * protocol extensions.  THESE INTERFACES ARE NOT PART OF THE X STANDARD AND
  * ARE SUBJECT TO CHANGE!
- * 
+ *
  *  Routines include:
- * 
+ *
  *         XextCreateExtension		called once per extension
  *         XextDestroyExtension		if no longer using extension
  *         XextAddDisplay		add another display
  *         XextRemoveDisplay		remove a display
  *         XextFindDisplay		is a display open
- * 
+ *
  * In addition, the following Xlib-style interfaces are provided:
- * 
+ *
  *         XSetExtensionErrorHandler	establish an extension error handler
  *         XMissingExtension		raise an error about missing ext
  */
-/* $XFree86: xc/lib/Xext/extutil.c,v 1.5 2002/10/16 00:37:27 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xlibint.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
+#include <X11/extensions/ge.h>
 
+/* defined in Xge.c */
+extern _X_HIDDEN Bool
+xgeExtRegister(Display* dpy, int extension, XExtensionHooks* callbacks);
 
 /*
  * XextCreateExtension - return an extension descriptor containing context
- * information for this extension.  This object is passed to all Xext 
+ * information for this extension.  This object is passed to all Xext
  * routines.
  */
-XExtensionInfo *XextCreateExtension ()
+XExtensionInfo *XextCreateExtension (void)
 {
     register XExtensionInfo *info =
       (XExtensionInfo *) Xmalloc (sizeof (XExtensionInfo));
@@ -75,8 +80,7 @@ XExtensionInfo *XextCreateExtension ()
 /*
  * XextDestroyExtension - free memory the given extension descriptor
  */
-void XextDestroyExtension (info)
-    XExtensionInfo *info;
+void XextDestroyExtension (XExtensionInfo *info)
 {
     info->head = NULL;			/* to catch refs after this */
     info->cur = NULL;
@@ -89,13 +93,13 @@ void XextDestroyExtension (info)
 /*
  * XextAddDisplay - add a display to this extension
  */
-XExtDisplayInfo *XextAddDisplay (extinfo, dpy, ext_name, hooks, nevents, data)
-    XExtensionInfo *extinfo;
-    Display *dpy;
-    char *ext_name;
-    XExtensionHooks *hooks;
-    int nevents;
-    XPointer data;
+XExtDisplayInfo *XextAddDisplay (
+    XExtensionInfo *extinfo,
+    Display *dpy,
+    _Xconst char *ext_name,
+    XExtensionHooks *hooks,
+    int nevents,
+    XPointer data)
 {
     XExtDisplayInfo *dpyinfo;
 
@@ -106,7 +110,7 @@ XExtDisplayInfo *XextAddDisplay (extinfo, dpy, ext_name, hooks, nevents, data)
     dpyinfo->codes = XInitExtension (dpy, ext_name);
 
     /*
-     * if the server has the extension, then we can initialize the 
+     * if the server has the extension, then we can initialize the
      * appropriate function vectors
      */
     if (dpyinfo->codes) {
@@ -116,6 +120,11 @@ XExtDisplayInfo *XextAddDisplay (extinfo, dpy, ext_name, hooks, nevents, data)
 	    XESetWireToEvent (dpy, j, hooks->wire_to_event);
 	    XESetEventToWire (dpy, j, hooks->event_to_wire);
 	}
+
+        /* register extension for XGE */
+        if (strcmp(ext_name, GE_NAME))
+            xgeExtRegister(dpy, dpyinfo->codes->major_opcode, hooks);
+
 	if (hooks->create_gc)
 	  XESetCreateGC (dpy, dpyinfo->codes->extension, hooks->create_gc);
 	if (hooks->copy_gc)
@@ -129,7 +138,7 @@ XExtDisplayInfo *XextAddDisplay (extinfo, dpy, ext_name, hooks, nevents, data)
 	if (hooks->free_font)
 	  XESetFreeFont (dpy, dpyinfo->codes->extension, hooks->free_font);
 	if (hooks->close_display)
-	  XESetCloseDisplay (dpy, dpyinfo->codes->extension, 
+	  XESetCloseDisplay (dpy, dpyinfo->codes->extension,
 			     hooks->close_display);
 	if (hooks->error)
 	  XESetError (dpy, dpyinfo->codes->extension, hooks->error);
@@ -166,9 +175,7 @@ XExtDisplayInfo *XextAddDisplay (extinfo, dpy, ext_name, hooks, nevents, data)
 /*
  * XextRemoveDisplay - remove the indicated display from the extension object
  */
-int XextRemoveDisplay (extinfo, dpy)
-    XExtensionInfo *extinfo;
-    Display *dpy;
+int XextRemoveDisplay (XExtensionInfo *extinfo, Display *dpy)
 {
     XExtDisplayInfo *dpyinfo, *prev;
 
@@ -207,9 +214,7 @@ int XextRemoveDisplay (extinfo, dpy)
  * XextFindDisplay - look for a display in this extension; keeps a cache
  * of the most-recently used for efficiency.
  */
-XExtDisplayInfo *XextFindDisplay (extinfo, dpy)
-    XExtensionInfo *extinfo;
-    Display *dpy;
+XExtDisplayInfo *XextFindDisplay (XExtensionInfo *extinfo, Display *dpy)
 {
     register XExtDisplayInfo *dpyinfo;
 
@@ -237,10 +242,7 @@ XExtDisplayInfo *XextFindDisplay (extinfo, dpy)
 
 
 
-static int _default_exterror (
-    Display *dpy,
-    char *ext_name,
-    char *reason)
+static int _default_exterror (Display *dpy, _Xconst char *ext_name, _Xconst char *reason)
 {
     fprintf (stderr, "Xlib:  extension \"%s\" %s on display \"%s\".\n",
 	     ext_name, reason, DisplayString(dpy));
@@ -249,21 +251,15 @@ static int _default_exterror (
 
 
 /*
- * XSetExtensionErrorHandler - sets the handler that gets called when a 
+ * XSetExtensionErrorHandler - sets the handler that gets called when a
  * requested extension is referenced.  This should eventually move into Xlib.
  */
 
-extern int (*_XExtensionErrorFunction)();
+extern XextErrorHandler _XExtensionErrorFunction;
 
-int (*XSetExtensionErrorHandler(
-    int (*handler)(
-		   Display*,
-		   char *,
-		   char *
-		   )
-))()
+XextErrorHandler XSetExtensionErrorHandler (XextErrorHandler handler)
 {
-    int (*oldhandler)() = _XExtensionErrorFunction;
+    XextErrorHandler oldhandler = _XExtensionErrorFunction;
 
     _XExtensionErrorFunction = (handler ? handler :
 				_default_exterror);
@@ -274,13 +270,10 @@ int (*XSetExtensionErrorHandler(
 /*
  * XMissingExtension - call the extension error handler
  */
-int
-XMissingExtension (
-    Display *dpy,
-    _Xconst char *ext_name)
+int XMissingExtension (Display *dpy, _Xconst char *ext_name)
 {
-    int (*func)() = (_XExtensionErrorFunction ?
-		     _XExtensionErrorFunction : _default_exterror);
+    XextErrorHandler func = (_XExtensionErrorFunction ?
+			     _XExtensionErrorFunction : _default_exterror);
 
     if (!ext_name) ext_name = X_EXTENSION_UNKNOWN;
     return (*func) (dpy, ext_name, X_EXTENSION_MISSING);

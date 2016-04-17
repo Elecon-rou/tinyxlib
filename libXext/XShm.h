@@ -1,4 +1,3 @@
-/* $XFree86: xc/include/extensions/XShm.h,v 1.8 2001/12/14 19:53:28 dawes Exp $ */
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -27,29 +26,15 @@ in this Software without prior written authorization from The Open Group.
 
 /* THIS IS NOT AN X CONSORTIUM STANDARD OR AN X PROJECT TEAM SPECIFICATION */
 
-/* $Xorg: XShm.h,v 1.4 2001/02/09 02:03:24 xorgcvs Exp $ */
-
 #ifndef _XSHM_H_
 #define _XSHM_H_
 
-#include "../Xfuncproto.h"
-
-#define X_ShmQueryVersion		0
-#define X_ShmAttach			1
-#define X_ShmDetach			2
-#define X_ShmPutImage			3
-#define X_ShmGetImage			4
-#define X_ShmCreatePixmap		5
-
-#define ShmCompletion			0
-#define ShmNumberEvents			(ShmCompletion + 1)
-
-#define BadShmSeg			0
-#define ShmNumberErrors			(BadShmSeg + 1)
-
-typedef unsigned long ShmSeg;
+#include <X11/Xfuncproto.h>
+#include <X11/extensions/shm.h>
 
 #ifndef _XSHM_SERVER_
+typedef unsigned long ShmSeg;
+
 typedef struct {
     int	type;		    /* of event */
     unsigned long serial;   /* # of last request processed by server */
@@ -72,48 +57,35 @@ typedef struct {
 _XFUNCPROTOBEGIN
 
 Bool XShmQueryExtension(
-#if NeedFunctionPrototypes
-    Display*            /* dpy */
-#endif
+    Display*		/* dpy */
 );
 
 int XShmGetEventBase(
-#if NeedFunctionPrototypes
     Display* 		/* dpy */
-#endif
 );
 
 Bool XShmQueryVersion(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int*		/* majorVersion */,
     int*		/* minorVersion */,
     Bool*		/* sharedPixmaps */
-#endif
 );
 
 int XShmPixmapFormat(
-#if NeedFunctionPrototypes
     Display*		/* dpy */
-#endif
 );
 
-Status XShmAttach(
-#if NeedFunctionPrototypes
+Bool XShmAttach(
     Display*		/* dpy */,
     XShmSegmentInfo*	/* shminfo */
-#endif
 );
 
-Status XShmDetach(
-#if NeedFunctionPrototypes
+Bool XShmDetach(
     Display*		/* dpy */,
     XShmSegmentInfo*	/* shminfo */
-#endif
 );
 
-Status XShmPutImage(
-#if NeedFunctionPrototypes
+Bool XShmPutImage(
     Display*		/* dpy */,
     Drawable		/* d */,
     GC			/* gc */,
@@ -125,22 +97,18 @@ Status XShmPutImage(
     unsigned int	/* src_width */,
     unsigned int	/* src_height */,
     Bool		/* send_event */
-#endif
 );
 
-Status XShmGetImage(
-#if NeedFunctionPrototypes
+Bool XShmGetImage(
     Display*		/* dpy */,
     Drawable		/* d */,
     XImage*		/* image */,
     int			/* x */,
     int			/* y */,
     unsigned long	/* plane_mask */
-#endif
 );
 
 XImage *XShmCreateImage(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     Visual*		/* visual */,
     unsigned int	/* depth */,
@@ -149,11 +117,9 @@ XImage *XShmCreateImage(
     XShmSegmentInfo*	/* shminfo */,
     unsigned int	/* width */,
     unsigned int	/* height */
-#endif
 );
 
 Pixmap XShmCreatePixmap(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     Drawable		/* d */,
     char*		/* data */,
@@ -161,21 +127,9 @@ Pixmap XShmCreatePixmap(
     unsigned int	/* width */,
     unsigned int	/* height */,
     unsigned int	/* depth */
-#endif
 );
 
 _XFUNCPROTOEND
-
-#else /* _XSHM_SERVER_ */
-
-#include "screenint.h"
-
-extern void ShmRegisterFbFuncs(
-#if NeedFunctionPrototypes
-    ScreenPtr /* pScreen */
-#endif
-);
-
-#endif
+#endif /* _XSHM_SERVER_ */
 
 #endif

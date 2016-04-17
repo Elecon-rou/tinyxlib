@@ -1,4 +1,3 @@
-/* $Xorg: XSecurity.c,v 1.6 2001/02/09 02:03:49 xorgcvs Exp $ */
 /*
 
 Copyright 1996, 1998  The Open Group
@@ -24,17 +23,20 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xext/XSecurity.c,v 1.5 2002/10/16 00:37:27 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <stdio.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
-#include <X11/extensions/securstr.h>
+#include <X11/extensions/securproto.h>
+#include <X11/extensions/security.h>
 
 static XExtensionInfo _Security_info_data;
 static XExtensionInfo *Security_info = &_Security_info_data;
-static char *Security_extension_name = SECURITY_EXTENSION_NAME;
+static const char *Security_extension_name = SECURITY_EXTENSION_NAME;
 
 #define SecurityCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, Security_extension_name, val)
@@ -74,8 +76,8 @@ static XExtensionHooks Security_extension_hooks = {
     error_string                        /* error_string */
 };
 
-static char    *security_error_list[] = {
-    "BadAuthorization"
+static const char    *security_error_list[] = {
+    "BadAuthorization",
     "BadAuthorizationProtocol"
 };
 
@@ -280,7 +282,7 @@ XSecurityGenerateAuthorization(
     }
     else
     {
-	_XEatData(dpy, (unsigned long) (rep.dataLength + 3) & ~3);
+	_XEatDataWords(dpy, rep.length);
     }
 
     UnlockDisplay (dpy);

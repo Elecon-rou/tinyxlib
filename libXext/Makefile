@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xext.pc
 	@echo "Name: Xext" >> xext.pc
 	@echo "Description: Misc X Extension Library" >> xext.pc
-	@echo "Version: 1.0.3" >> xext.pc
+	@echo "Version: 1.3.3" >> xext.pc
 	@echo "Requires: x11 xau xdmcp" >> xext.pc
 	@echo "Requires.private: x11 xau xdmcp" >> xext.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xext.pc

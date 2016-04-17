@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/Xext/XAppgroup.c,v 1.11 2002/10/16 02:19:22 dawes Exp $ */
 /*
 
 Copyright 1996, 1998  The Open Group
@@ -24,13 +23,17 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $Xorg: XAppgroup.c,v 1.5 2001/02/09 02:03:49 xorgcvs Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <X11/Xwindows.h>
+#endif
 
-#define NEED_EVENTS
-#define NEED_REPLIES
 #include <X11/Xlibint.h>
-#include <X11/extensions/Xagstr.h>
+#include <X11/extensions/Xag.h>
+#include <X11/extensions/agproto.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
 
@@ -49,7 +52,7 @@ struct xagstuff {
 
 static XExtensionInfo _xag_info_data;
 static XExtensionInfo *xag_info = &_xag_info_data;
-static char *xag_extension_name = XAGNAME;
+static const char *xag_extension_name = XAGNAME;
 
 #define XagCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, xag_extension_name, val)
@@ -75,9 +78,9 @@ static /* const */ XExtensionHooks xag_extension_hooks = {
     NULL,				/* error_string */
 };
 
-static XEXT_GENERATE_FIND_DISPLAY (find_display, xag_info, 
-				   xag_extension_name, 
-				   &xag_extension_hooks, 
+static XEXT_GENERATE_FIND_DISPLAY (find_display, xag_info,
+				   xag_extension_name,
+				   &xag_extension_hooks,
 				   0, NULL)
 
 static XEXT_GENERATE_CLOSE_DISPLAY (close_display, xag_info)
@@ -90,10 +93,10 @@ static XEXT_GENERATE_CLOSE_DISPLAY (close_display, xag_info)
  *****************************************************************************/
 
 Bool
-XagQueryVersion(dpy, major_version_return, minor_version_return)
-    Display* dpy;
-    int* major_version_return; 
-    int* minor_version_return;
+XagQueryVersion(
+    Display *dpy,
+    int *major_version_return,
+    int *minor_version_return)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xXagQueryVersionReply rep;
@@ -154,7 +157,7 @@ StuffToWire (Display *dpy, struct xagstuff *stuff, xXagCreateReq *req)
     Data32 (dpy, (long*) values, (long) nvalues);
 }
 
-Bool 
+Bool
 XagCreateEmbeddedApplicationGroup(
     Display* dpy,
     VisualID root_visual,
@@ -175,7 +178,7 @@ XagCreateEmbeddedApplicationGroup(
     stuff.default_root = RootWindow (dpy, DefaultScreen(dpy));
     stuff.root_visual = root_visual;
     stuff.default_colormap = default_colormap;
-    stuff.attrib_mask = 
+    stuff.attrib_mask =
 	XagAppGroupLeaderMask | XagSingleScreenMask | XagDefaultRootMask |
 	XagRootVisualMask | XagDefaultColormapMask;
     if (default_colormap != None) {
@@ -195,7 +198,7 @@ XagCreateEmbeddedApplicationGroup(
     return True;
 }
 
-Bool 
+Bool
 XagCreateNonembeddedApplicationGroup(
     Display* dpy,
     XAppGroup* app_group_return)
@@ -222,9 +225,7 @@ XagCreateNonembeddedApplicationGroup(
     return True;
 }
 
-Bool XagDestroyApplicationGroup(dpy,app_group)
-    Display* dpy;
-    XAppGroup app_group;
+Bool XagDestroyApplicationGroup(Display* dpy, XAppGroup app_group)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xXagDestroyReq *req;
@@ -242,10 +243,7 @@ Bool XagDestroyApplicationGroup(dpy,app_group)
 }
 
 Bool
-XagGetApplicationGroupAttributes(
-    Display* dpy,
-    XAppGroup app_group,
-    ...)
+XagGetApplicationGroupAttributes(Display* dpy, XAppGroup app_group, ...)
 {
     va_list var;
     XExtDisplayInfo *info = find_display (dpy);
@@ -307,10 +305,10 @@ XagGetApplicationGroupAttributes(
 }
 
 Bool
-XagQueryApplicationGroup(dpy, resource, app_group_return)
-    Display* dpy;
-    XID resource;
-    XAppGroup* app_group_return;
+XagQueryApplicationGroup(
+    Display* dpy,
+    XID resource,
+    XAppGroup* app_group_return)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xXagQueryReq *req;
@@ -336,26 +334,55 @@ XagQueryApplicationGroup(dpy, resource, app_group_return)
 }
 
 Bool
-XagCreateAssociation(dpy, window_return, system_window)
-    Display* dpy;
-    Window* window_return;
-    void* system_window;
+XagCreateAssociation(Display* dpy, Window* window_return, void* system_window)
 {
+#ifdef WIN32
+    long tmp = *(HWND*) system_window;
+    XExtDisplayInfo *info = find_display (dpy);
+    xXagCreateAssocReq *req;
+
+    XagCheckExtension (dpy, info, False);
+
+    LockDisplay(dpy);
+    GetReq(XagCreateAssoc, req);
+    req->reqType = info->codes->major_opcode;
+    req->xagReqType = X_XagCreateAssoc;
+    *window_return = req->window = XAllocID(dpy);
+    req->window_type = XagWindowTypeWin32;
+    req->system_window_len = sizeof(HWND);
+    Data32 (dpy, (long*) tmp, 1L);
+    req->length++;
+    UnlockDisplay(dpy);
+    SyncHandle();
+#else
     /* other platforms go here */
 
     /* this whole thing could be arranged better, but since X need
-     * only short-circuit the protocol and WIN32 is the only other 
+     * only short-circuit the protocol and WIN32 is the only other
      * platform the XC supports, it will suffice for now.
      */
     *window_return = *(Window*)system_window;
+#endif
     return True;
 }
 
 Bool
-XagDestroyAssociation(dpy, window)
-    Display* dpy;
-    Window window;
+XagDestroyAssociation(Display* dpy, Window window)
 {
+#ifdef WIN32
+    XExtDisplayInfo *info = find_display (dpy);
+    xXagDestroyAssocReq *req;
+
+    XagCheckExtension (dpy, info, False);
+
+    LockDisplay(dpy);
+    GetReq(XagDestroyAssoc, req);
+    req->reqType = info->codes->major_opcode;
+    req->xagReqType = X_XagDestroyAssoc;
+    req->window = window;
+    UnlockDisplay(dpy);
+    SyncHandle();
+#endif
     return True;
 }
 

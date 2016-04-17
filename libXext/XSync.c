@@ -1,4 +1,3 @@
-/* $Xorg: XSync.c,v 1.5 2001/02/09 02:03:49 xorgcvs Exp $ */
 /*
 
 Copyright 1991, 1993, 1998  The Open Group
@@ -50,19 +49,21 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xext/XSync.c,v 1.7tsi Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
-#define NEED_EVENTS
-#define NEED_REPLIES
 #include <X11/Xlibint.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
-#include <X11/extensions/syncstr.h>
+#include <X11/extensions/sync.h>
+#include <X11/extensions/syncproto.h>
+#include <limits.h>
 
 static XExtensionInfo _sync_info_data;
 static XExtensionInfo *sync_info = &_sync_info_data;
-static char    *sync_extension_name = SYNC_NAME;
+static const char     *sync_extension_name = SYNC_NAME;
 
 #define SyncCheckExtension(dpy,i,val) \
 		XextCheckExtension(dpy, i, sync_extension_name, val)
@@ -89,24 +90,110 @@ static XExtensionHooks sync_extension_hooks = {
     error_string,		/* error_string */
 };
 
-static char    *sync_error_list[] = {
+static const char *sync_error_list[] = {
     "BadCounter",
     "BadAlarm",
+    "BadFence",
 };
 
+typedef struct _SyncVersionInfoRec {
+    short major;
+    short minor;
+    int num_errors;
+} SyncVersionInfo;
+
+static /* const */ SyncVersionInfo supported_versions[] = {
+    { 3 /* major */, 0 /* minor */, 2 /* num_errors */ },
+    { 3 /* major */, 1 /* minor */, 3 /* num_errors */ },
+};
+
+#define NUM_VERSIONS (sizeof(supported_versions)/sizeof(supported_versions[0]))
+#define GET_VERSION(info) ((const SyncVersionInfo*)(info)->data)
+#define IS_VERSION_SUPPORTED(info) (!!(info))
+
 static
-XEXT_GENERATE_FIND_DISPLAY(find_display, sync_info,
-			   sync_extension_name,
-			   &sync_extension_hooks,
-			   XSyncNumberEvents, (XPointer) NULL)
+const SyncVersionInfo* GetVersionInfo(Display *dpy)
+{
+    xSyncInitializeReply rep;
+    xSyncInitializeReq *req;
+    XExtCodes codes;
+    int i;
+
+    if (!XQueryExtension(dpy, sync_extension_name,
+                         &codes.major_opcode,
+                         &codes.first_event,
+                         &codes.first_error))
+        return NULL;
+
+    LockDisplay(dpy);
+    GetReq(SyncInitialize, req);
+    req->reqType = codes.major_opcode;
+    req->syncReqType = X_SyncInitialize;
+    req->majorVersion = SYNC_MAJOR_VERSION;
+    req->minorVersion = SYNC_MINOR_VERSION;
+    if (!_XReply(dpy, (xReply *) & rep, 0, xTrue))
+    {
+	UnlockDisplay(dpy);
+	SyncHandle();
+	return NULL;
+    }
+    UnlockDisplay(dpy);
+    SyncHandle();
+
+    for (i = 0; i < NUM_VERSIONS; i++) {
+	if (supported_versions[i].major == rep.majorVersion &&
+	    supported_versions[i].minor == rep.minorVersion) {
+	    return &supported_versions[i];
+	}
+    }
+
+    return NULL;
+}
+
+static
+XExtDisplayInfo *find_display_create_optional(Display *dpy, Bool create)
+{
+    XExtDisplayInfo *dpyinfo;
+
+    if (!sync_info) {
+        if (!(sync_info = XextCreateExtension())) return NULL;
+    }
+
+    if (!(dpyinfo = XextFindDisplay (sync_info, dpy)) && create) {
+        dpyinfo = XextAddDisplay(sync_info, dpy,
+                                 sync_extension_name,
+                                 &sync_extension_hooks,
+                                 XSyncNumberEvents,
+                                 (XPointer)GetVersionInfo(dpy));
+    }
+
+    return dpyinfo;
+}
+
+static
+XExtDisplayInfo *find_display (Display *dpy)
+{
+    return find_display_create_optional(dpy, True);
+}
 
 static
 XEXT_GENERATE_CLOSE_DISPLAY(close_display, sync_info)
 
 static
-XEXT_GENERATE_ERROR_STRING(error_string, sync_extension_name,
-			   XSyncNumberErrors, sync_error_list)
+char *error_string(Display *dpy, int code, XExtCodes *codes, char *buf, int n)
+{
+    XExtDisplayInfo *info = find_display_create_optional(dpy, False);
+    int nerr = IS_VERSION_SUPPORTED(info) ? GET_VERSION(info)->num_errors : 0;
 
+    code -= codes->first_error;
+    if (code >= 0 && code < nerr) {
+	char tmp[256];
+	snprintf (tmp, sizeof(tmp), "%s.%d", sync_extension_name, code);
+	XGetErrorDatabaseText (dpy, "XProtoError", tmp, sync_error_list[code], buf, n);
+	return buf;
+    }
+    return (char *)0;
+}
 
 static Bool
 wire_to_event(Display *dpy, XEvent *event, xEvent *wire)
@@ -209,9 +296,9 @@ event_to_wire(Display *dpy, XEvent *event, xEvent *wire)
 }
 
 Status
-XSyncQueryExtension(dpy, event_base_return, error_base_return)
-    Display        *dpy;
-    int  *event_base_return, *error_base_return;
+XSyncQueryExtension(
+    Display *dpy,
+    int *event_base_return, int *error_base_return)
 {
     XExtDisplayInfo *info = find_display(dpy);
 
@@ -226,43 +313,26 @@ XSyncQueryExtension(dpy, event_base_return, error_base_return)
 }
 
 Status
-XSyncInitialize(dpy, major_version_return, minor_version_return)
-    Display        *dpy;
-    int *major_version_return, *minor_version_return;
+XSyncInitialize(
+    Display *dpy,
+    int *major_version_return, int *minor_version_return)
 {
     XExtDisplayInfo *info = find_display(dpy);
-    xSyncInitializeReply rep;
-    xSyncInitializeReq *req;
 
     SyncCheckExtension(dpy, info, False);
 
-    LockDisplay(dpy);
-    GetReq(SyncInitialize, req);
-    req->reqType = info->codes->major_opcode;
-    req->syncReqType = X_SyncInitialize;
-    req->majorVersion = SYNC_MAJOR_VERSION;
-    req->minorVersion = SYNC_MINOR_VERSION;
-    if (!_XReply(dpy, (xReply *) & rep, 0, xTrue))
-    {
-	UnlockDisplay(dpy);
-	SyncHandle();
+    if (IS_VERSION_SUPPORTED(info)) {
+	*major_version_return = GET_VERSION(info)->major;
+	*minor_version_return = GET_VERSION(info)->minor;
+
+	return True;
+    } else {
 	return False;
     }
-    UnlockDisplay(dpy);
-    SyncHandle();
-    *major_version_return = rep.majorVersion;
-    *minor_version_return = rep.minorVersion;
-    return ((rep.majorVersion == SYNC_MAJOR_VERSION)
-#if SYNC_MINOR_VERSION > 0	/* avoid compiler warning */
-	    && (rep.minorVersion >= SYNC_MINOR_VERSION)
-#endif
-	    );
 }
 
 XSyncSystemCounter *
-XSyncListSystemCounters(dpy, n_counters_return)
-    Display        *dpy;
-    int		   *n_counters_return;
+XSyncListSystemCounters(Display *dpy, int *n_counters_return)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncListSystemCountersReply rep;
@@ -282,21 +352,29 @@ XSyncListSystemCounters(dpy, n_counters_return)
     if (rep.nCounters > 0)
     {
 	xSyncSystemCounter *pWireSysCounter, *pNextWireSysCounter;
+	xSyncSystemCounter *pLastWireSysCounter;
 	XSyncCounter counter;
-	int replylen;
+	unsigned int replylen;
 	int i;
 
-	list = (XSyncSystemCounter *)Xmalloc(
-			rep.nCounters * sizeof(XSyncSystemCounter));
-	replylen = rep.length << 2;
-	pWireSysCounter = (xSyncSystemCounter *) Xmalloc ((unsigned) replylen + 1);
-                /* +1 to leave room for last null-terminator */
+	if (rep.nCounters < (INT_MAX / sizeof(XSyncSystemCounter)))
+	    list = Xmalloc(rep.nCounters * sizeof(XSyncSystemCounter));
+	if (rep.length < (INT_MAX >> 2)) {
+	    replylen = rep.length << 2;
+	    pWireSysCounter = Xmalloc (replylen + sizeof(XSyncCounter));
+	    /* +1 to leave room for last counter read-ahead */
+	    pLastWireSysCounter = (xSyncSystemCounter *)
+		((char *)pWireSysCounter) + replylen;
+	} else {
+	    replylen = 0;
+	    pWireSysCounter = NULL;
+	}
 
 	if ((!list) || (!pWireSysCounter))
 	{
-	    if (list) Xfree((char *) list);
-	    if (pWireSysCounter)   Xfree((char *) pWireSysCounter);
-	    _XEatData(dpy, (unsigned long) replylen);
+	    Xfree(list);
+	    Xfree(pWireSysCounter);
+	    _XEatDataWords(dpy, rep.length);
 	    list = NULL;
 	    goto bail;
 	}
@@ -319,6 +397,14 @@ XSyncListSystemCounters(dpy, n_counters_return)
 	    pNextWireSysCounter = (xSyncSystemCounter *)
 		(((char *)pWireSysCounter) + ((SIZEOF(xSyncSystemCounter) +
 				     pWireSysCounter->name_length + 3) & ~3));
+	    /* Make sure we haven't gone too far */
+	    if (pNextWireSysCounter > pLastWireSysCounter) {
+		Xfree(list);
+		Xfree(pWireSysCounter);
+		list = NULL;
+		goto bail;
+	    }
+
 	    counter = pNextWireSysCounter->counter;
 
 	    list[i].name = ((char *)pWireSysCounter) +
@@ -336,8 +422,7 @@ bail:
 }
 
 void
-XSyncFreeSystemCounterList(list)
-    XSyncSystemCounter *list;
+XSyncFreeSystemCounterList(XSyncSystemCounter *list)
 {
     if (list)
     {
@@ -348,9 +433,7 @@ XSyncFreeSystemCounterList(list)
 
 
 XSyncCounter
-XSyncCreateCounter(dpy, initial_value)
-    Display        *dpy;
-    XSyncValue    initial_value;
+XSyncCreateCounter(Display *dpy, XSyncValue initial_value)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncCreateCounterReq *req;
@@ -372,10 +455,7 @@ XSyncCreateCounter(dpy, initial_value)
 }
 
 Status
-XSyncSetCounter(dpy, counter, value)
-    Display        *dpy;
-    XSyncCounter    counter;
-    XSyncValue    value;
+XSyncSetCounter(Display *dpy, XSyncCounter counter, XSyncValue value)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncSetCounterReq *req;
@@ -395,10 +475,7 @@ XSyncSetCounter(dpy, counter, value)
 }
 
 Status
-XSyncChangeCounter(dpy, counter, value)
-    Display        *dpy;
-    XSyncCounter    counter;
-    XSyncValue    value;
+XSyncChangeCounter(Display *dpy, XSyncCounter counter, XSyncValue value)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncChangeCounterReq *req;
@@ -418,9 +495,7 @@ XSyncChangeCounter(dpy, counter, value)
 }
 
 Status
-XSyncDestroyCounter(dpy, counter)
-    Display        *dpy;
-    XSyncCounter    counter;
+XSyncDestroyCounter(Display *dpy, XSyncCounter counter)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncDestroyCounterReq *req;
@@ -439,10 +514,7 @@ XSyncDestroyCounter(dpy, counter)
 }
 
 Status
-XSyncQueryCounter(dpy, counter, value_return)
-    Display        *dpy;
-    XSyncCounter    counter;
-    XSyncValue   *value_return;
+XSyncQueryCounter(Display *dpy, XSyncCounter counter, XSyncValue *value_return)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncQueryCounterReply rep;
@@ -470,10 +542,7 @@ XSyncQueryCounter(dpy, counter, value_return)
 
 
 Status
-XSyncAwait(dpy, wait_list, n_conditions)
-    Display        *dpy;
-    XSyncWaitCondition *wait_list;
-    int   n_conditions;
+XSyncAwait(Display *dpy, XSyncWaitCondition *wait_list, int n_conditions)
 {
     XExtDisplayInfo *info = find_display(dpy);
     XSyncWaitCondition *wait_item = wait_list;
@@ -550,10 +619,10 @@ _XProcessAlarmAttributes(Display *dpy, xSyncChangeAlarmReq *req,
 }
 
 XSyncAlarm
-XSyncCreateAlarm(dpy, values_mask, values)
-    Display        *dpy;
-    unsigned long   values_mask;
-    XSyncAlarmAttributes *values;
+XSyncCreateAlarm(
+    Display *dpy,
+    unsigned long values_mask,
+    XSyncAlarmAttributes *values)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncCreateAlarmReq *req;
@@ -577,9 +646,7 @@ XSyncCreateAlarm(dpy, values_mask, values)
 }
 
 Status
-XSyncDestroyAlarm(dpy, alarm)
-    Display        *dpy;
-    XSyncAlarm      alarm;
+XSyncDestroyAlarm(Display *dpy, XSyncAlarm alarm)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncDestroyAlarmReq *req;
@@ -597,10 +664,10 @@ XSyncDestroyAlarm(dpy, alarm)
 }
 
 Status
-XSyncQueryAlarm(dpy, alarm, values_return)
-    Display        *dpy;
-    XSyncAlarm      alarm;
-    XSyncAlarmAttributes *values_return;
+XSyncQueryAlarm(
+    Display *dpy,
+    XSyncAlarm alarm,
+    XSyncAlarmAttributes *values_return)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncQueryAlarmReq *req;
@@ -637,11 +704,11 @@ XSyncQueryAlarm(dpy, alarm, values_return)
 }
 
 Status
-XSyncChangeAlarm(dpy, alarm, values_mask, values)
-    Display        *dpy;
-    XSyncAlarm      alarm;
-    unsigned long   values_mask;
-    XSyncAlarmAttributes *values;
+XSyncChangeAlarm(
+    Display *dpy,
+    XSyncAlarm alarm,
+    unsigned long values_mask,
+    XSyncAlarmAttributes *values)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncChangeAlarmReq *req;
@@ -663,10 +730,10 @@ XSyncChangeAlarm(dpy, alarm, values_mask, values)
 }
 
 Status
-XSyncSetPriority(dpy, client_resource_id, priority)
-    Display        *dpy;
-    XID             client_resource_id;
-    int             priority;
+XSyncSetPriority(
+    Display *dpy,
+    XID client_resource_id,
+    int priority)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncSetPriorityReq *req;
@@ -685,10 +752,7 @@ XSyncSetPriority(dpy, client_resource_id, priority)
 }
 
 Status
-XSyncGetPriority(dpy, client_resource_id, return_priority)
-    Display        *dpy;
-    XID             client_resource_id;
-    int            *return_priority;
+XSyncGetPriority(Display *dpy, XID client_resource_id, int *return_priority)
 {
     XExtDisplayInfo *info = find_display(dpy);
     xSyncGetPriorityReply rep;
@@ -716,141 +780,238 @@ XSyncGetPriority(dpy, client_resource_id, return_priority)
     return True;
 }
 
+XSyncFence
+XSyncCreateFence(Display *dpy, Drawable d, Bool initially_triggered)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncCreateFenceReq *req;
+    XSyncFence id;
+
+    SyncCheckExtension(dpy, info, None);
+
+    LockDisplay(dpy);
+    GetReq(SyncCreateFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncCreateFence;
+
+    req->d = d;
+    id = req->fid = XAllocID(dpy);
+    req->initially_triggered = initially_triggered;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return id;
+}
+
+Bool
+XSyncTriggerFence(Display *dpy, XSyncFence fence)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncTriggerFenceReq *req;
+
+    SyncCheckExtension(dpy, info, None);
+
+    LockDisplay(dpy);
+    GetReq(SyncTriggerFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncTriggerFence;
+
+    req->fid = fence;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return True;
+}
+
+Bool
+XSyncResetFence(Display *dpy, XSyncFence fence)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncResetFenceReq *req;
+
+    SyncCheckExtension(dpy, info, None);
+
+    LockDisplay(dpy);
+    GetReq(SyncResetFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncResetFence;
+
+    req->fid = fence;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return True;
+}
+
+Bool
+XSyncDestroyFence(Display *dpy, XSyncFence fence)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncDestroyFenceReq *req;
+
+    SyncCheckExtension(dpy, info, None);
+
+    LockDisplay(dpy);
+    GetReq(SyncDestroyFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncDestroyFence;
+
+    req->fid = fence;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return True;
+}
+
+Bool
+XSyncQueryFence(Display *dpy, XSyncFence fence, Bool *triggered)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncQueryFenceReply rep;
+    xSyncQueryFenceReq *req;
+
+    SyncCheckExtension(dpy, info, None);
+
+    LockDisplay(dpy);
+    GetReq(SyncQueryFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncQueryFence;
+    req->fid = fence;
+
+    if (!_XReply(dpy, (xReply *) & rep, 0, xFalse))
+    {
+	UnlockDisplay(dpy);
+	SyncHandle();
+	return False;
+    }
+    if (triggered)
+	*triggered = rep.triggered;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return True;
+}
+
+Bool
+XSyncAwaitFence(Display *dpy, const XSyncFence *fence_list, int n_fences)
+{
+    XExtDisplayInfo *info = find_display(dpy);
+    xSyncAwaitFenceReq  *req;
+
+    SyncCheckExtension(dpy, info, False);
+
+    LockDisplay(dpy);
+    GetReq(SyncAwaitFence, req);
+    req->reqType = info->codes->major_opcode;
+    req->syncReqType = X_SyncAwaitFence;
+    SetReqLen(req, n_fences, n_fences);
+
+    Data32(dpy, (char *)fence_list, sizeof(CARD32) * n_fences);
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return True;
+}
+
 /*
  *  Functions corresponding to the macros for manipulating 64-bit values
  */
 
-/* get rid of macros so we can define corresponding functions */
-#undef XSyncIntToValue
-#undef XSyncIntsToValue
-#undef XSyncValueGreaterThan
-#undef XSyncValueLessThan
-#undef XSyncValueGreaterOrEqual
-#undef XSyncValueLessOrEqual
-#undef XSyncValueEqual
-#undef XSyncValueIsNegative
-#undef XSyncValueIsZero
-#undef XSyncValueIsPositive
-#undef XSyncValueLow32
-#undef XSyncValueHigh32
-#undef XSyncValueAdd
-#undef XSyncValueSubtract
-#undef XSyncMaxValue
-#undef XSyncMinValue
-
 void
-XSyncIntToValue(pv, i)
-    XSyncValue *pv;
-    int i;
+XSyncIntToValue(XSyncValue *pv, int i)
 {
     _XSyncIntToValue(pv,i);
 }
 
 void
-XSyncIntsToValue(pv, l, h)
-    XSyncValue *pv;
-    unsigned int l;
-    int h;
+XSyncIntsToValue(XSyncValue *pv, unsigned int l, int h)
 {
     _XSyncIntsToValue(pv, l, h);
 }
 
 Bool
-XSyncValueGreaterThan(a, b)
-    XSyncValue a, b;
+XSyncValueGreaterThan(XSyncValue a, XSyncValue b)
 {
     return _XSyncValueGreaterThan(a, b);
 }
 
 Bool
-XSyncValueLessThan(a, b)
-    XSyncValue a, b;
+XSyncValueLessThan(XSyncValue a, XSyncValue b)
 {
     return _XSyncValueLessThan(a, b);
 }
 
 Bool
-XSyncValueGreaterOrEqual(a, b)
-    XSyncValue a, b;
+XSyncValueGreaterOrEqual(XSyncValue a, XSyncValue b)
 {
     return _XSyncValueGreaterOrEqual(a, b);
 }
 
 Bool
-XSyncValueLessOrEqual(a, b)
-    XSyncValue a, b;
+XSyncValueLessOrEqual(XSyncValue a, XSyncValue b)
 {
     return _XSyncValueLessOrEqual(a, b);
 }
 
 Bool
-XSyncValueEqual(a, b)
-    XSyncValue a, b;
+XSyncValueEqual(XSyncValue a, XSyncValue b)
 {
     return _XSyncValueEqual(a, b);
 }
 
 Bool
-XSyncValueIsNegative(v)
-    XSyncValue v;
+XSyncValueIsNegative(XSyncValue v)
 {
     return _XSyncValueIsNegative(v);
 }
 
 Bool
-XSyncValueIsZero(a)
-    XSyncValue a;
+XSyncValueIsZero(XSyncValue a)
 {
     return _XSyncValueIsZero(a);
 }
 
 Bool
-XSyncValueIsPositive(v)
-    XSyncValue v;
+XSyncValueIsPositive(XSyncValue v)
 {
     return _XSyncValueIsPositive(v);
 }
 
 unsigned int
-XSyncValueLow32(v)
-    XSyncValue v;
+XSyncValueLow32(XSyncValue v)
 {
     return _XSyncValueLow32(v);
 }
 
 int
-XSyncValueHigh32(v)
-    XSyncValue v;
+XSyncValueHigh32(XSyncValue v)
 {
     return _XSyncValueHigh32(v);
 }
 
 void
-XSyncValueAdd(presult, a, b, poverflow)
-    XSyncValue *presult, a, b;
-    Bool *poverflow;
+XSyncValueAdd(XSyncValue *presult, XSyncValue a, XSyncValue b, Bool *poverflow)
 {
     _XSyncValueAdd(presult, a, b, poverflow);
 }
 
 void
-XSyncValueSubtract(presult, a, b, poverflow)
-    XSyncValue *presult, a, b;
-    Bool *poverflow;
+XSyncValueSubtract(
+    XSyncValue *presult,
+    XSyncValue a, XSyncValue b,
+    Bool *poverflow)
 {
     _XSyncValueSubtract(presult, a, b, poverflow);
 }
 
 void
-XSyncMaxValue(pv)
-    XSyncValue *pv;
+XSyncMaxValue(XSyncValue *pv)
 {
     _XSyncMaxValue(pv);
 }
 
 void
-XSyncMinValue(pv)
-    XSyncValue *pv;
+XSyncMinValue(XSyncValue *pv)
 {
     _XSyncMinValue(pv);
 }

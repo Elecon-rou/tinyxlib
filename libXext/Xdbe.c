@@ -1,6 +1,5 @@
-/* $Xorg: Xdbe.c,v 1.4 2000/08/17 19:45:53 cpqbld Exp $ */
 /******************************************************************************
- * 
+ *
  * Copyright (c) 1994, 1995  Hewlett-Packard Company
  *
  * Permission is hereby granted, free of charge, to any person obtaining
@@ -10,10 +9,10 @@
  * distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to
  * the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
  * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -21,44 +20,39 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR
  * THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
+ *
  * Except as contained in this notice, the name of the Hewlett-Packard
  * Company shall not be used in advertising or otherwise to promote the
  * sale, use or other dealings in this Software without prior written
  * authorization from the Hewlett-Packard Company.
- * 
+ *
  *     Xlib DBE code
  *
  *****************************************************************************/
-/* $XFree86: xc/lib/Xext/Xdbe.c,v 3.7 2002/10/16 02:19:22 dawes Exp $ */
 
-#define NEED_EVENTS
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xlibint.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
-#define NEED_DBE_PROTOCOL
 #include <X11/extensions/Xdbe.h>
+#include <X11/extensions/dbeproto.h>
+#include <limits.h>
 
 static XExtensionInfo _dbe_info_data;
 static XExtensionInfo *dbe_info = &_dbe_info_data;
-static char *dbe_extension_name = DBE_PROTOCOL_NAME;
+static const char *dbe_extension_name = DBE_PROTOCOL_NAME;
 
 #define DbeCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, dbe_extension_name, val)
 #define DbeSimpleCheckExtension(dpy,i) \
   XextSimpleCheckExtension (dpy, i, dbe_extension_name)
 
-#if !defined(UNIXCPP)
 #define DbeGetReq(name,req,info) GetReq (name, req); \
         req->reqType = info->codes->major_opcode; \
         req->dbeReqType = X_##name;
-#else
-#define DbeGetReq(name,req,info) GetReq (name, req); \
-        req->reqType = info->codes->major_opcode; \
-        req->dbeReqType = X_/**/name;
-#endif
 
 
 /*****************************************************************************
@@ -87,19 +81,19 @@ static XExtensionHooks dbe_extension_hooks = {
     error_string,                       /* error_string */
 };
 
-static char *dbe_error_list[] = {
+static const char *dbe_error_list[] = {
     "BadBuffer",			/* DbeBadBuffer */
 };
 
 static XEXT_GENERATE_FIND_DISPLAY (find_display, dbe_info,
-				   dbe_extension_name, 
-				   &dbe_extension_hooks, 
+				   dbe_extension_name,
+				   &dbe_extension_hooks,
 				   DbeNumberEvents, NULL)
 
 static XEXT_GENERATE_CLOSE_DISPLAY (close_display, dbe_info)
 
 static XEXT_GENERATE_ERROR_STRING (error_string, dbe_extension_name,
-				   DbeNumberErrors, 
+				   DbeNumberErrors,
 				   dbe_error_list)
 
 
@@ -109,7 +103,7 @@ static XEXT_GENERATE_ERROR_STRING (error_string, dbe_extension_name,
  *                                                                           *
  *****************************************************************************/
 
-/* 
+/*
  * XdbeQueryExtension -
  *	Sets major_version_return and minor_verion_return to the major and
  *	minor DBE protocol version supported by the server.  If the DBE
@@ -181,14 +175,11 @@ XdbeBackBuffer XdbeAllocateBackBufferName(
      */
     DbeCheckExtension (dpy, info, (XdbeBackBuffer)0);
 
-    /* allocate the id */
-    buffer = XAllocID (dpy);
-
     LockDisplay(dpy);
     DbeGetReq(DbeAllocateBackBufferName, req, info);
     req->window = window;
     req->swapAction = (unsigned char)swap_action;
-    req->buffer = buffer;
+    req->buffer = buffer = XAllocID (dpy);
 
     UnlockDisplay (dpy);
     SyncHandle ();
@@ -197,7 +188,7 @@ XdbeBackBuffer XdbeAllocateBackBufferName(
 } /* XdbeAllocateBackBufferName() */
 
 /*
- * XdbeDeallocateBackBufferName - 
+ * XdbeDeallocateBackBufferName -
  *	This function frees a drawable ID, buffer, that was obtained via
  *	XdbeAllocateBackBufferName.  The buffer must refer to the back buffer
  *	of the specified window, or a protocol error results.
@@ -222,7 +213,7 @@ Status XdbeDeallocateBackBufferName (
 
 
 /*
- * XdbeSwapBuffers - 
+ * XdbeSwapBuffers -
  *	This function swaps the front and back buffers for a list of windows.
  *	The argument num_windows specifies how many windows are to have their
  *	buffers swapped; it is the number of elements in the swap_info array.
@@ -270,8 +261,7 @@ Status XdbeSwapBuffers (
  * XdbeBeginIdiom -
  *	This function marks the beginning of an idiom sequence.
  */
-Status XdbeBeginIdiom (
-    Display *dpy)
+Status XdbeBeginIdiom (Display *dpy)
 {
     XExtDisplayInfo *info = find_display(dpy);
     register xDbeBeginIdiomReq *req;
@@ -291,8 +281,7 @@ Status XdbeBeginIdiom (
  * XdbeEndIdiom -
  *	This function marks the end of an idiom sequence.
  */
-Status XdbeEndIdiom (
-    Display *dpy)
+Status XdbeEndIdiom (Display *dpy)
 {
     XExtDisplayInfo *info = find_display(dpy);
     register xDbeEndIdiomReq *req;
@@ -358,9 +347,12 @@ XdbeScreenVisualInfo *XdbeGetVisualInfo (
        *num_screens = rep.m;
 
     /* allocate list of visual information to be returned */
-    if (!(scrVisInfo =
-        (XdbeScreenVisualInfo *)Xmalloc(
-        (unsigned)(*num_screens * sizeof(XdbeScreenVisualInfo))))) {
+    if ((*num_screens > 0) && (*num_screens < 65536))
+        scrVisInfo = Xmalloc(*num_screens * sizeof(XdbeScreenVisualInfo));
+    else
+        scrVisInfo = NULL;
+    if (scrVisInfo == NULL) {
+        _XEatDataWords(dpy, rep.length);
         UnlockDisplay (dpy);
         SyncHandle ();
         return NULL;
@@ -368,30 +360,32 @@ XdbeScreenVisualInfo *XdbeGetVisualInfo (
 
     for (i = 0; i < *num_screens; i++)
     {
-        int nbytes;
         int j;
-        long c;
+        unsigned long c;
 
-        _XRead32 (dpy, &c, sizeof(CARD32));
-        scrVisInfo[i].count = c;
+        _XRead32 (dpy, (long *) &c, sizeof(CARD32));
 
-        nbytes = scrVisInfo[i].count * sizeof(XdbeVisualInfo);
+        if (c < 65536) {
+            scrVisInfo[i].count = c;
+            scrVisInfo[i].visinfo = Xmalloc(c * sizeof(XdbeVisualInfo));
+        } else
+            scrVisInfo[i].visinfo = NULL;
 
         /* if we can not allocate the list of visual/depth info
          * then free the lists that we already allocate as well
          * as the visual info list itself
          */
-        if (!(scrVisInfo[i].visinfo = (XdbeVisualInfo *)Xmalloc(
-            (unsigned)nbytes))) {
+        if (scrVisInfo[i].visinfo == NULL) {
             for (j = 0; j < i; j++) {
                 Xfree ((char *)scrVisInfo[j].visinfo);
             }
             Xfree ((char *)scrVisInfo);
+            _XEatDataWords(dpy, rep.length);
             UnlockDisplay (dpy);
             SyncHandle ();
             return NULL;
         }
-    
+
         /* Read the visual info item into the wire structure.  Then copy each
          * element into the library structure.  The element sizes and/or
          * padding may be different in the two structures.
@@ -419,8 +413,7 @@ XdbeScreenVisualInfo *XdbeGetVisualInfo (
  *	This function frees the list of XdbeScreenVisualInfo returned by the
  *	function XdbeGetVisualInfo.
  */
-void XdbeFreeVisualInfo(
-    XdbeScreenVisualInfo *visual_info)
+void XdbeFreeVisualInfo(XdbeScreenVisualInfo *visual_info)
 {
     if (visual_info == NULL) {
         return;
@@ -462,6 +455,7 @@ XdbeBackBufferAttributes *XdbeGetBackBufferAttributes(
     if (!_XReply (dpy, (xReply *) &rep, 0, xTrue)) {
         UnlockDisplay (dpy);
         SyncHandle ();
+	Xfree(attr);
         return NULL;
     }
     attr->window = rep.attributes;

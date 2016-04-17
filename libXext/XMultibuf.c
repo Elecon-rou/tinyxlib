@@ -1,5 +1,4 @@
 /*
- * $Xorg: XMultibuf.c,v 1.6 2001/02/09 02:03:49 xorgcvs Exp $
  *
 Copyright 1989, 1998  The Open Group
 
@@ -25,19 +24,20 @@ in this Software without prior written authorization from The Open Group.
  *
  * Authors:  Jim Fulton, MIT X Consortium
  */
-/* $XFree86: xc/lib/Xext/XMultibuf.c,v 1.5 2001/12/14 19:55:00 dawes Exp $ */
 
-#define NEED_EVENTS
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <stdio.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
-#include <X11/extensions/multibufst.h>
+#include <X11/extensions/multibufproto.h>
+#include <X11/extensions/multibuf.h>
 
 static XExtensionInfo _multibuf_info_data;
 static XExtensionInfo *multibuf_info = &_multibuf_info_data;
-static /* const */ char *multibuf_extension_name = MULTIBUFFER_PROTOCOL_NAME;
+static const char *multibuf_extension_name = MULTIBUFFER_PROTOCOL_NAME;
 
 #define MbufCheckExtension(dpy,i,val) \
   XextCheckExtension (dpy, i, multibuf_extension_name, val)
@@ -54,10 +54,10 @@ static /* const */ char *multibuf_extension_name = MULTIBUFFER_PROTOCOL_NAME;
 /*
  * find_display - locate the display info block
  */
-static int close_display();
-static char *error_string();
-static Bool wire_to_event();
-static Status event_to_wire();
+static int close_display(Display *dpy, XExtCodes *codes);
+static char *error_string(Display *dpy, int code, XExtCodes *codes, char *buf, int n);
+static Bool wire_to_event(Display *dpy, XEvent *libevent, xEvent *netevent);
+static Status event_to_wire(Display *dpy, XEvent *libevent, xEvent *netevent);
 static /* const */ XExtensionHooks multibuf_extension_hooks = {
     NULL,				/* create_gc */
     NULL,				/* copy_gc */
@@ -72,29 +72,26 @@ static /* const */ XExtensionHooks multibuf_extension_hooks = {
     error_string,			/* error_string */
 };
 
-static /* const */ char *multibuf_error_list[] = {
+static const char *multibuf_error_list[] = {
     "BadBuffer",			/* MultibufferBadBuffer */
 };
 
 static XEXT_GENERATE_FIND_DISPLAY (find_display, multibuf_info,
-				   multibuf_extension_name, 
-				   &multibuf_extension_hooks, 
+				   multibuf_extension_name,
+				   &multibuf_extension_hooks,
 				   MultibufferNumberEvents, NULL)
 
 static XEXT_GENERATE_CLOSE_DISPLAY (close_display, multibuf_info)
 
 static XEXT_GENERATE_ERROR_STRING (error_string, multibuf_extension_name,
-				   MultibufferNumberErrors, 
+				   MultibufferNumberErrors,
 				   multibuf_error_list)
 
 /*
- * wire_to_event - convert a wire event in network format to a C 
+ * wire_to_event - convert a wire event in network format to a C
  * event structure
  */
-static Bool wire_to_event (dpy, libevent, netevent)
-    Display *dpy;
-    XEvent *libevent;
-    xEvent *netevent;
+static Bool wire_to_event (Display *dpy, XEvent *libevent, xEvent *netevent)
 {
     XExtDisplayInfo *info = find_display (dpy);
 
@@ -105,7 +102,7 @@ static Bool wire_to_event (dpy, libevent, netevent)
 	{
 	    XmbufClobberNotifyEvent *ev;
 	    xMbufClobberNotifyEvent *event;
-    
+
     	    ev = (XmbufClobberNotifyEvent *) libevent;
 	    event = (xMbufClobberNotifyEvent *) netevent;
     	    ev->type = event->type & 0x7f;
@@ -139,10 +136,7 @@ static Bool wire_to_event (dpy, libevent, netevent)
  * event_to_wire - convert a C event structure to a wire event in
  * network format
  */
-static Status event_to_wire (dpy, libevent, netevent)
-    Display *dpy;
-    XEvent  *libevent;
-    xEvent  *netevent;
+static Status event_to_wire (Display *dpy, XEvent *libevent, xEvent *netevent)
 {
     XExtDisplayInfo *info = find_display (dpy);
 
@@ -153,7 +147,7 @@ static Status event_to_wire (dpy, libevent, netevent)
 	{
 	    XmbufClobberNotifyEvent *ev;
 	    xMbufClobberNotifyEvent *event;
-    
+
     	    ev = (XmbufClobberNotifyEvent *) libevent;
 	    event = (xMbufClobberNotifyEvent *) netevent;
     	    event->type = ev->type;
@@ -185,9 +179,7 @@ static Status event_to_wire (dpy, libevent, netevent)
  */
 #define TALLOC(type,count) ((type *) Xmalloc ((unsigned) count * sizeof(type)))
 
-static XmbufBufferInfo *read_buffer_info (dpy, nbufs)
-    Display *dpy;
-    int nbufs;
+static XmbufBufferInfo *read_buffer_info (Display *dpy, int nbufs)
 {
     xMbufBufferInfo *netbuf = TALLOC (xMbufBufferInfo, nbufs);
     XmbufBufferInfo *bufinfo = NULL;
@@ -234,23 +226,23 @@ static XmbufBufferInfo *read_buffer_info (dpy, nbufs)
  *****************************************************************************/
 
 
-/* 
- * XmbufQueryExtension - 
+/*
+ * XmbufQueryExtension -
  * 	Returns True if the multibuffering/stereo extension is available
  * 	on the given display.  If the extension exists, the value of the
  * 	first event code (which should be added to the event type constants
  * 	MultibufferClobberNotify and MultibufferUpdateNotify to get the
  * 	actual values) is stored into event_base and the value of the first
  * 	error code (which should be added to the error type constant
- * 	MultibufferBadBuffer to get the actual value) is stored into 
+ * 	MultibufferBadBuffer to get the actual value) is stored into
  * 	error_base.
  */
-Bool XmbufQueryExtension (dpy, event_base_return, error_base_return)
-    Display *dpy;
-    int *event_base_return, *error_base_return;
+Bool XmbufQueryExtension (
+    Display *dpy,
+    int *event_base_return, int *error_base_return)
 {
     XExtDisplayInfo *info = find_display (dpy);
-    
+
     if (XextHasExtension (info)) {
 	*event_base_return = info->codes->first_event;
 	*error_base_return = info->codes->first_error;
@@ -261,14 +253,14 @@ Bool XmbufQueryExtension (dpy, event_base_return, error_base_return)
 }
 
 
-/* 
+/*
  * XmbufGetVersion -
  * 	Gets the major and minor version numbers of the extension.  The return
  * 	value is zero if an error occurs or non-zero if no error happens.
  */
-Status XmbufGetVersion (dpy, major_version_return, minor_version_return)
-    Display *dpy;
-    int *major_version_return, *minor_version_return;
+Status XmbufGetVersion (
+    Display *dpy,
+    int *major_version_return, int *minor_version_return)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xMbufGetBufferVersionReply rep;
@@ -293,18 +285,18 @@ Status XmbufGetVersion (dpy, major_version_return, minor_version_return)
 
 
 /*
- * XmbufCreateBuffers - 
+ * XmbufCreateBuffers -
  * 	Requests that "count" buffers be created with the given update_action
  * 	and update_hint and be associated with the indicated window.  The
  * 	number of buffers created is returned (zero if an error occurred)
  * 	and buffers_return is filled in with that many Multibuffer identifiers.
  */
-int XmbufCreateBuffers (dpy, w, count, update_action, update_hint, buffers)
-    Display *dpy;
-    Window w;
-    int count;
-    int update_action, update_hint;
-    Multibuffer *buffers;
+int XmbufCreateBuffers (
+    Display *dpy,
+    Window w,
+    int count,
+    int update_action, int update_hint,
+    Multibuffer *buffers)
 {
     XExtDisplayInfo *info = find_display (dpy);
     xMbufCreateImageBuffersReply rep;
@@ -337,12 +329,10 @@ int XmbufCreateBuffers (dpy, w, count, update_action, update_hint, buffers)
 
 
 /*
- * XmbufDestroyBuffers - 
+ * XmbufDestroyBuffers -
  * 	Destroys the buffers associated with the given window.
  */
-void XmbufDestroyBuffers (dpy, window)
-    Display *dpy;
-    Window  window;
+void XmbufDestroyBuffers (Display *dpy, Window window)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufDestroyImageBuffersReq *req;
@@ -358,17 +348,17 @@ void XmbufDestroyBuffers (dpy, window)
 
 
 /*
- * XmbufDisplayBuffers - 
+ * XmbufDisplayBuffers -
  * 	Displays the indicated buffers their appropriate windows within
  * 	max_delay milliseconds after min_delay milliseconds have passed.
- * 	No two buffers may be associated with the same window or else a Matc
+ * 	No two buffers may be associated with the same window or else a Match
  * 	error is generated.
  */
-void XmbufDisplayBuffers (dpy, count, buffers, min_delay, max_delay)
-    Display *dpy;
-    int count;
-    Multibuffer *buffers;
-    int min_delay, max_delay;
+void XmbufDisplayBuffers (
+    Display *dpy,
+    int count,
+    Multibuffer *buffers,
+    int min_delay, int max_delay)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufDisplayImageBuffersReq *req;
@@ -388,15 +378,15 @@ void XmbufDisplayBuffers (dpy, count, buffers, min_delay, max_delay)
 
 
 /*
- * XmbufGetWindowAttributes - 
+ * XmbufGetWindowAttributes -
  * 	Gets the multibuffering attributes that apply to all buffers associated
  * 	with the given window.  Returns non-zero on success and zero if an
  * 	error occurs.
  */
-Status XmbufGetWindowAttributes (dpy, w, attr)
-    Display *dpy;
-    Window w;
-    XmbufWindowAttributes *attr;
+Status XmbufGetWindowAttributes (
+    Display *dpy,
+    Window w,
+    XmbufWindowAttributes *attr)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufGetMBufferAttributesReq *req;
@@ -412,13 +402,13 @@ Status XmbufGetWindowAttributes (dpy, w, attr)
 	SyncHandle ();
 	return 0;
     }
-    attr->buffers = (Multibuffer *) NULL; 
+    attr->buffers = (Multibuffer *) NULL;
     if ((attr->nbuffers = rep.length)) {
 	int nbytes = rep.length * sizeof(Multibuffer);
 	attr->buffers = (Multibuffer *) Xmalloc((unsigned) nbytes);
 	nbytes = rep.length << 2;
 	if (! attr->buffers) {
-	    _XEatData(dpy, (unsigned long) nbytes);
+	    _XEatDataWords(dpy, rep.length);
 	    UnlockDisplay(dpy);
 	    SyncHandle();
 	    return (0);
@@ -437,15 +427,15 @@ Status XmbufGetWindowAttributes (dpy, w, attr)
 
 
 /*
- * XmbufChangeWindowAttributes - 
+ * XmbufChangeWindowAttributes -
  * 	Sets the multibuffering attributes that apply to all buffers associated
  * 	with the given window.  This is currently limited to the update_hint.
  */
-void XmbufChangeWindowAttributes (dpy, w, valuemask, attr)
-    Display *dpy;
-    Window w;
-    unsigned long valuemask;
-    XmbufSetWindowAttributes *attr;
+void XmbufChangeWindowAttributes (
+    Display *dpy,
+    Window w,
+    unsigned long valuemask,
+    XmbufSetWindowAttributes *attr)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufSetMBufferAttributesReq *req;
@@ -460,7 +450,7 @@ void XmbufChangeWindowAttributes (dpy, w, valuemask, attr)
 	unsigned long *v = values;
 	unsigned int nvalues;
 
-	if (valuemask & MultibufferWindowUpdateHint) 
+	if (valuemask & MultibufferWindowUpdateHint)
 	  *v++ = attr->update_hint;
 	req->length += (nvalues = v - values);
 	nvalues <<= 2;			/* watch out for macros... */
@@ -472,14 +462,14 @@ void XmbufChangeWindowAttributes (dpy, w, valuemask, attr)
 
 
 /*
- * XmbufGetBufferAttributes - 
+ * XmbufGetBufferAttributes -
  * 	Gets the attributes for the indicated buffer.  Returns non-zero on
  * 	success and zero if an error occurs.
  */
-Status XmbufGetBufferAttributes (dpy, b, attr)
-    Display *dpy;
-    Multibuffer b;
-    XmbufBufferAttributes *attr;
+Status XmbufGetBufferAttributes (
+    Display *dpy,
+    Multibuffer b,
+    XmbufBufferAttributes *attr)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufGetBufferAttributesReq *req;
@@ -507,15 +497,15 @@ Status XmbufGetBufferAttributes (dpy, b, attr)
 
 
 /*
- * XmbufChangeBufferAttributes - 
+ * XmbufChangeBufferAttributes -
  * 	Sets the attributes for the indicated buffer.  This is currently
  * 	limited to the event_mask.
  */
-void XmbufChangeBufferAttributes (dpy, b, valuemask, attr)
-    Display *dpy;
-    Multibuffer b;
-    unsigned long valuemask;
-    XmbufSetBufferAttributes *attr;
+void XmbufChangeBufferAttributes (
+    Display *dpy,
+    Multibuffer b,
+    unsigned long valuemask,
+    XmbufSetBufferAttributes *attr)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufSetBufferAttributesReq *req;
@@ -543,26 +533,25 @@ void XmbufChangeBufferAttributes (dpy, b, valuemask, attr)
 
 
 /*
- * XmbufGetScreenInfo - 
+ * XmbufGetScreenInfo -
  * 	Gets the parameters controlling how mono and stereo windows may be
- * 	created on the indicated screen.  The numbers of sets of visual and 
- * 	depths are returned in nmono_return and nstereo_return.  If 
+ * 	created on the indicated screen.  The numbers of sets of visual and
+ * 	depths are returned in nmono_return and nstereo_return.  If
  * 	nmono_return is greater than zero, then mono_info_return is set to
  * 	the address of an array of XmbufBufferInfo structures describing the
  * 	various visuals and depths that may be used.  Otherwise,
  * 	mono_info_return is set to NULL.  Similarly, stereo_info_return is
- * 	set according to nstereo_return.  The storage returned in 
+ * 	set according to nstereo_return.  The storage returned in
  * 	mono_info_return and stereo_info_return may be released by XFree.
  * 	If no errors are encounted, non-zero will be returned.
  */
-Status XmbufGetScreenInfo (dpy, d, nmono_return, mono_info_return,
-			   nstereo_return, stereo_info_return)
-    Display *dpy;
-    Drawable d;
-    int *nmono_return;
-    XmbufBufferInfo **mono_info_return;
-    int *nstereo_return;
-    XmbufBufferInfo **stereo_info_return;
+Status XmbufGetScreenInfo (
+    Display *dpy,
+    Drawable d,
+    int *nmono_return,
+    XmbufBufferInfo **mono_info_return,
+    int *nstereo_return,
+    XmbufBufferInfo **stereo_info_return)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufGetBufferInfoReq *req;
@@ -606,24 +595,22 @@ Status XmbufGetScreenInfo (dpy, d, nmono_return, mono_info_return,
 
 
 /*
- * XmbufCreateStereoWindow - 
+ * XmbufCreateStereoWindow -
  * 	Creates a stereo window in the same way that XCreateWindow creates
  * 	a mono window (in fact, use the same code, except for the request)
- *      and returns the left and right buffers that may be 
+ *      and returns the left and right buffers that may be
  */
-Window XmbufCreateStereoWindow (dpy, parent, x, y, width, height, border_width,
-				depth, class, visual, valuemask, attr,
-				leftp, rightp)
-    Display *dpy;
-    Window parent;
-    int x, y;
-    unsigned int width, height, border_width;
-    int depth;
-    unsigned int class;
-    Visual *visual;
-    unsigned long valuemask;
-    XSetWindowAttributes *attr;
-    Multibuffer *leftp, *rightp;
+Window XmbufCreateStereoWindow (
+    Display *dpy,
+    Window parent,
+    int x, int y,
+    unsigned int width, unsigned int height, unsigned int border_width,
+    int depth,
+    unsigned int class,
+    Visual *visual,
+    unsigned long valuemask,
+    XSetWindowAttributes *attr,
+    Multibuffer *leftp, Multibuffer *rightp)
 {
     XExtDisplayInfo *info = find_display (dpy);
     Window wid;
@@ -644,7 +631,7 @@ Window XmbufCreateStereoWindow (dpy, parent, x, y, width, height, border_width,
     req->borderWidth = border_width;
     req->depth = depth;
     req->class = class;
-    if (visual == CopyFromParent)
+    if (visual == (Visual *)CopyFromParent)
 	req->visual = CopyFromParent;
     else
 	req->visual = visual->visualid;
@@ -698,12 +685,12 @@ Window XmbufCreateStereoWindow (dpy, parent, x, y, width, height, border_width,
     return wid;
 }
 
-void XmbufClearBufferArea (dpy, buffer, x, y, width, height, exposures)
-     Display *dpy;
-     Multibuffer buffer;
-     int x, y;
-     unsigned int width, height;
-     Bool exposures;
+void XmbufClearBufferArea (
+    Display *dpy,
+    Multibuffer buffer,
+    int x, int y,
+    unsigned int width, unsigned int height,
+    Bool exposures)
 {
     XExtDisplayInfo *info = find_display (dpy);
     register xMbufClearImageBufferAreaReq *req;
