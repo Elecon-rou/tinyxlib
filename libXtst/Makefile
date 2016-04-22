@@ -1,6 +1,6 @@
 include	../config.mk
 
-CPPFLAGS+=-D_POSIX_C_SOURCE=2 -D_SVID_SOURCE 
+CPPFLAGS+=-D_POSIX_C_SOURCE=2  
 
 OBJS=$(wildcard *.c)
 
