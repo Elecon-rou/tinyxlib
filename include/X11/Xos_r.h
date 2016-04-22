@@ -69,6 +69,9 @@ in this Software without prior written authorization from The Open Group.
 #ifndef _XOS_R_H_
 # define _XOS_R_H_
 
+//Ugly build fix
+#define MAXHOSTNAMELEN 255
+
 # include <X11/Xos.h>
 # include <X11/Xfuncs.h>
 

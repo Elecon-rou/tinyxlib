@@ -3,7 +3,7 @@
 CC=gcc
 
 # flags
-CPPFLAGS=-Dlinux -D_XOPEN_SOURCE=600 -D_DEFAULT_SOURCE -DUSECMS 
+CPPFLAGS=-Dlinux -D_XOPEN_SOURCE=600 -D_POSIX_SOURCE -D_DEFAULT_SOURCE -DUSECMS 
 CFLAGS=-pipe -Os -mtune=generic -Wall -fno-strength-reduce -nodefaultlibs -fno-strict-aliasing -ffunction-sections -fdata-sections $(INCS)
 LDFLAGS=-Wl,--gc-sections,--sort-common,-s $(LIBS)
 
@@ -14,7 +14,7 @@ INCDIR=${PREFIX}/include/X11
 
 # includes and libs 
 LIBS = -L/usr/lib
-INCS = -I. -I../include -I../include/X11 -I../libxtrans
+INCS = -I/usr/include -I. -I../include -I../include/X11 -I../libxtrans
 
 #If you do not have setlocale, set this:
 #CPPFLAGS+= -DX_LOCALE -DXLOCALEDIR=\"/usr/share/locale\" 
