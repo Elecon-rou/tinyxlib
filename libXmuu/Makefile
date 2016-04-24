@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xmuu.pc
 	@echo "Name: Xmuu" >> xmuu.pc
 	@echo "Description: Mini Xmu Library" >> xmuu.pc
-	@echo "Version: 1.0.3" >> xmuu.pc
+	@echo "Version: 1.1.2" >> xmuu.pc
 	@echo "Requires: x11 xau xdmcp" >> xmuu.pc
 	@echo "Requires.private: x11 xau xdmcp" >> xmuu.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xmuu.pc

@@ -1,7 +1,5 @@
-/* $Xorg: DelCmap.c,v 1.4 2001/02/09 02:03:52 xorgcvs Exp $ */
+/*
 
-/* 
- 
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,12 +23,14 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/DelCmap.c,v 1.6 2001/01/17 19:42:54 dawes Exp $ */
 
 /*
  * Author:  Donna Converse, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xmu/StdCmap.h>

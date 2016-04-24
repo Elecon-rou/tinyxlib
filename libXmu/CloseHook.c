@@ -1,6 +1,4 @@
-/* $Xorg: CloseHook.c,v 1.4 2001/02/09 02:03:51 xorgcvs Exp $ */
-
-/* 
+/*
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -24,36 +22,38 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/CloseHook.c,v 3.5 2001/07/25 15:04:50 dawes Exp $ */
 
 /*
  * CloseDisplayHook package - provide callback on XCloseDisplay
  *
  * *
  * Author:  Jim Fulton, MIT X Consortium
- * 
- * 
+ *
+ *
  *			      Public Entry Points
- * 
+ *
  * CloseHook XmuAddCloseDisplayHook (dpy, func, arg)
  *     Display *dpy;
  *     XmuCloseHookProc func;
  *     XPointer arg;
- * 
+ *
  * Bool XmuRemoveCloseDisplayHook (dpy, hook, func, arg)
  *     Display *dpy;
  *     CloseHook hook;
  *     XmuCloseHookProc func;
  *     XPointer arg;
- * 
+ *
  * Bool XmuLookupCloseDisplayHook (dpy, hook, func, arg)
  *     Display *dpy;
  *     CloseHook hook;
  *     XmuCloseHookProc func;
  *     XPointer arg;
- * 
+ *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>					/* for NULL */
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
@@ -188,8 +188,8 @@ XmuRemoveCloseDisplayHook(Display *dpy, CloseHook handle,
 
 
 /*
- * Lookup - see whether or not a handle has been installed.  If handle is 
- * non-NULL, look for an entry that matches it; otherwise look for an entry 
+ * Lookup - see whether or not a handle has been installed.  If handle is
+ * non-NULL, look for an entry that matches it; otherwise look for an entry
  * with the same function/argument pair.
  */
 Bool

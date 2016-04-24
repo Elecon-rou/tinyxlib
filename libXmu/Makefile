@@ -20,7 +20,7 @@ pkgconf:
 	@echo "" >> xmu.pc
 	@echo "Name: Xmu" >> xmu.pc
 	@echo "Description: Xmu Library" >> xmu.pc
-	@echo "Version: 1.0.3" >> xmu.pc
+	@echo "Version: 1.1.2" >> xmu.pc
 	@echo "Requires: xt sm ice xext x11 xau xdmcp" >> xmu.pc
 	@echo "Requires.private: xt sm ice xext x11 xau xdmcp" >> xmu.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xmu.pc

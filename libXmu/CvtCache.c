@@ -1,7 +1,5 @@
-/* $Xorg: CvtCache.c,v 1.5 2001/02/09 02:03:52 xorgcvs Exp $ */
-
 /*
- 
+
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,12 +23,14 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/CvtCache.c,v 3.6 2001/08/23 00:03:21 dawes Exp $ */
 
-/* 
+/*
  * Author:  Jim Fulton, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
@@ -100,7 +100,7 @@ _XmuCCLookupDisplay(Display *dpy)
 	dq = XmuDQCreate (_CloseDisplay, _FreeCCDQ, NULL);
 	if (!dq) return NULL;
     }
-    
+
     /*
      * See if the display is already there
      */

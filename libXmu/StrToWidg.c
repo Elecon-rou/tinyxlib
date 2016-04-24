@@ -1,5 +1,3 @@
-/* $Xorg: StrToWidg.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
-
 /*
 
 Copyright 1994, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/StrToWidg.c,v 1.6 2001/01/17 19:42:57 dawes Exp $ */
 
 /*
  * XmuCvtStringToWidget
@@ -38,6 +35,9 @@ in this Software without prior written authorization from The Open Group.
  * or popup) of the parent.  If none match, compares string to classname
  * & returns first match.  Case is significant.
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
 #include <X11/ObjectP.h>
@@ -57,11 +57,14 @@ XmuCvtStringToWidget(XrmValuePtr args, Cardinal *num_args,
 {
     static Widget widget, *widgetP, parent;
     XrmName name = XrmStringToName(fromVal->addr);
-    int i;
+    Cardinal i;
 
     if (*num_args != 1)
+    {
+	i = 0;
 	XtErrorMsg("wrongParameters", "cvtStringToWidget", "xtToolkitError",
-		   "StringToWidget conversion needs parent arg", NULL, 0);
+		   "StringToWidget conversion needs parent arg", NULL, &i);
+    }
 
     parent = *(Widget*)args[0].addr;
     /* try to match names of normal children */

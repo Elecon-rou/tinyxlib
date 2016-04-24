@@ -1,6 +1,4 @@
-/* $Xorg: VisCmap.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
-
-/* 
+/*
 
 Copyright 1989, 1998  The Open Group
 
@@ -25,12 +23,14 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/VisCmap.c,v 1.6 2001/01/17 19:42:57 dawes Exp $ */
 
 /*
  * Author:  Donna Converse, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <math.h>
 #include <X11/Xlib.h>
@@ -41,7 +41,7 @@ in this Software without prior written authorization from The Open Group.
 /*
  * To create all of the appropriate standard colormaps for a given visual on
  * a given screen, use XmuVisualStandardColormaps.
- * 
+ *
  * Define all appropriate standard colormap properties for the given visual.
  * If replace is true, any previous definition will be removed.
  * If retain is true, new properties will be retained for the duration of
@@ -147,7 +147,7 @@ XmuVisualStandardColormaps(Display *dpy, int screen, VisualID visualid,
 
 	status = XmuLookupStandardColormap(dpy, screen, visualid, depth,
 					   XA_RGB_BEST_MAP, replace, retain);
-	if (!status && (vinfo->class == PseudoColor || 
+	if (!status && (vinfo->class == PseudoColor ||
 			vinfo->class == DirectColor)) {
 	    XmuDeleteStandardColormap(dpy, screen, XA_RGB_DEFAULT_MAP);
 	    XmuDeleteStandardColormap(dpy, screen, XA_RGB_GRAY_MAP);

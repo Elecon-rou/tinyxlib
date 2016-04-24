@@ -1,5 +1,3 @@
-/* $Xorg: RdBitF.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/RdBitF.c,v 3.12 2001/12/14 19:55:48 dawes Exp $ */
 
 /*
  * This file contains miscellaneous utility routines and is not part of the
@@ -38,7 +35,7 @@ in this Software without prior written authorization from The Open Group.
  *					and return data
  *
  * Note that this file and ../X/XRdBitF.c look very similar....  Keep them
- * that way (but don't use common source code so that people can have one 
+ * that way (but don't use common source code so that people can have one
  * without the other).
  */
 
@@ -47,6 +44,9 @@ in this Software without prior written authorization from The Open Group.
  * Based on an optimized version provided by Jim Becker, Auguest 5, 1988.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -54,6 +54,9 @@ in this Software without prior written authorization from The Open Group.
 #include <stdio.h>
 #include <ctype.h>
 #include <X11/Xmu/Drawing.h>
+#ifdef WIN32
+#include <X11/Xwindows.h>
+#endif
 
 #define MAX_SIZE 255
 
@@ -99,7 +102,7 @@ initHexTable(void)
     hexTable[' '] = -1;	hexTable[','] = -1;
     hexTable['}'] = -1;	hexTable['\n'] = -1;
     hexTable['\t'] = -1;
-	
+
     initialized = True;
 }
 
@@ -113,7 +116,7 @@ NextInt(FILE *fstream)
     int	value = 0;
     int gotone = 0;
     int done = 0;
-    
+
     /* loop, accumulate hex value until find delimiter  */
     /* skip any initial delimiters found in read stream */
 
@@ -193,7 +196,7 @@ XmuReadBitmapData(FILE *fstream, unsigned int *width, unsigned int *height,
 	    }
 	    continue;
 	}
-    
+
 	if (sscanf(line, "static short %s = {", name_and_type) == 1)
 	  version10p = 1;
 	else if (sscanf(line,"static unsigned char %s = {",name_and_type) == 1)
@@ -210,7 +213,7 @@ XmuReadBitmapData(FILE *fstream, unsigned int *width, unsigned int *height,
 
 	if (strcmp("bits[]", type))
 	  continue;
-    
+
 	if (!ww || !hh)
 	  RETURN (BitmapFileInvalid);
 
@@ -223,7 +226,7 @@ XmuReadBitmapData(FILE *fstream, unsigned int *width, unsigned int *height,
 
 	size = bytes_per_line * hh;
 	data = (unsigned char *) Xmalloc ((unsigned int) size);
-	if (!data) 
+	if (!data)
 	  RETURN (BitmapNoMemory);
 
 	if (version10p) {
@@ -242,7 +245,7 @@ XmuReadBitmapData(FILE *fstream, unsigned int *width, unsigned int *height,
 	    int bytes;
 
 	    for (bytes=0, ptr=data; bytes<size; bytes++, ptr++) {
-		if ((value = NextInt(fstream)) < 0) 
+		if ((value = NextInt(fstream)) < 0)
 		  RETURN (BitmapFileInvalid);
 		*ptr=value;
 	    }
@@ -264,11 +267,116 @@ XmuReadBitmapData(FILE *fstream, unsigned int *width, unsigned int *height,
     RETURN (BitmapSuccess);
 }
 
+#if defined(WIN32)
+static int
+access_file(char *path, char *pathbuf, int len_pathbuf, char **pathret)
+{
+    if (access (path, F_OK) == 0) {
+	if (strlen (path) < len_pathbuf)
+	    *pathret = pathbuf;
+	else
+	    *pathret = malloc (strlen (path) + 1);
+	if (*pathret) {
+	    strcpy (*pathret, path);
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+static int
+AccessFile(char *path, char *pathbuf, int len_pathbuf, char **pathret)
+{
+#ifndef MAX_PATH
+#define MAX_PATH 512
+#endif
+
+    unsigned long drives;
+    int i, len;
+    char* drive;
+    char buf[MAX_PATH];
+    char* bufp;
+
+    /* just try the "raw" name first and see if it works */
+    if (access_file (path, pathbuf, len_pathbuf, pathret))
+	return 1;
+
+    /* try the places set in the environment */
+    drive = getenv ("_XBASEDRIVE");
+    if (!drive)
+	drive = "C:";
+    len = strlen (drive) + strlen (path);
+    if (len < MAX_PATH) bufp = buf;
+    else bufp = malloc (len + 1);
+    strcpy (bufp, drive);
+    strcat (bufp, path);
+    if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+	if (bufp != buf) free (bufp);
+	return 1;
+    }
+
+    /* one last place to look */
+    drive = getenv ("HOMEDRIVE");
+    if (drive) {
+	len = strlen (drive) + strlen (path);
+	if (len < MAX_PATH) bufp = buf;
+	else bufp = malloc (len + 1);
+	strcpy (bufp, drive);
+	strcat (bufp, path);
+	if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+	    if (bufp != buf) free (bufp);
+	    return 1;
+	}
+    }
+
+    /* does OS/2 (with or with gcc-emx) have getdrives? */
+    /* tried everywhere else, go fishing */
+#define C_DRIVE ('C' - 'A')
+#define Z_DRIVE ('Z' - 'A')
+    drives = _getdrives ();
+    for (i = C_DRIVE; i <= Z_DRIVE; i++) { /* don't check on A: or B: */
+	if ((1 << i) & drives) {
+	    len = 2 + strlen (path);
+	    if (len < MAX_PATH) bufp = buf;
+	    else bufp = malloc (len + 1);
+	    *bufp = 'A' + i;
+	    *(bufp + 1) = ':';
+	    *(bufp + 2) = '\0';
+	    strcat (bufp, path);
+	    if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+		if (bufp != buf) free (bufp);
+		return 1;
+	    }
+	}
+    }
+    return 0;
+}
+
+FILE *
+fopen_file(char *path, char *mode)
+{
+    char buf[MAX_PATH];
+    char* bufp;
+    void* ret = NULL;
+    UINT olderror = SetErrorMode (SEM_FAILCRITICALERRORS);
+
+    if (AccessFile (path, buf, MAX_PATH, &bufp))
+	ret = fopen (bufp, mode);
+
+    (void) SetErrorMode (olderror);
+
+    if (bufp != buf) free (bufp);
+
+    return ret;
+}
+
+#else
 #define fopen_file fopen
+#endif
 
 
 int
-XmuReadBitmapDataFromFile(_Xconst char *filename, unsigned int *width, 
+XmuReadBitmapDataFromFile(_Xconst char *filename, unsigned int *width,
 			       unsigned int *height, unsigned char **datap,
 			       int *x_hot, int *y_hot)
 {

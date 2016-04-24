@@ -1,7 +1,5 @@
-/* $Xorg: CvtStdSel.c,v 1.4 2001/02/09 02:03:52 xorgcvs Exp $ */
-
 /*
- 
+
 Copyright 1988, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/CvtStdSel.c,v 3.19 2001/11/21 16:22:59 tsi Exp $ */
 
 /*
  * This file contains routines to handle common selection targets.
@@ -34,6 +31,10 @@ in this Software without prior written authorization from The Open Group.
  *
  *	XmuConvertStandardSelection()	return a known selection
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef SYSVNET
 #include <interlan/il_types.h>
@@ -51,8 +52,18 @@ in this Software without prior written authorization from The Open Group.
 #include <stdio.h>
 
 #ifndef SYSVNET
+#ifdef WIN32
+#include <X11/Xwinsock.h>
+#define XOS_USE_MTSAFE_NETDBAPI
+#else
+#ifndef Lynx
 #include <sys/socket.h>
+#else
+#include <sys/types.h>
+#include <socket.h>
+#endif
 #define XOS_USE_XT_LOCKING
+#endif
 #define X_INCLUDE_NETDB_H
 #include <X11/Xos_r.h>
 #endif
@@ -66,11 +77,22 @@ in this Software without prior written authorization from The Open Group.
 
 #ifndef OS_NAME
 #ifndef X_OS_FILE
+#ifdef SYSV			/* keep separate until makedepend fixed */
+#define USE_UNAME
+#endif
+#ifdef SVR4
+#define USE_UNAME
+#endif
+#ifdef ultrix
+#define USE_UNAME
+#endif
 #ifdef CSRG_BASED
 #define USE_UNAME
 #endif
 #endif /*X_OS_FILE*/
+#ifdef USE_UNAME
 #include <sys/utsname.h>
+#endif
 #endif
 
 /*
@@ -88,18 +110,62 @@ get_os_name(void)
 #ifdef OS_NAME
 	return XtNewString(OS_NAME);
 #else
+#if defined(X_OS_FILE) || defined(MOTD_FILE)
+	FILE *f = NULL;
+#endif
+
+#ifdef USE_UNAME
 	struct utsname utss;
 
-	if (uname (&utss) == 0) {
+	if (uname (&utss) >= 0) {
 	    char *os_name;
 	    int len = strlen(utss.sysname) + 1;
+#ifndef hpux				/* because of hostname length crock */
 	    len += 2 + strlen(utss.release);
+#endif
 	    os_name = XtMalloc (len);
 	    strcpy (os_name, utss.sysname);
+#ifndef hpux
 	    strcat (os_name, " ");
 	    strcat (os_name, utss.release);
+#endif
 	    return os_name;
 	}
+#endif
+
+#ifdef X_OS_FILE
+	f = fopen(X_OS_FILE, "r");
+	if (!f)
+#endif
+#ifdef MOTD_FILE
+	       f = fopen(MOTD_FILE, "r");
+#endif
+#if defined(X_OS_FILE) || defined(MOTD_FILE)
+	if (f) {
+	    char motd[512];
+	    motd[0] = '\0';
+	    (void) fgets(motd, 511, f);
+	    fclose(f);
+	    motd[511] = '\0';
+	    if (motd[0] != '\0') {
+		int len = strlen(motd);
+		if (motd[len - 1] == '\n')
+		    motd[len - 1] = '\0';
+		return XtNewString(motd);
+	    }
+	}
+#endif
+
+#ifdef sun
+	return XtNewString("SunOS");
+#else
+# if !defined(SYSV) && (defined(CSRG_BASED) || defined(unix))
+	return XtNewString("BSD");
+# else
+	return NULL;
+# endif
+#endif
+
 #endif /*OS_NAME*/
 }
 
@@ -241,7 +307,11 @@ XmuConvertStandardSelection(Widget w, Time time, Atom *selection, Atom *target,
 	return True;
     }
     if (*target == XA_TARGETS(d)) {
-#    define NUM_TARGETS 8
+#if defined(unix)
+#  define NUM_TARGETS 8
+#else
+#  define NUM_TARGETS 7
+#endif
 	Atom* std_targets = (Atom*)XtMalloc(NUM_TARGETS*sizeof(Atom));
 	int i = 0;
 	std_targets[i++] = XA_TIMESTAMP(d);
@@ -251,7 +321,9 @@ XmuConvertStandardSelection(Widget w, Time time, Atom *selection, Atom *target,
 	std_targets[i++] = XA_CLASS(d);
 	std_targets[i++] = XA_NAME(d);
 	std_targets[i++] = XA_CLIENT_WINDOW(d);
+#ifdef unix
 	std_targets[i++] = XA_OWNER_OS(d);
+#endif
 	*value = (XPointer)std_targets;
 	*type = XA_ATOM;
 	*length = NUM_TARGETS;

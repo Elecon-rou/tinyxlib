@@ -1,7 +1,5 @@
-/* $Xorg: WidgetNode.c,v 1.5 2001/02/09 02:03:53 xorgcvs Exp $ */
-
 /*
- 
+
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -26,14 +24,15 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-/* $XFree86: xc/lib/Xmu/WidgetNode.c,v 1.12 2002/09/19 13:21:58 tsi Exp $ */
-
 /*
  * Author:  Jim Fulton, MIT X Consortium
  */
 
 
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <X11/Xos.h>
@@ -87,8 +86,8 @@ static int
 compare_resource_entries(register _Xconst void *a,
 			 register _Xconst void *b)
 {
-    return strcmp (((XtResourceList)a)->resource_name,
-		   ((XtResourceList)b)->resource_name);
+    return strcmp (((_Xconst XtResource *)a)->resource_name,
+		   ((_Xconst XtResource *)b)->resource_name);
 }
 
 
@@ -102,7 +101,7 @@ find_resource(XmuWidgetNode *node, char *name, Bool cons)
 #define nreslist (int) (cons ? sup->nconstraints : sup->nresources)
 
     res.resource_name = name;
-    for (sup = node->superclass; 
+    for (sup = node->superclass;
 	 sup && (XtResourceList) binsearch ((char *) &res,
 					    reslist, nreslist,
 					    sizeof(XtResource),
@@ -196,7 +195,7 @@ XmuWnInitializeNodes(XmuWidgetNode *nodearray, int nnodes)
 	     */
 	    superclass = superclass->core_class.superclass;
 	}
-      done: 
+      done:
 	if (wn->superclass) {
 	    wn->siblings = wn->superclass->children;
 	    wn->superclass->children = wn;

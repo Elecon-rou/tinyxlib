@@ -1,5 +1,3 @@
-/* $Xorg: UpdMapHint.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
-
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,12 +23,14 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/UpdMapHint.c,v 1.6 2001/01/17 19:42:57 dawes Exp $ */
 
 /*
  * Author:  Jim Fulton, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -56,4 +56,4 @@ XmuUpdateMapHints(Display *dpy, Window w, XSizeHints *hints)
     XSetWMNormalHints (dpy, w, hints);
     return True;
 }
-    
+

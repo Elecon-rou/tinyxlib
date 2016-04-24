@@ -1,5 +1,3 @@
-/* $Xorg: EditresP.h,v 1.4 2001/02/09 02:03:52 xorgcvs Exp $ */
-
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/EditresP.h,v 1.5 2001/01/17 19:42:55 dawes Exp $ */
 
 /*
  * Author:  Chris D. Peterson, MIT X Consortium
@@ -58,22 +55,22 @@ in this Software without prior written authorization from The Open Group.
 	Window:		32-bit value
 	Widget:		32-bit value
 	String8:        ListOfCard8
-	
+
 	[a][b][c] represent an exclusive list of choices.
 
-	All widgets are passed as a list of widgets, containing the 
+	All widgets are passed as a list of widgets, containing the
 	full instance heirarch of this widget.  The hierarchy is ordered
 	from parent to child.  Thus the first element of each list is
 	the root of the widget tree (this makes verifying that the widget
 	still exists, MUCH faster).
 
 	ListOfFoo comprises a list of things in the following format:
-	
+
 	number:			Card16
 	<number> things:	????
-	
+
   This is a synchronous protocol, every request MUST be followed by a
-  reply.  
+  reply.
 
   Request:
 
@@ -85,7 +82,7 @@ in this Software without prior written authorization from The Open Group.
 				  FindChild = 4,
 				  GetValues = 5 }
 	Length:		Card32
-	Data:		
+	Data:
 
    Reply:
 
@@ -135,7 +132,7 @@ in this Software without prior written authorization from The Open Group.
         of widgets for each widget in the tree.  This is enough information
         to completely reconstruct the entire widget heirarchy.
 
-	The window return value contains the Xid of the window currently 
+	The window return value contains the Xid of the window currently
 	used by this widget.  If the widget is unrealized then 0 is returned,
 	and if widget is a non-windowed object a value of 2 is returned.
 
@@ -155,20 +152,20 @@ in this Software without prior written authorization from The Open Group.
 		widget:		ListOfWidgets
 		message:	String8
 
-	SetValues will allow the same resource to be set on a number of 
+	SetValues will allow the same resource to be set on a number of
 	widgets.  This function will return an error message if the SetValues
 	request caused an Xt error.
-	
+
   GetValues:
 
-        names:                ListOfString8       
+        names:                ListOfString8
         widget:               Widget
 
         --->
 	novalues:             ListOfCard16
 	values:               ListOfString8
-                   
-        GetValues will allow a number of resource values to be read 
+
+        GetValues will allow a number of resource values to be read
         on a particular widget.  The request specifies the names of
 	the resources wanted and the widget id these resources are
 	from.  The reply returns a list of indices from the requests
@@ -194,10 +191,10 @@ in this Software without prior written authorization from The Open Group.
 		Resource:
 			Kind:	{normal, constraint}
 			Name:	String8
-			Class:	String8	
+			Class:	String8
 			Type:	String8 ]
 
-	GetResource retrieves the kind, name, class and type for every 
+	GetResource retrieves the kind, name, class and type for every
 	widget passed to it.  If an error occured with the resource fetch
 	Error will be set to True for the given widget and a message
 	is returned rather than the resource info.
@@ -224,23 +221,23 @@ in this Software without prior written authorization from The Open Group.
 		  BorderWidth:	Card16 ]
 
 	GetGeometry retreives the mapping state, x, y, width, height
-	and border width for each widget specified.  If an error occured 
-	with the geometry fetch "Error" will be set to True for the given 
-	widget and a message is returned rather than the geometry info.  
+	and border width for each widget specified.  If an error occured
+	with the geometry fetch "Error" will be set to True for the given
+	widget and a message is returned rather than the geometry info.
 	X an Y corrospond to the root coordinates of the upper left corner
 	of the widget (outside the window border).
-	
+
   FindChild:
 
 	Widget:		ListOfWidgets
 	X:		Int16
 	Y:		Int16
-	
+
 	--->
 
 	Widget:		ListOfWidgets
 
-	Find Child returns a descendent of the widget specified that 
+	Find Child returns a descendent of the widget specified that
 	is at the root coordinates specified.
 
 	NOTE:
@@ -250,20 +247,20 @@ in this Software without prior written authorization from The Open Group.
 
   GetValues:
 
-        names:                ListOfString8       
+        names:                ListOfString8
         widget:               Widget
 
         --->
-	
+
 	values:               ListOfString8
 
-        GetValues will allow a number of resource values to be read 
-        on a particular widget.  Currently only InterViews 3.0.1 Styles 
+        GetValues will allow a number of resource values to be read
+        on a particular widget.  Currently only InterViews 3.0.1 Styles
 	and their attributes are supported.  In addition, the current
 	user interface  only supports the return of 1 resource.  The ability
 	to specify and return multiple resources is defined for future editres
 	interfaces where some or all of a widgets resource values are returned
-	and displayed at once. 
+	and displayed at once.
 
 
 ************************************************************/
@@ -298,7 +295,7 @@ typedef enum {
   SendWidgetTree = 0,
 	       SetValues      = 1,
 	       GetResources   = 2,
-	       GetGeometry    = 3, 
+	       GetGeometry    = 3,
 	       FindChild      = 4,
 	       GetValues      = 5
 } EditresCommand;
@@ -338,7 +335,7 @@ _XFUNCPROTOBEGIN
 void _XEditResPutString8
 (
  ProtocolStream		*stream,
- char			*str
+ _Xconst char		*str
  );
 
 void _XEditResPut8

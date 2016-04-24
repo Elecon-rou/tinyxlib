@@ -1,5 +1,3 @@
-/* $Xorg: CrPixFBit.c,v 1.4 2001/02/09 02:03:51 xorgcvs Exp $ */
-
 /*
 
 Copyright 1988, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/CrPixFBit.c,v 1.6 2001/01/17 19:42:53 dawes Exp $ */
 
 /*
  * This file contains miscellaneous utility routines and is not part of the
@@ -38,6 +35,9 @@ in this Software without prior written authorization from The Open Group.
  *     XmuCreatePixmapFromBitmap	make a pixmap from a bitmap
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xos.h>
 #include <X11/Xlib.h>
 #include <X11/Xmu/Drawing.h>

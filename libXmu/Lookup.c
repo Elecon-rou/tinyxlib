@@ -1,7 +1,5 @@
-/* $Xorg: Lookup.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
+/*
 
-/* 
- 
 Copyright 1988, 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/Lookup.c,v 3.7 2001/01/17 19:42:56 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xmu/Lookup.h>
 
 #define XK_LATIN1
@@ -177,13 +177,11 @@ XmuLookupString(register XKeyEvent *event, unsigned char *buffer, int nbytes,
 	       (symbol & 0x80) && (latin2[symbol & 0x7f] & (1 << kset))) {
 	buffer[0] = (symbol & 0xff);
 	count = 1;
-#ifndef TINY
     } else if ((keysymSet == sGreek) &&
 	       ((symbol == XK_leftsinglequotemark) ||
 		(symbol == XK_rightsinglequotemark))) {
 	buffer[0] = symbol - (XK_leftsinglequotemark - 0xa1);
 	count = 1;
-#endif
     }
     return count;
 }

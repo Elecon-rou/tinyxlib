@@ -1,7 +1,5 @@
-/* $Xorg: LocBitmap.c,v 1.7 2001/02/09 02:03:52 xorgcvs Exp $ */
-
 /*
- 
+
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,12 +23,14 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/LocBitmap.c,v 3.9 2001/12/14 19:55:47 dawes Exp $ */
 
 /*
  * Author:  Jim Fulton, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlib.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,9 +40,21 @@ in this Software without prior written authorization from The Open Group.
 #include <X11/Xmu/Drawing.h>
 #include <X11/Xmu/SysUtil.h>
 
+#ifndef X_NOT_POSIX
+#ifdef _POSIX_SOURCE
 #include <limits.h>
+#else
+#define _POSIX_SOURCE
+#include <limits.h>
+#undef _POSIX_SOURCE
+#endif
+#endif /* X_NOT_POSIX */
 #ifndef PATH_MAX
+#ifdef WIN32
+#define PATH_MAX 512
+#else
 #include <sys/param.h>
+#endif
 #ifndef PATH_MAX
 #ifdef MAXPATHLEN
 #define PATH_MAX MAXPATHLEN
@@ -63,10 +75,10 @@ static char **split_path_string(char*);
 
 Pixmap
 XmuLocateBitmapFile(Screen *screen, _Xconst char *name, char *srcname,
-			    int srcnamelen, int *widthp, int *heightp, 
+			    int srcnamelen, int *widthp, int *heightp,
 			    int *xhotp, int *yhotp)
 {
-    return XmuLocatePixmapFile (screen, name, 
+    return XmuLocatePixmapFile (screen, name,
 				(unsigned long) 1, (unsigned long) 0,
 				(unsigned int) 1, srcname, srcnamelen,
 				widthp, heightp, xhotp, yhotp);
@@ -77,9 +89,9 @@ XmuLocateBitmapFile(Screen *screen, _Xconst char *name, char *srcname,
  * version that reads pixmap data as well as bitmap data
  */
 Pixmap
-XmuLocatePixmapFile(Screen *screen, _Xconst char *name, 
-			    unsigned long fore, unsigned long back, 
-			    unsigned int depth, 
+XmuLocatePixmapFile(Screen *screen, _Xconst char *name,
+			    unsigned long fore, unsigned long back,
+			    unsigned int depth,
 			    char *srcname, int srcnamelen,
 			    int *widthp, int *heightp, int *xhotp, int *yhotp)
 {
@@ -119,10 +131,10 @@ XmuLocatePixmapFile(Screen *screen, _Xconst char *name,
 		/* what a hack; need to initialize it */
 		(void) XGetDefault (dpy, "", "");
 	    }
-	    if (XrmQGetResource (XrmGetDatabase(dpy), xrm_name, xrm_class, 
+	    if (XrmQGetResource (XrmGetDatabase(dpy), xrm_name, xrm_class,
 				 &rep_type, &value) &&
 		rep_type == XrmPermStringToQuark("String")) {
-		cache->string_to_bitmap.bitmapFilePath = 
+		cache->string_to_bitmap.bitmapFilePath =
 		  split_path_string (value.addr);
 	    }
 	}
@@ -138,7 +150,7 @@ XmuLocatePixmapFile(Screen *screen, _Xconst char *name,
      */
 
     for (i = 1; i <= 4; i++) {
-	char *fn = filename;
+	const char *fn = filename;
 	Pixmap pixmap;
 	unsigned char *data;
 
@@ -146,7 +158,7 @@ XmuLocatePixmapFile(Screen *screen, _Xconst char *name,
 	  case 1:
 	    if (!(name[0] == '/' || ((name[0] == '.') && name[1] == '/')))
 	      continue;
-	    fn = (char *) name;
+	    fn = name;
 	    try_plain_name = False;
 	    break;
 	  case 2:
@@ -163,7 +175,7 @@ XmuLocatePixmapFile(Screen *screen, _Xconst char *name,
 	    break;
 	  case 4:
 	    if (!try_plain_name) continue;
-	    fn = (char *) name;
+	    fn = name;
 	    break;
 	}
 
@@ -242,7 +254,7 @@ void
 _XmuStringToBitmapFreeCache(register XmuCvtCache *c)
 {
     if (c->string_to_bitmap.bitmapFilePath) {
-	if (c->string_to_bitmap.bitmapFilePath[0]) 
+	if (c->string_to_bitmap.bitmapFilePath[0])
 	  free (c->string_to_bitmap.bitmapFilePath[0]);
 	free ((char *) (c->string_to_bitmap.bitmapFilePath));
     }

@@ -1,7 +1,5 @@
-/* $Xorg: StrToBS.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
+/*
 
-/* 
- 
 Copyright 1988, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -26,8 +24,9 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-/* $XFree86: xc/lib/Xmu/StrToBS.c,v 1.6 2001/01/17 19:42:56 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Intrinsic.h>
 #include "Converters.h"
 #include "CharSet.h"

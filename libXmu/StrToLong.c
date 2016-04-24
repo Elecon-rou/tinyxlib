@@ -1,7 +1,5 @@
-/* $Xorg: StrToLong.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
-
 /*
- 
+
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/StrToLong.c,v 1.8 2001/08/23 00:03:21 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <X11/Intrinsic.h>
 #include <X11/Xmu/SysUtil.h>

@@ -1,7 +1,5 @@
-/* $Xorg: ShapeWidg.c,v 1.4 2001/02/09 02:03:53 xorgcvs Exp $ */
+/*
 
-/* 
- 
 Copyright 1988, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/ShapeWidg.c,v 1.7 2001/01/17 19:42:56 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/IntrinsicP.h>
 #include <X11/extensions/shape.h>
 #include "Converters.h"
@@ -142,7 +142,7 @@ ShapeOval(Widget w)
 	rad = height >> 1;
 	XDrawLine(dpy, p, gc, rad, rad, width - rad - 1, rad);
     }
-    XShapeCombineMask(dpy, XtWindow(w), ShapeBounding, 
+    XShapeCombineMask(dpy, XtWindow(w), ShapeBounding,
 		      -(int)w->core.border_width, -(int)w->core.border_width,
 		      p, ShapeSet);
     if (w->core.border_width)

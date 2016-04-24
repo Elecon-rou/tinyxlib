@@ -1,6 +1,4 @@
-/* $Xorg: Atoms.c,v 1.4 2001/02/09 02:03:51 xorgcvs Exp $ */
- 
-/* 
+/*
 
 Copyright 1988, 1998  The Open Group
 
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xmu/Atoms.c,v 3.7 2001/07/25 15:04:50 dawes Exp $ */
 
 /*
  * This file contains routines to cache atoms, avoiding multiple
@@ -40,6 +37,9 @@ in this Software without prior written authorization from The Open Group.
  *	XmuNameOfAtom		returns name from an AtomPtr
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Intrinsic.h>
 #include "Atoms.h"
 
@@ -50,21 +50,19 @@ typedef struct _DisplayRec {
 } DisplayRec;
 
 struct _AtomRec {
-    char *name;
+    _Xconst char *name;
     DisplayRec* head;
 };
 
+#ifdef SUNSHLIB
+#define STATIC
+#else
 #define STATIC static
+#endif
 
-#if !defined(UNIXCPP) || defined(ANSICPP)
 #define DeclareAtom(atom,text) \
 STATIC struct _AtomRec __##atom = { text, NULL }; \
 AtomPtr _##atom = &__##atom;
-#else
-#define DeclareAtom(atom,text) \
-STATIC struct _AtomRec __/**/atom = { text, NULL }; \
-AtomPtr _/**/atom = &__/**/atom;
-#endif
 
 DeclareAtom(XA_ATOM_PAIR,		"ATOM_PAIR"		)
 DeclareAtom(XA_CHARACTER_POSITION,	"CHARACTER_POSITION"	)
@@ -101,7 +99,7 @@ AtomPtr
 XmuMakeAtom(_Xconst char *name)
 {
     AtomPtr ptr = XtNew(struct _AtomRec);
-    ptr->name = (char *) name;
+    ptr->name = name;
     ptr->head = NULL;
     return ptr;
 }
@@ -109,7 +107,7 @@ XmuMakeAtom(_Xconst char *name)
 char *
 XmuNameOfAtom(AtomPtr atom_ptr)
 {
-    return atom_ptr->name;
+    return (char *) atom_ptr->name;
 }
 
 
