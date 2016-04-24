@@ -1,4 +1,3 @@
-/* $Xorg: XKB.h,v 1.3 2000/08/18 04:05:45 coskrey Exp $ */
 /************************************************************
 Copyright (c) 1993 by Silicon Graphics Computer Systems, Inc.
 
@@ -24,7 +23,6 @@ OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
 THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/include/extensions/XKB.h,v 1.4 2001/01/17 17:53:17 dawes Exp $ */
 
 #ifndef _XKB_H_
 #define	_XKB_H_
@@ -139,7 +137,7 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define	XkbAXN_BKAcceptMask		(1L << 4)
 #define	XkbAXN_BKRejectMask		(1L << 5)
 #define	XkbAXN_AXKWarningMask		(1L << 6)
-#define	XkbAllAccessXEventsMask		(0xf)
+#define	XkbAllAccessXEventsMask		(0x7f)
 
     /*
      * Miscellaneous event details:
@@ -502,6 +500,8 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define	XkbSA_LastAction	XkbSA_DeviceValuator
 #define	XkbSA_NumActions	(XkbSA_LastAction+1)
 
+#define	XkbSA_XFree86Private	0x86
+
     /*
      * Specifies the key actions that clear latched groups or modifiers.
      */
@@ -545,7 +545,8 @@ THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define	XkbMaxLegalKeyCode	255
 #define	XkbMaxKeyCount		(XkbMaxLegalKeyCode-XkbMinLegalKeyCode+1)
 #define	XkbPerKeyBitArraySize	((XkbMaxLegalKeyCode+1)/8)
-#define	XkbIsLegalKeycode(k)	(((k)>=XkbMinLegalKeyCode)&&((k)<=XkbMaxLegalKeyCode))
+/* Seems kinda silly to check that an unsigned char is <= 255... */
+#define	XkbIsLegalKeycode(k)	((k)>=XkbMinLegalKeyCode)
 
     /*
      * Assorted constants and limits.

@@ -4,13 +4,13 @@ and the Massachusetts Institute of Technology, Cambridge, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the names of Digital or MIT not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -21,16 +21,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/include/extensions/Xvproto.h,v 1.6 2001/05/07 21:37:12 tsi Exp $ */
 
 #ifndef XVPROTO_H
 #define XVPROTO_H
 /*
-** File: 
+** File:
 **
 **   Xvproto.h --- Xv protocol header file
 **
-** Author: 
+** Author:
 **
 **   David Carver (Digital Workstation Engineering/Project Athena)
 **
@@ -85,8 +84,8 @@ typedef struct {
   XvEncodingID encoding B32;
   CARD16 name_size B16;
   CARD16 width B16, height B16;
-  xvRational rate;
   CARD16 pad B16;
+  xvRational rate;
 } xvEncodingInfo;
 #define sz_xvEncodingInfo (12 + sz_xvRational)
 
@@ -126,7 +125,7 @@ typedef struct {
   CARD16 pad6 B16;
   CARD32 y_sample_bits B32;
   CARD32 u_sample_bits B32;
-  CARD32 v_sample_bits B32;   
+  CARD32 v_sample_bits B32;
   CARD32 horz_y_period B32;
   CARD32 horz_u_period B32;
   CARD32 horz_v_period B32;
@@ -460,7 +459,7 @@ typedef struct _QueryEncodingsReply {
   CARD16 sequenceNumber B16;
   CARD32 length B32;
   CARD16 num_encodings B16;
-  CARD32 padl3 B32;
+  CARD16 padl3 B16;
   CARD32 padl4 B32;
   CARD32 padl5 B32;
   CARD32 padl6 B32;
@@ -517,7 +516,7 @@ typedef struct {
   BYTE padb1;
   CARD16 sequenceNumber B16;
   CARD32 length B32;  /* 0 */
-  CARD32 num_attributes B32; 
+  CARD32 num_attributes B32;
   CARD32 text_size B32;
   CARD32 padl5 B32;
   CARD32 padl6 B32;
@@ -531,7 +530,7 @@ typedef struct {
   BYTE padb1;
   CARD16 sequenceNumber B16;
   CARD32 length B32;
-  CARD32 num_formats B32; 
+  CARD32 num_formats B32;
   CARD32 padl4 B32;
   CARD32 padl5 B32;
   CARD32 padl6 B32;
@@ -544,8 +543,8 @@ typedef struct {
   BYTE type;  /* X_Reply */
   BYTE padb1;
   CARD16 sequenceNumber B16;
-  CARD32 length B32; 
-  CARD32 num_planes B32; 
+  CARD32 length B32;
+  CARD32 num_planes B32;
   CARD32 data_size B32;
   CARD16 width B16;
   CARD16 height B16;

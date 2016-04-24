@@ -73,40 +73,30 @@ typedef struct {
 _XFUNCPROTOBEGIN
 
 Bool FontCacheQueryVersion(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int* 		/* majorVersion */,
     int* 		/* minorVersion */
-#endif
 );
 
 Bool FontCacheQueryExtension(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int*		/* event_base */,
     int*		/* error_base */
-#endif
 );
 
 Status FontCacheGetCacheSettings(
-#if NeedFunctionPrototypes
     Display*			/* dpy */,
     FontCacheSettings*		/* cache info */
-#endif
 );
 
 Status FontCacheChangeCacheSettings(
-#if NeedFunctionPrototypes
     Display*			/* dpy */,
     FontCacheSettings*		/* cache info */
-#endif
 );
 
 Status FontCacheGetCacheStatistics(
-#if NeedFunctionPrototypes
     Display*			/* dpy */,
     FontCacheStatistics*	/* cache statistics info */
-#endif
 );
 
 _XFUNCPROTOEND

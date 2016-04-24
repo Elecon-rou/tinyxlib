@@ -1,5 +1,3 @@
-/* $Xorg: XI.h,v 1.4 2001/02/09 02:03:23 xorgcvs Exp $ */
-
 /************************************************************
 
 Copyright 1989, 1998  The Open Group
@@ -45,16 +43,14 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/include/extensions/XI.h,v 1.5 2001/12/14 19:53:28 dawes Exp $ */
 
 /* Definitions used by the server, library and client */
 
 #ifndef _XI_H_
-
 #define _XI_H_
 
-#define sz_xGetExtensionVersionReq		8
-#define sz_xGetExtensionVersionReply		32
+#define sz_xGetExtensionVersionReq             8
+#define sz_xGetExtensionVersionReply           32
 #define sz_xListInputDevicesReq			4
 #define sz_xListInputDevicesReply		32
 #define sz_xOpenDeviceReq			8
@@ -110,8 +106,14 @@ SOFTWARE.
 #define sz_xGetDeviceControlReply		32
 #define sz_xChangeDeviceControlReq		8
 #define sz_xChangeDeviceControlReply		32
+#define sz_xListDevicePropertiesReq             8
+#define sz_xListDevicePropertiesReply           32
+#define sz_xChangeDevicePropertyReq             20
+#define sz_xDeleteDevicePropertyReq             12
+#define sz_xGetDevicePropertyReq                24
+#define sz_xGetDevicePropertyReply              32
 
-#define INAME 			"XInputExtension"
+#define INAME		"XInputExtension"
 
 #define XI_KEYBOARD	"KEYBOARD"
 #define XI_MOUSE	"MOUSE"
@@ -131,12 +133,18 @@ SOFTWARE.
 #define XI_EYETRACKER	"EYETRACKER"
 #define XI_CURSORKEYS	"CURSORKEYS"
 #define XI_FOOTMOUSE	"FOOTMOUSE"
+#define XI_JOYSTICK	"JOYSTICK"
 
+/* Indices into the versions[] array (XExtInt.c). Used as a index to
+ * retrieve the minimum version of XI from _XiCheckExtInit */
 #define Dont_Check			0
 #define XInput_Initial_Release		1
 #define XInput_Add_XDeviceBell		2
 #define XInput_Add_XSetDeviceValuators	3
 #define XInput_Add_XChangeDeviceControl	4
+#define XInput_Add_DevicePresenceNotify	5
+#define XInput_Add_DeviceProperties	6
+/* DO NOT ADD TO HERE -> XI2 */
 
 #define XI_Absent		0
 #define XI_Present		1
@@ -153,7 +161,17 @@ SOFTWARE.
 #define XI_Add_XChangeDeviceControl_Major	1
 #define XI_Add_XChangeDeviceControl_Minor	3
 
+#define XI_Add_DevicePresenceNotify_Major	1
+#define XI_Add_DevicePresenceNotify_Minor	4
+
+#define XI_Add_DeviceProperties_Major		1
+#define XI_Add_DeviceProperties_Minor		5
+
 #define DEVICE_RESOLUTION	1
+#define DEVICE_ABS_CALIB        2
+#define DEVICE_CORE             3
+#define DEVICE_ENABLE           4
+#define DEVICE_ABS_AREA         5
 
 #define NoSuchExtension		1
 
@@ -171,6 +189,8 @@ SOFTWARE.
 #define IsXPointer		0
 #define IsXKeyboard		1
 #define IsXExtensionDevice	2
+#define IsXExtensionKeyboard    3
+#define IsXExtensionPointer     4
 
 #define AsyncThisDevice		0
 #define SyncThisDevice		1
@@ -204,12 +224,6 @@ SOFTWARE.
 #define DeviceMode              (1L << 0)
 #define Relative                0
 #define Absolute                1
-/* Merged from Metrolink tree for XINPUT stuff	*/
-#define TS_Raw					57
-#define TS_Scaled				58
-#define SendCoreEvents			59
-#define DontSendCoreEvents		60
-/* End of merged section	*/
 
 #define ProximityState          (1L << 1)
 #define InProximity             (0L << 1)
@@ -225,6 +239,7 @@ SOFTWARE.
 #define ProximityClass  	4
 #define FocusClass  		5
 #define OtherClass  		6
+#define AttachClass             7
 
 #define KbdFeedbackClass  	0
 #define PtrFeedbackClass  	1
@@ -244,18 +259,36 @@ SOFTWARE.
 #define _deviceOwnerGrabButton	 8
 #define _noExtensionEvent	 9
 
+#define _devicePresence		 0
+
+#define _deviceEnter             0
+#define _deviceLeave             1
+
+/* Device presence notify states */
+#define DeviceAdded              0
+#define DeviceRemoved            1
+#define DeviceEnabled            2
+#define DeviceDisabled           3
+#define DeviceUnrecoverable      4
+#define DeviceControlChanged     5
+
+/* XI Errors */
 #define XI_BadDevice	0
 #define XI_BadEvent	1
 #define XI_BadMode	2
 #define XI_DeviceBusy	3
 #define XI_BadClass	4
 
-/* Make XEventClass be a CARD32 for 64 bit servers.  Don't affect client
+/*
+ * Make XEventClass be a CARD32 for 64 bit servers.  Don't affect client
  * definition of XEventClass since that would be a library interface change.
  * See the top of X.h for more _XSERVER64 magic.
+ *
+ * But, don't actually use the CARD32 type.  We can't get it defined here
+ * without polluting the namespace.
  */
 #ifdef _XSERVER64
-typedef	CARD32		XEventClass;
+typedef	unsigned int	XEventClass;
 #else
 typedef	unsigned long	XEventClass;
 #endif
