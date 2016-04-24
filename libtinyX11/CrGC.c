@@ -1,4 +1,3 @@
-/* $Xorg: CrGC.c,v 1.5 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/CrGC.c,v 3.6 2001/12/14 19:53:59 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Cr.h"
 
@@ -60,18 +61,18 @@ static void _XGenerateGCList(
     GC gc,
     xReq *req);
 
-GC XCreateGC (dpy, d, valuemask, values)
-     register Display *dpy;
-     Drawable d;		/* Window or Pixmap for which depth matches */
-     unsigned long valuemask;	/* which ones to set initially */
-     XGCValues *values;		/* the values themselves */
+GC XCreateGC (
+     register Display *dpy,
+     Drawable d,		/* Window or Pixmap for which depth matches */
+     unsigned long valuemask,	/* which ones to set initially */
+     XGCValues *values)		/* the values themselves */
 {
     register GC gc;
     register xCreateGCReq *req;
     register _XExtension *ext;
 
     LockDisplay(dpy);
-    if ((gc = (GC)Xmalloc (sizeof(struct _XGC))) == NULL) {
+    if ((gc = Xmalloc (sizeof(struct _XGC))) == NULL) {
 	UnlockDisplay(dpy);
 	SyncHandle();
 	return (NULL);
@@ -147,10 +148,10 @@ _XGenerateGCList (
 
     req->length += (nvalues = value - values);
 
-    /* 
+    /*
      * note: Data is a macro that uses its arguments multiple
      * times, so "nvalues" is changed in a separate assignment
-     * statement 
+     * statement
      */
 
     nvalues <<= 2;
@@ -160,11 +161,11 @@ _XGenerateGCList (
 
 
 int
-_XUpdateGCCache (gc, mask, attr)
-    register unsigned long mask;
-    register XGCValues *attr;
-    register GC gc;
-    {
+_XUpdateGCCache (
+    register GC gc,
+    register unsigned long mask,
+    register XGCValues *attr)
+{
     register XGCValues *gv = &gc->values;
 
     if (mask & GCFunction)
@@ -172,7 +173,7 @@ _XUpdateGCCache (gc, mask, attr)
 	  gv->function = attr->function;
 	  gc->dirty |= GCFunction;
 	}
-	
+
     if (mask & GCPlaneMask)
         if (gv->plane_mask != attr->plane_mask) {
             gv->plane_mask = attr->plane_mask;
@@ -208,7 +209,7 @@ _XUpdateGCCache (gc, mask, attr)
             gv->cap_style = attr->cap_style;
 	    gc->dirty |= GCCapStyle;
 	  }
-    
+
     if (mask & GCJoinStyle)
         if (gv->join_style != attr->join_style) {
             gv->join_style = attr->join_style;
@@ -307,13 +308,13 @@ _XUpdateGCCache (gc, mask, attr)
 	    gc->dashes = 0;
 	    }
     return 0;
-    }
+}
 
 /* can only call when display is already locked. */
 
-void _XFlushGCCache(dpy, gc)
-     Display *dpy;
-     GC gc;
+void _XFlushGCCache(
+     Display *dpy,
+     GC gc)
 {
     register xChangeGCReq *req;
     register _XExtension *ext;
@@ -330,13 +331,15 @@ void _XFlushGCCache(dpy, gc)
     }
 }
 
-void XFlushGC(dpy, gc)
-     Display *dpy;
-     GC gc;
+void
+XFlushGC(
+    Display *dpy,
+    GC gc)
 {
     FlushGC(dpy, gc);
 }
 
-GContext XGContextFromGC(gc)
-    GC gc;
-    { return (gc->gid); }
+GContext XGContextFromGC(GC gc)
+{
+    return (gc->gid);
+}

@@ -1,4 +1,3 @@
-/* $Xorg: SetPMask.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,22 +23,24 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/SetPMask.c,v 1.3 2001/01/17 19:41:43 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XSetPlaneMask (dpy, gc, planemask)
-register Display *dpy;
-GC gc;
-unsigned long planemask; /* CARD32 */
+XSetPlaneMask (
+    register Display *dpy,
+    GC gc,
+    unsigned long planemask) /* CARD32 */
 {
     LockDisplay(dpy);
     if (gc->values.plane_mask != planemask) {
 	gc->values.plane_mask = planemask;
 	gc->dirty |= GCPlaneMask;
     }
-    UnlockDisplay(dpy);	
+    UnlockDisplay(dpy);
     SyncHandle();
     return 1;
 }

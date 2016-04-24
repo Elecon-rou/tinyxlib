@@ -1,4 +1,3 @@
-/* $Xorg: DrRect.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/DrRect.c,v 1.3 2001/01/17 19:41:34 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /* precompute the maximum size of batching request allowed */
@@ -34,20 +35,16 @@ in this Software without prior written authorization from The Open Group.
 #define zsize (SIZEOF(xPolyRectangleReq) + ZRCTSPERBATCH * SIZEOF(xRectangle))
 
 int
-XDrawRectangle(dpy, d, gc, x, y, width, height)
-    register Display *dpy;
-    Drawable d;
-    GC gc;
-    int x, y; /* INT16 */
-    unsigned int width, height; /* CARD16 */
+XDrawRectangle(
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    int x,
+    int y, /* INT16 */
+    unsigned int width,
+    unsigned int height) /* CARD16 */
 {
     xRectangle *rect;
-#ifdef MUSTCOPY
-    xRectangle rectdata;
-    long len = SIZEOF(xRectangle);
-
-    rect = &rectdata;
-#endif /* MUSTCOPY */
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
@@ -64,31 +61,21 @@ XDrawRectangle(dpy, d, gc, x, y, width, height)
        && (((char *)dpy->bufptr - (char *)req) < (gc->values.line_width ?
 						  wsize : zsize)) ) {
 	 req->length += SIZEOF(xRectangle) >> 2;
-#ifndef MUSTCOPY
          rect = (xRectangle *) dpy->bufptr;
 	 dpy->bufptr += SIZEOF(xRectangle);
-#endif /* not MUSTCOPY */
 	 }
 
     else {
 	GetReqExtra(PolyRectangle, SIZEOF(xRectangle), req);
 	req->drawable = d;
 	req->gc = gc->gid;
-#ifdef MUSTCOPY
-	dpy->bufptr -= SIZEOF(xRectangle);
-#else
 	rect = (xRectangle *) NEXTPTR(req,xPolyRectangleReq);
-#endif /* MUSTCOPY */
 	}
 
     rect->x = x;
     rect->y = y;
     rect->width = width;
     rect->height = height;
-
-#ifdef MUSTCOPY
-    Data (dpy, (char *) rect, len);	/* subtracted bufptr up above */
-#endif /* MUSTCOPY */
 
     }
     UnlockDisplay(dpy);

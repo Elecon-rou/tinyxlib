@@ -1,4 +1,3 @@
-/* $Xorg: PixFormats.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,6 +24,9 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <stdio.h>
 
@@ -32,12 +34,12 @@ in this Software without prior written authorization from The Open Group.
  * XListPixmapFormats - return info from connection setup
  */
 
-XPixmapFormatValues *XListPixmapFormats (dpy, count)
-    Display *dpy;
-    int *count;	/* RETURN */
+XPixmapFormatValues *XListPixmapFormats (
+    Display *dpy,
+    int *count)	/* RETURN */
 {
-    XPixmapFormatValues *formats = (XPixmapFormatValues *)
-	Xmalloc((unsigned) (dpy->nformats * sizeof (XPixmapFormatValues)));
+    XPixmapFormatValues *formats =
+	Xmalloc(dpy->nformats * sizeof (XPixmapFormatValues));
 
     if (formats) {
 	register int i;

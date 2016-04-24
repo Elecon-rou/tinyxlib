@@ -1,15 +1,12 @@
-/* $XConsortium: IntAtom.c,v 11.26 94/04/17 20:20:02 rws Exp $ */
 /*
 
-Copyright (c) 1986, 1990  X Consortium
+Copyright 1986, 1990, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -17,45 +14,30 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
-
-/* XXX this table def is duplicated in GetAtomNm.c, keep them consistent! */
-
-#define TABLESIZE 64
-
-typedef struct _Entry {
-    unsigned long sig;
-    Atom atom;
-} EntryRec, *Entry;
-
-#define RESERVED ((Entry) 1)
-
-#define EntryName(e) ((char *)(e+1))
-
-typedef struct _XDisplayAtoms {
-    Entry table[TABLESIZE];
-} AtomTable;
+#include "Xintatom.h"
 
 #define HASH(sig) ((sig) & (TABLESIZE-1))
 #define REHASHVAL(sig) ((((sig) % (TABLESIZE-3)) + 2) | 1)
 #define REHASH(idx,rehash) ((idx + rehash) & (TABLESIZE-1))
 
 void
-_XFreeAtomTable(dpy)
-    Display *dpy;
+_XFreeAtomTable(Display *dpy)
 {
     register Entry *table;
     register int i;
@@ -65,34 +47,32 @@ _XFreeAtomTable(dpy)
 	table = dpy->atoms->table;
 	for (i = TABLESIZE; --i >= 0; ) {
 	    if ((e = *table++) && (e != RESERVED))
-		Xfree((char *)e);
+		Xfree(e);
 	}
-	Xfree((char *)dpy->atoms);
+	Xfree(dpy->atoms);
     }
 }
 
 static
-Atom _XInternAtom(dpy, name, onlyIfExists, psig, pidx, pn)
-    Display *dpy;
-    char *name;
-    Bool onlyIfExists;
-    unsigned long *psig;
-    int *pidx;
-    int *pn;
+Atom _XInternAtom(
+    Display *dpy,
+    _Xconst char *name,
+    Bool onlyIfExists,
+    unsigned long *psig,
+    int *pidx,
+    int *pn)
 {
     register AtomTable *atoms;
     register char *s1, c, *s2;
     register unsigned long sig;
     register int idx = 0, i;
-    //register int idx=NULL, i; //gn
     Entry e;
     int n, firstidx, rehash = 0;
-    //int n, firstidx, rehash=NULL;	//gn
     xInternAtomReq *req;
 
     /* look in the cache first */
     if (!(atoms = dpy->atoms)) {
-	dpy->atoms = atoms = (AtomTable *)Xcalloc(1, sizeof(AtomTable));
+	dpy->atoms = atoms = Xcalloc(1, sizeof(AtomTable));
 	dpy->free_funcs->atoms = _XFreeAtomTable;
     }
     sig = 0;
@@ -132,13 +112,13 @@ nomatch:    if (idx == firstidx)
 }
 
 void
-_XUpdateAtomCache(dpy, name, atom, sig, idx, n)
-    Display *dpy;
-    char *name;
-    Atom atom;
-    unsigned long sig;
-    int idx;
-    int n;
+_XUpdateAtomCache(
+    Display *dpy,
+    const char *name,
+    Atom atom,
+    unsigned long sig,
+    int idx,
+    int n)
 {
     Entry e, oe;
     register char *s1;
@@ -147,7 +127,7 @@ _XUpdateAtomCache(dpy, name, atom, sig, idx, n)
 
     if (!dpy->atoms) {
 	if (idx < 0) {
-	    dpy->atoms = (AtomTable *)Xcalloc(1, sizeof(AtomTable));
+	    dpy->atoms = Xcalloc(1, sizeof(AtomTable));
 	    dpy->free_funcs->atoms = _XFreeAtomTable;
 	}
 	if (!dpy->atoms)
@@ -167,28 +147,22 @@ _XUpdateAtomCache(dpy, name, atom, sig, idx, n)
 	    }
 	}
     }
-    e = (Entry)Xmalloc(sizeof(EntryRec) + n + 1);
+    e = Xmalloc(sizeof(EntryRec) + n + 1);
     if (e) {
 	e->sig = sig;
 	e->atom = atom;
 	strcpy(EntryName(e), name);
 	if ((oe = dpy->atoms->table[idx]) && (oe != RESERVED))
-	    Xfree((char *)oe);
+	    Xfree(oe);
 	dpy->atoms->table[idx] = e;
     }
 }
 
-#if NeedFunctionPrototypes
-Atom XInternAtom (
+Atom
+XInternAtom (
     Display *dpy,
-    _Xconst char *name,
+    const char *name,
     Bool onlyIfExists)
-#else
-Atom XInternAtom (dpy, name, onlyIfExists)
-    Display *dpy;
-    char *name;
-    Bool onlyIfExists;
-#endif
 {
     Atom atom;
     unsigned long sig;
@@ -223,16 +197,15 @@ typedef struct {
 } _XIntAtomState;
 
 static
-Bool _XIntAtomHandler(dpy, rep, buf, len, data)
-    register Display *dpy;
-    register xReply *rep;
-    char *buf;
-    int len;
-    XPointer data;
+Bool _XIntAtomHandler(
+    register Display *dpy,
+    register xReply *rep,
+    char *buf,
+    int len,
+    XPointer data)
 {
     register _XIntAtomState *state;
     register int i, idx = 0;
-   // register int i, idx;	//gn
     xInternAtomReply replbuf;
     register xInternAtomReply *repl;
 
@@ -258,18 +231,18 @@ Bool _XIntAtomHandler(dpy, rep, buf, len, data)
 			(SIZEOF(xInternAtomReply) - SIZEOF(xReply)) >> 2,
 			True);
     if ((state->atoms[i] = repl->atom))
-	_XUpdateAtomCache(dpy, state->names[i], repl->atom,
+	_XUpdateAtomCache(dpy, state->names[i], (Atom) repl->atom,
 			  (unsigned long)0, idx, 0);
     return True;
 }
 
 Status
-XInternAtoms (dpy, names, count, onlyIfExists, atoms_return)
-    Display *dpy;
-    char **names;
-    int count;
-    Bool onlyIfExists;
-    Atom *atoms_return;
+XInternAtoms (
+    Display *dpy,
+    char **names,
+    int count,
+    Bool onlyIfExists,
+    Atom *atoms_return)
 {
     int i, idx, n, tidx;
     unsigned long sig;
@@ -309,7 +282,8 @@ XInternAtoms (dpy, names, count, onlyIfExists, atoms_return)
         }
 	if (_XReply (dpy, (xReply *)&rep, 0, xTrue)) {
 	    if ((atoms_return[missed] = rep.atom))
-		_XUpdateAtomCache(dpy, names[missed], rep.atom, sig, idx, n);
+		_XUpdateAtomCache(dpy, names[missed], (Atom) rep.atom,
+				  sig, idx, n);
 	} else {
 	    atoms_return[missed] = None;
 	    async_state.status = 0;

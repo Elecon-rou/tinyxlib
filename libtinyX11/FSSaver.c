@@ -1,4 +1,3 @@
-/* $Xorg: FSSaver.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1987, 1998  The Open Group
@@ -24,33 +23,30 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FSSaver.c,v 1.3 2001/01/17 19:41:35 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XActivateScreenSaver(dpy) 
-    register Display *dpy;
-
+XActivateScreenSaver(register Display *dpy)
 {
     XForceScreenSaver (dpy, ScreenSaverActive);
     return 1;
 }
 
 int
-XResetScreenSaver(dpy) 
-    register Display *dpy;
-
+XResetScreenSaver(register Display *dpy)
 {
     XForceScreenSaver (dpy, ScreenSaverReset);
     return 1;
 }
 
 int
-XForceScreenSaver(dpy, mode)
-    register Display *dpy; 
-    int mode;
-
+XForceScreenSaver(
+    register Display *dpy,
+    int mode)
 {
     register xForceScreenSaverReq *req;
 

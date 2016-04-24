@@ -1,3 +1,4 @@
+
 /***********************************************************
 
 Copyright 1987, 1988, 1998  The Open Group
@@ -27,13 +28,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -44,30 +45,23 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/X11/GetDflt.c,v 3.25 2006/01/09 14:58:27 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xos.h>
 #include <X11/Xresource.h>
-
-#include <limits.h>
-#ifndef PATH_MAX
-#include <sys/param.h>
-#ifndef PATH_MAX
-#ifdef MAXPATHLEN
-#define PATH_MAX MAXPATHLEN
-#else
-#define PATH_MAX 1024
-#endif
-#endif
-#endif
+#include "pathmax.h"
 
 #ifdef XTHREADS
 #include <X11/Xthreads.h>
 #endif
+#ifndef WIN32
 #define X_INCLUDE_PWD_H
 #define XOS_USE_XLIB_LOCKING
 #include <X11/Xos_r.h>
+#endif
 #include <stdio.h>
 #include <ctype.h>
 
@@ -78,6 +72,25 @@ GetHomeDir(
     char *dest,
     int len)
 {
+#ifdef WIN32
+    register char *ptr1 = NULL;
+    register char *ptr2 = NULL;
+    int len1 = 0, len2 = 0;
+
+    if ((ptr1 = getenv("HOME"))) {	/* old, deprecated */
+	len1 = strlen (ptr1);
+    } else if ((ptr1 = getenv("HOMEDRIVE")) && (ptr2 = getenv("HOMEDIR"))) {
+	len1 = strlen (ptr1);
+	len2 = strlen (ptr2);
+    } else if ((ptr2 = getenv("USERNAME"))) {
+	len1 = strlen (ptr1 = "/users/");
+	len2 = strlen (ptr2);
+    }
+    if ((len1 + len2 + 1) < len)
+	snprintf (dest, len, "%s%s", ptr1, (ptr2) ? ptr2 : "");
+    else
+	*dest = '\0';
+#else
 #ifdef X_NEEDS_PWPARAMS
     _Xgetpwparams pwparams;
 #endif
@@ -101,6 +114,7 @@ GetHomeDir(
 	} else
 	    *dest = '\0';
     }
+#endif
     return dest;
 }
 
@@ -125,7 +139,7 @@ InitDefaults(
      */
 
     if (dpy->xdefaults == NULL) {
-	char *slashDotXdefaults = "/.Xdefaults";
+	const char *slashDotXdefaults = "/.Xdefaults";
 
 	(void) GetHomeDir (fname, PATH_MAX - strlen (slashDotXdefaults) - 1);
 	(void) strcat (fname, slashDotXdefaults);
@@ -135,7 +149,7 @@ InitDefaults(
     }
 
     if (!(xenv = getenv ("XENVIRONMENT"))) {
-	char *slashDotXdefaultsDash = "/.Xdefaults-";
+	const char *slashDotXdefaultsDash = "/.Xdefaults-";
 	int len;
 
 	(void) GetHomeDir (fname, PATH_MAX - strlen (slashDotXdefaultsDash) - 1);
@@ -167,11 +181,30 @@ XGetDefault(
 	XrmRepresentation fromType;
 	XrmValue result;
 	char *progname;
+#ifdef WIN32
+	char *progname2;
+#endif
+#ifdef __UNIXOS2__
+	char *progname2;
+	char *dotpos;
+#endif
 
 	/*
 	 * strip path off of program name (XXX - this is OS specific)
 	 */
 	progname = strrchr (prog, '/');
+#ifdef WIN32
+	progname2 = strrchr (prog, '\\');
+	if (progname2 && (!progname || progname < progname2))
+	    progname = progname2;
+#endif
+#ifdef __UNIXOS2__  /* Very similar to WIN32 */
+	progname2 = strrchr (prog, '\\');
+	if (progname2 && (!progname || progname < progname2))
+	    progname = progname2;
+	dotpos = strrchr (prog, '.');
+	if (dotpos && (dotpos>progname2)) *dotpos='\0';
+#endif  /* We take out the .exe suffix  */
 
 	if (progname)
 	    progname++;

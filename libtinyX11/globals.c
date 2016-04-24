@@ -1,15 +1,12 @@
-/* $XConsortium: globals.c,v 1.19 95/06/08 23:20:39 gildea Exp $ */
 /*
 
-Copyright (c) 1989  X Consortium
+Copyright 1989, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -17,18 +14,17 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
-
 
 /*
  *
@@ -36,11 +32,11 @@ from the X Consortium.
  *
  * This file should contain only those objects which must be predefined.
  */
-#define NEED_EVENTS
-#include "Xlibint.h"
-//#include <./X11/Xlib.h>
-//#include <X11/extensions/Xext.h>
-#include <stddef.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/Xlibint.h>
+
 
 /*
  * If possible, it is useful to have the global data default to a null value.
@@ -49,23 +45,30 @@ from the X Consortium.
  */
 #ifdef NULL_NOT_ZERO			/* then need to initialize */
 #define SetZero(t,var,z) t var = z
-#else 
+#else
 #define SetZero(t,var,z) t var
 #endif
 
+#ifdef USL_SHAREDLIB			/* then need extra variables */
+/*
+ * If we need to define extra variables for each global
+ */
+#define ZEROINIT(t,var,val) SetZero(t,var,val); \
+  SetZero (long, _libX_##var##Flag, 0); \
+  SetZero (void *, _libX_##var##Ptr, NULL)
+
+#else /* else not USL_SHAREDLIB */
 /*
  * no extra crud
  */
 #define ZEROINIT(t,var,val) SetZero (t, var, val)
 
+#endif /* USL_SHAREDLIB */
 
 
 /*
  * Error handlers; used to be in XlibInt.c
  */
-//typedef int (*funcptr)();
-//ZEROINIT (funcptr, _XExtensionErrorFunction, NULL);
-
 ZEROINIT (XErrorHandler, _XErrorFunction, NULL);
 ZEROINIT (XIOErrorHandler, _XIOErrorFunction, NULL);
 ZEROINIT (_XQEvent *, _qfree, NULL);
@@ -76,11 +79,6 @@ ZEROINIT (_XQEvent *, _qfree, NULL);
  */
 ZEROINIT (int, _Xdebug, 0);
 ZEROINIT (Display *, _XHeadOfDisplayList, NULL);
-
-
-
-#if 0
-#endif
 
 
 #ifdef XTEST1

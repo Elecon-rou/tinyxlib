@@ -1,4 +1,3 @@
-/* $Xorg: ModMap.c,v 1.4 2001/02/09 02:03:34 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,15 +23,16 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ModMap.c,v 1.4 2001/12/14 19:54:03 dawes Exp $ */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
+#include <limits.h>
 
 XModifierKeymap *
-XGetModifierMapping(dpy)
-     register Display *dpy;
-{       
+XGetModifierMapping(register Display *dpy)
+{
     xGetModifierMappingReply rep;
     register xReq *req;
     unsigned long nbytes;
@@ -42,13 +42,17 @@ XGetModifierMapping(dpy)
     GetEmptyReq(GetModifierMapping, req);
     (void) _XReply (dpy, (xReply *)&rep, 0, xFalse);
 
-    nbytes = (unsigned long)rep.length << 2;
-    res = (XModifierKeymap *) Xmalloc(sizeof (XModifierKeymap));
-    if (res) res->modifiermap = (KeyCode *) Xmalloc ((unsigned) nbytes);
+    if (rep.length < (INT_MAX >> 2)) {
+	nbytes = (unsigned long)rep.length << 2;
+	res = Xmalloc(sizeof (XModifierKeymap));
+	if (res)
+	    res->modifiermap = Xmalloc (nbytes);
+    } else
+	res = NULL;
     if ((! res) || (! res->modifiermap)) {
-	if (res) Xfree((char *) res);
+	Xfree(res);
 	res = (XModifierKeymap *) NULL;
-	_XEatData(dpy, nbytes);
+	_XEatDataWords(dpy, rep.length);
     } else {
 	_XReadPad(dpy, (char *) res->modifiermap, (long) nbytes);
 	res->max_keypermod = rep.numKeyPerModifier;
@@ -61,27 +65,25 @@ XGetModifierMapping(dpy)
 
 /*
  *	Returns:
- *	0	Success
- *	1	Busy - one or more old or new modifiers are down
- *	2	Failed - one or more new modifiers unacceptable
+ *	MappingSuccess (0)	Success
+ *	MappingBusy (1) 	Busy - one or more old or new modifiers are down
+ *	MappingFailed (2)	Failed - one or more new modifiers unacceptable
  */
 int
-XSetModifierMapping(dpy, modifier_map)
-    register Display *dpy;
-    register XModifierKeymap *modifier_map;
+XSetModifierMapping(
+    register Display *dpy,
+    register XModifierKeymap *modifier_map)
 {
     register xSetModifierMappingReq *req;
     xSetModifierMappingReply rep;
     int         mapSize = modifier_map->max_keypermod << 3;	/* 8 modifiers */
 
     LockDisplay(dpy);
-    GetReqExtra(SetModifierMapping, mapSize, req);
-
+    GetReq(SetModifierMapping, req);
+    req->length += mapSize >> 2;
     req->numKeyPerModifier = modifier_map->max_keypermod;
 
-    memcpy((char *) NEXTPTR(req,xSetModifierMappingReq),
-	   (char *) modifier_map->modifiermap,
-	   mapSize);
+    Data(dpy, modifier_map->modifiermap, mapSize);
 
     (void) _XReply(dpy, (xReply *) & rep,
 	(SIZEOF(xSetModifierMappingReply) - SIZEOF(xReply)) >> 2, xTrue);
@@ -91,17 +93,16 @@ XSetModifierMapping(dpy, modifier_map)
 }
 
 XModifierKeymap *
-XNewModifiermap(keyspermodifier)
-    int keyspermodifier;
+XNewModifiermap(int keyspermodifier)
 {
-    XModifierKeymap *res = (XModifierKeymap *) Xmalloc((sizeof (XModifierKeymap)));
+    XModifierKeymap *res = Xmalloc((sizeof (XModifierKeymap)));
     if (res) {
 	res->max_keypermod = keyspermodifier;
 	res->modifiermap = (keyspermodifier > 0 ?
-			    (KeyCode *) Xmalloc((unsigned) (8 * keyspermodifier))
+			    Xmalloc(8 * keyspermodifier)
 			    : (KeyCode *) NULL);
 	if (keyspermodifier && (res->modifiermap == NULL)) {
-	    Xfree((char *) res);
+	    Xfree(res);
 	    return (XModifierKeymap *) NULL;
 	}
     }
@@ -110,13 +111,11 @@ XNewModifiermap(keyspermodifier)
 
 
 int
-XFreeModifiermap(map)
-    XModifierKeymap *map;
+XFreeModifiermap(XModifierKeymap *map)
 {
     if (map) {
-	if (map->modifiermap)
-	    Xfree((char *) map->modifiermap);
-	Xfree((char *) map);
+        Xfree(map->modifiermap);
+	Xfree(map);
     }
     return 1;
 }
@@ -143,7 +142,7 @@ XInsertModifiermapEntry(XModifierKeymap *map,
             map->modifiermap[ row+i ] = keycode;
 	    return(map); /* we added it without stretching the map */
 	}
-    }   
+    }
 
     /* stretch the map */
     if ((newmap = XNewModifiermap(map->max_keypermod+1)) == NULL)

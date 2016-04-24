@@ -1,14 +1,12 @@
-/* $XConsortium: ErrHndlr.c,v 11.21 94/04/17 20:19:15 kaleb Exp $ */
 /*
 
-Copyright (c) 1986  X Consortium
+Copyright 1986, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,34 +14,31 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-extern int _XDefaultError();
-extern int _XDefaultIOError();
-/* 
+/*
  * XErrorHandler - This procedure sets the X non-fatal error handler
  * (_XErrorFunction) to be the specified routine.  If NULL is passed in
  * the original error handler is restored.
  */
- 
-#if NeedFunctionPrototypes
-XErrorHandler XSetErrorHandler(XErrorHandler handler)
-#else
-XErrorHandler XSetErrorHandler(handler)
-    register XErrorHandler handler;
-#endif
+
+XErrorHandler
+XSetErrorHandler(XErrorHandler handler)
 {
-    int (*oldhandler)();
+    int (*oldhandler)(Display *dpy, XErrorEvent *event);
 
     _XLockMutex(_Xglobal_lock);
     oldhandler = _XErrorFunction;
@@ -62,21 +57,16 @@ XErrorHandler XSetErrorHandler(handler)
     return (XErrorHandler) oldhandler;
 }
 
-/* 
+/*
  * XIOErrorHandler - This procedure sets the X fatal I/O error handler
- * (_XIOErrorFunction) to be the specified routine.  If NULL is passed in 
+ * (_XIOErrorFunction) to be the specified routine.  If NULL is passed in
  * the original error handler is restored.
  */
- 
-extern int _XIOError();
-#if NeedFunctionPrototypes
-XIOErrorHandler XSetIOErrorHandler(XIOErrorHandler handler)
-#else
-XIOErrorHandler XSetIOErrorHandler(handler)
-    register XIOErrorHandler handler;
-#endif
+
+XIOErrorHandler
+XSetIOErrorHandler(XIOErrorHandler handler)
 {
-    int (*oldhandler)();
+    int (*oldhandler)(Display *dpy);
 
     _XLockMutex(_Xglobal_lock);
     oldhandler = _XIOErrorFunction;

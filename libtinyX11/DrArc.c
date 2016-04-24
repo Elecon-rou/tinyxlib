@@ -1,4 +1,3 @@
-/* $Xorg: DrArc.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,33 +23,32 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/DrArc.c,v 1.3 2001/01/17 19:41:34 dawes Exp $ */
 
 /* Note to future maintainers:  XDrawArc does NOT batch successive PolyArc
    requests into a single request like XDrawLine, XDrawPoint, etc.
    We don't do this because X_PolyArc applies the GC's join-style if
    the last point in one arc coincides with the first point in another.
    The client wouldn't expect this and would have no easy way to defeat it. */
-   
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XDrawArc(dpy, d, gc, x, y, width, height, angle1, angle2)
-    register Display *dpy;
-    Drawable d;
-    GC gc;
-    int x, y; /* INT16 */
-    unsigned int width, height; /* CARD16 */
-    int angle1, angle2; /* INT16 */
+XDrawArc(
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    int x,
+    int y, /* INT16 */
+    unsigned int width,
+    unsigned int height, /* CARD16 */
+    int angle1,
+    int angle2) /* INT16 */
 {
     register xPolyArcReq *req;
     register xArc *arc;
-#ifdef MUSTCOPY
-    xArc arcdata;
-    long len = SIZEOF(xArc);
-
-    arc = &arcdata;
-#endif /* MUSTCOPY */
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
@@ -59,9 +57,7 @@ XDrawArc(dpy, d, gc, x, y, width, height, angle1, angle2)
     req->drawable = d;
     req->gc = gc->gid;
 
-#ifndef MUSTCOPY
     arc = (xArc *) NEXTPTR(req,xPolyArcReq);
-#endif /* MUSTCOPY */
 
     arc->x = x;
     arc->y = y;
@@ -70,10 +66,6 @@ XDrawArc(dpy, d, gc, x, y, width, height, angle1, angle2)
     arc->angle1 = angle1;
     arc->angle2 = angle2;
 
-#ifdef MUSTCOPY
-    dpy->bufptr -= SIZEOF(xArc);
-    Data (dpy, (char *) arc, len);
-#endif /* MUSTCOPY */
 
     UnlockDisplay(dpy);
     SyncHandle();

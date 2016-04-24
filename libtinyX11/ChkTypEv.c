@@ -1,4 +1,3 @@
-/* $Xorg: ChkTypEv.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1985, 1987, 1998  The Open Group
@@ -24,27 +23,32 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ChkTypEv.c,v 1.2 2001/10/28 03:32:29 tsi Exp $ */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-/* 
+/*
  * Check existing events in queue to find if any match.  If so, return.
  * If not, flush buffer and see if any more events are readable. If one
  * matches, return.  If all else fails, tell the user no events found.
  */
 
-Bool XCheckTypedEvent (dpy, type, event)
-        register Display *dpy;
-	int type;		/* Selected event type. */
-	register XEvent *event;	/* XEvent to be filled in. */
+Bool XCheckTypedEvent (
+	register Display *dpy,
+	int type,		/* Selected event type. */
+	register XEvent *event)	/* XEvent to be filled in. */
 {
 	register _XQEvent *prev, *qelt;
 	unsigned long qe_serial = 0;
 	int n;			/* time through count */
 
         LockDisplay(dpy);
+
+	/* Delete unclaimed cookies */
+	_XFreeEventCookies(dpy);
+
 	prev = NULL;
 	for (n = 3; --n >= 0;) {
 	    for (qelt = prev ? prev->next : dpy->head;
@@ -53,6 +57,7 @@ Bool XCheckTypedEvent (dpy, type, event)
 		if (qelt->event.type == type) {
 		    *event = qelt->event;
 		    _XDeq(dpy, prev, qelt);
+		    _XStoreEventCookie(dpy, event);
 		    UnlockDisplay(dpy);
 		    return True;
 		}

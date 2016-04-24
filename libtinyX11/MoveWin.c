@@ -1,4 +1,3 @@
-/* $Xorg: MoveWin.c,v 1.4 2001/02/09 02:03:34 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,15 +23,18 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/MoveWin.c,v 1.3 2001/01/17 19:41:40 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XMoveWindow (dpy, w, x, y)
-    register Display *dpy;
-    Window w;
-    int x, y;
+XMoveWindow (
+    register Display *dpy,
+    Window w,
+    int x,
+    int y)
 {
     register xConfigureWindowReq *req;
 
@@ -42,20 +44,11 @@ XMoveWindow (dpy, w, x, y)
     req->window = w;
     req->mask = CWX | CWY;
 
-#ifdef MUSTCOPY
-    {
-	long lx = (long) x, ly = (long) y;
-	dpy->bufptr -= 8;
-	Data32 (dpy, (long *) &lx, 4);	/* order dictated by CWX and CWY */
-	Data32 (dpy, (long *) &ly, 4);
-    }
-#else
     {
 	CARD32 *valuePtr = (CARD32 *) NEXTPTR(req,xConfigureWindowReq);
 	*valuePtr++ = x;
 	*valuePtr = y;
     }
-#endif /* MUSTCOPY */
     UnlockDisplay(dpy);
     SyncHandle();
     return 1;

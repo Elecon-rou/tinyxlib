@@ -1,14 +1,12 @@
-/* $XConsortium: StrKeysym.c,v 11.17 95/06/08 23:20:39 gildea Exp $ */
 /*
 
-Copyright (c) 1985, 1987, 1990  X Consortium
+Copyright 1985, 1987, 1990, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,61 +14,47 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
-#include "Xlibint.h"
-#include "Xresource.h"
-//#include <X11/keysymdef.h>
-
-
-#define XK_VoidSymbol              0xFFFFFF  /* void symbol */
-
-
-extern XrmQuark _XrmInternalStringToQuark();
-
-#define Const const
-
-typedef unsigned long Signature;
-
-#ifdef NOKEYSYMS
-#define KTABLESIZE 0
-static Const unsigned short hashString[KTABLESIZE] = {};
-Const unsigned char _XkeyTable[] = {};
-
-#define KMAXHASH 0
-#undef NEEDKTABLE
-#else
-#define NEEDKTABLE
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+#include <limits.h>
+#include "Xlibint.h"
+#include <X11/Xresource.h>
+#include <X11/keysymdef.h>
+#include "Xresinternal.h"
 
+#define NEEDKTABLE
 #include "ks_tables.h"
-
-
+#include "Key.h"
 
 #ifndef KEYSYMDB
+#ifndef XKEYSYMDB
 #define KEYSYMDB "/usr/lib/X11/XKeysymDB"
+#else
+#define KEYSYMDB XKEYSYMDB
+#endif
 #endif
 
 static Bool initialized;
 static XrmDatabase keysymdb;
 static XrmQuark Qkeysym[2];
 
-
 XrmDatabase
-_XInitKeysymDB()
+_XInitKeysymDB(void)
 {
-#if 1
     if (!initialized)
     {
-	char *dbname;
+	const char *dbname;
 
 	XrmInitialize();
 	/* use and name of this env var is not part of the standard */
@@ -83,25 +67,19 @@ _XInitKeysymDB()
 	    Qkeysym[0] = XrmStringToQuark("Keysym");
 	initialized = True;
     }
-#endif
     return keysymdb;
 }
 
-#if NeedFunctionPrototypes
-KeySym XStringToKeysym(s)
-    _Xconst char *s;
-#else
-KeySym XStringToKeysym(s)
-    char *s;
-#endif
+KeySym
+XStringToKeysym(_Xconst char *s)
 {
     register int i, n;
     int h;
     register Signature sig = 0;
-    register Const char *p = s;
+    register const char *p = s;
     register int c;
     register int idx;
-    Const unsigned char *entry;
+    const unsigned char *entry;
     unsigned char sig1, sig2;
     KeySym val;
 
@@ -116,9 +94,10 @@ KeySym XStringToKeysym(s)
     {
 	entry = &_XkeyTable[idx];
 	if ((entry[0] == sig1) && (entry[1] == sig2) &&
-	    !strcmp(s, (char *)entry + 4))
+	    !strcmp(s, (const char *)entry + 6))
 	{
-	    val = (entry[2] << 8) | entry[3];
+	    val = (entry[2] << 24) | (entry[3] << 16) |
+	          (entry[4] << 8)  | entry[5];
 	    if (!val)
 		val = XK_VoidSymbol;
 	    return val;
@@ -130,16 +109,13 @@ KeySym XStringToKeysym(s)
 	    i -= KTABLESIZE;
     }
 
-#if 1
     if (!initialized)
 	(void)_XInitKeysymDB();
-#endif
     if (keysymdb)
     {
 	XrmValue result;
 	XrmRepresentation from_type;
 	char c;
-	KeySym val;
 	XrmQuark names[2];
 
 	names[0] = _XrmInternalStringToQuark(s, p - s - 1, sig, False);
@@ -152,12 +128,54 @@ KeySym XStringToKeysym(s)
 	    {
 		c = ((char *)result.addr)[i];
 		if ('0' <= c && c <= '9') val = (val<<4)+c-'0';
-		else if ('a' <= c && c <= 'z') val = (val<<4)+c-'a'+10;
-		else if ('A' <= c && c <= 'Z') val = (val<<4)+c-'A'+10;
+		else if ('a' <= c && c <= 'f') val = (val<<4)+c-'a'+10;
+		else if ('A' <= c && c <= 'F') val = (val<<4)+c-'A'+10;
 		else return NoSymbol;
 	    }
 	    return val;
 	}
     }
-    return (NoSymbol);
+
+    if (*s == 'U') {
+    	val = 0;
+        for (p = &s[1]; *p; p++) {
+            c = *p;
+	    if ('0' <= c && c <= '9') val = (val<<4)+c-'0';
+	    else if ('a' <= c && c <= 'f') val = (val<<4)+c-'a'+10;
+	    else if ('A' <= c && c <= 'F') val = (val<<4)+c-'A'+10;
+	    else return NoSymbol;
+	    if (val > 0x10ffff)
+		return NoSymbol;
+	}
+	if (val < 0x20 || (val > 0x7e && val < 0xa0))
+	    return NoSymbol;
+	if (val < 0x100)
+	    return val;
+        return val | 0x01000000;
+    }
+
+    if (strlen(s) > 2 && s[0] == '0' && s[1] == 'x') {
+        char *tmp = NULL;
+        val = strtoul(s, &tmp, 16);
+        if (val == ULONG_MAX || (tmp && *tmp != '\0'))
+            return NoSymbol;
+        else
+            return val;
+    }
+
+    /* Stupid inconsistency between the headers and XKeysymDB: the former has
+     * no separating underscore, while some XF86* syms in the latter did.
+     * As a last ditch effort, try without. */
+    if (strncmp(s, "XF86_", 5) == 0) {
+        KeySym ret;
+        char *tmp = strdup(s);
+        if (!tmp)
+            return NoSymbol;
+        memmove(&tmp[4], &tmp[5], strlen(s) - 5 + 1);
+        ret = XStringToKeysym(tmp);
+        free(tmp);
+        return ret;
+    }
+
+    return NoSymbol;
 }

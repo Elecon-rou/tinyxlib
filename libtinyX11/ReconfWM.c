@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/X11/ReconfWM.c,v 1.3 2006/01/09 14:58:33 dawes Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -27,21 +26,21 @@ from The Open Group.
 
 */
 
-#define NEED_EVENTS
-#define NEED_REPLIES
-#include <Xlibint.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "Xlibint.h"
 
 #define AllMaskBits (CWX|CWY|CWWidth|CWHeight|\
                      CWBorderWidth|CWSibling|CWStackMode)
 
-Status XReconfigureWMWindow (dpy, w, screen, mask, changes)
-    register Display *dpy;
-    Window w;
-    int screen;
-    unsigned int mask;
-    XWindowChanges *changes;
+Status XReconfigureWMWindow (
+    register Display *dpy,
+    Window w,
+    int screen,
+    unsigned int mask,
+    XWindowChanges *changes)
 {
-    XConfigureRequestEvent ev;
     Window root = RootWindow (dpy, screen);
     _XAsyncHandler async;
     _XAsyncErrorState async_state;
@@ -120,20 +119,24 @@ Status XReconfigureWMWindow (dpy, w, screen, mask, changes)
     /*
      * If the request succeeded, then everything is okay; otherwise, send event
      */
-    if (!async_state.error_count) return True;
-
-    ev.type		= ConfigureRequest;
-    ev.window		= w;
-    ev.parent		= root;
-    ev.value_mask	= (mask & AllMaskBits);
-    ev.x		= changes->x;
-    ev.y		= changes->y;
-    ev.width		= changes->width;
-    ev.height		= changes->height;
-    ev.border_width	= changes->border_width;
-    ev.above		= changes->sibling;
-    ev.detail		= changes->stack_mode;
-    return (XSendEvent (dpy, root, False,
-			SubstructureRedirectMask|SubstructureNotifyMask,
-			(XEvent *)&ev));
+    if (!async_state.error_count)
+        return True;
+    else {
+        XConfigureRequestEvent ev = {
+            .type		= ConfigureRequest,
+            .window		= w,
+            .parent		= root,
+            .value_mask		= (mask & AllMaskBits),
+            .x			= changes->x,
+            .y			= changes->y,
+            .width		= changes->width,
+            .height		= changes->height,
+            .border_width	= changes->border_width,
+            .above		= changes->sibling,
+            .detail		= changes->stack_mode,
+        };
+        return (XSendEvent (dpy, root, False,
+                            SubstructureRedirectMask|SubstructureNotifyMask,
+                            (XEvent *)&ev));
+    }
 }

@@ -208,12 +208,12 @@ _XUnresolveColor(
  *		be linked with -lm.
  */
 
-#define XCMS_ATAN(x)		atan(x)
-#define XCMS_COS(x)		cos(x)
-#define XCMS_CUBEROOT(x)	cbrt(x)
+#define XCMS_ATAN(x)		_XcmsArcTangent(x)
+#define XCMS_COS(x)		_XcmsCosine(x)
+#define XCMS_CUBEROOT(x)	_XcmsCubeRoot(x)
 #define XCMS_FABS(x)		((x) < 0.0 ? -(x) : (x))
-#define XCMS_SIN(x)		sin(x)
-#define XCMS_SQRT(x)		sqrt(x)
+#define XCMS_SIN(x)		_XcmsSine(x)
+#define XCMS_SQRT(x)		_XcmsSquareRoot(x)
 #define XCMS_TAN(x)		(XCMS_SIN(x) / XCMS_COS(x))
 
 double _XcmsArcTangent(double a);

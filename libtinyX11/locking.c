@@ -1,6 +1,5 @@
-/* $Xorg: locking.c,v 1.5 2001/02/09 02:03:40 xorgcvs Exp $ */
 /*
- 
+
 Copyright 1992, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -24,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/locking.c,v 1.5 2003/04/13 19:22:22 dawes Exp $ */
 
 /*
  * Author: Stephen Gildea, MIT X Consortium
@@ -32,6 +30,9 @@ in this Software without prior written authorization from The Open Group.
  * locking.c - multi-thread locking routines implemented in C Threads
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #undef _XLockMutex
 #undef _XUnlockMutex
@@ -40,16 +41,55 @@ in this Software without prior written authorization from The Open Group.
 
 #ifdef XTHREADS
 
+#ifdef __UNIXWARE__
+#include <dlfcn.h>
+#endif
+
+#include "Xprivate.h"
 #include "locking.h"
 #ifdef XTHREADS_WARN
 #include <stdio.h>		/* for warn/debug stuff */
 #endif
+
+/* Additional arguments for source code location lock call was made from */
+#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
+# define XTHREADS_FILE_LINE_ARGS \
+    ,								\
+    char* file,			/* source file, from macro */	\
+    int line
+#else
+# define XTHREADS_FILE_LINE_ARGS /* None */
+#endif
+
 
 #define NUM_FREE_CVLS 4
 
 /* in lcWrap.c */
 extern LockInfoPtr _Xi18n_lock;
 
+#ifdef WIN32
+static DWORD _X_TlsIndex = (DWORD)-1;
+
+void _Xthread_init(void)
+{
+    if (_X_TlsIndex == (DWORD)-1)
+	_X_TlsIndex = TlsAlloc();
+}
+
+struct _xthread_waiter *
+_Xthread_waiter(void)
+{
+    struct _xthread_waiter *me;
+
+    if (!(me = TlsGetValue(_X_TlsIndex))) {
+	me = xmalloc(sizeof(struct _xthread_waiter));
+	me->sem = CreateSemaphore(NULL, 0, 1, NULL);
+	me->next = NULL;
+	TlsSetValue(_X_TlsIndex, me);
+    }
+    return me;
+}
+#endif /* WIN32 */
 
 static xthread_t _Xthread_self(void)
 {
@@ -59,28 +99,18 @@ static xthread_t _Xthread_self(void)
 static LockInfoRec global_lock;
 static LockInfoRec i18n_lock;
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XLockMutex(lip,file,line)
-    LockInfoPtr lip;
-    char* file;
-    int line;
-#else
 static void _XLockMutex(
-    LockInfoPtr lip)
-#endif
+    LockInfoPtr lip
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
     xmutex_lock(lip->lock);
 }
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
 static void _XUnlockMutex(
-    LockInfoPtr lip,
-    char* file,
-    int line)
-#else
-static void _XUnlockMutex(
-    LockInfoPtr lip)
-#endif
+    LockInfoPtr lip
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
     xmutex_unlock(lip->lock);
 }
@@ -172,15 +202,10 @@ static void _XLockDisplayWarn(
 }
 #endif /* XTHREADS_WARN */
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XUnlockDisplay(dpy,file,line)
-    Display *dpy;
-    char *file;
-    int line;
-#else
 static void _XUnlockDisplay(
-    Display *dpy)
-#endif
+    Display *dpy
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
     xthread_t self = xthread_self();
@@ -224,7 +249,7 @@ static struct _XCVList *_XCreateCVL(
 	dpy->lock->free_cvls = cvl->next;
 	dpy->lock->num_free_cvls--;
     } else {
-	cvl = (struct _XCVList *)Xmalloc(sizeof(struct _XCVList));
+	cvl = Xmalloc(sizeof(struct _XCVList));
 	if (!cvl)
 	    return NULL;
 	cvl->cv = xcondition_malloc();
@@ -287,8 +312,8 @@ static void _XPopReader(
 	    dpy->lock->num_free_cvls++;
 	} else {
 	    xcondition_clear(front->cv);
-	    Xfree((char *)front->cv);
-	    Xfree((char *)front);
+	    Xfree(front->cv);
+	    Xfree(front);
 	}
     }
 
@@ -300,23 +325,17 @@ static void _XPopReader(
     }
 }
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XConditionWait(cv, mutex,file,line)
-    xcondition_t cv;
-    xmutex_t mutex;
-    char *file;
-    int line;
-#else
 static void _XConditionWait(
     xcondition_t cv,
-    xmutex_t mutex)
-#endif
+    xmutex_t mutex
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
     xthread_t self = xthread_self();
     char *old_file = locking_file;
     int old_line = locking_line;
-    
+
 #ifdef XTHREADS_DEBUG
     printf("line %d thread %x in condition wait\n", line, self);
 #endif
@@ -351,15 +370,10 @@ static void _XConditionWait(
 #endif /* XTHREADS_WARN */
 }
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XConditionSignal(cv,file,line)
-    xcondition_t cv;
-    char *file;
-    int line;
-#else
 static void _XConditionSignal(
-    xcondition_t cv)
-#endif
+    xcondition_t cv
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
 #ifdef XTHREADS_DEBUG
@@ -368,17 +382,12 @@ static void _XConditionSignal(
 #endif
     xcondition_signal(cv);
 }
-    
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XConditionBroadcast(cv,file,line)
-    xcondition_t cv;
-    char *file;
-    int line;
-#else
+
 static void _XConditionBroadcast(
-    xcondition_t cv)
-#endif
+    xcondition_t cv
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
 #ifdef XTHREADS_DEBUG
@@ -387,7 +396,7 @@ static void _XConditionBroadcast(
 #endif
     xcondition_broadcast(cv);
 }
-    
+
 
 static void _XFreeDisplayLock(
     Display *dpy)
@@ -410,14 +419,14 @@ static void _XFreeDisplayLock(
 	while ((cvl = dpy->lock->free_cvls)) {
 	    dpy->lock->free_cvls = cvl->next;
 	    xcondition_clear(cvl->cv);
-	    Xfree((char *)cvl->cv);
-	    Xfree((char *)cvl);
+	    Xfree(cvl->cv);
+	    Xfree(cvl);
 	}
-	Xfree((char *)dpy->lock);
+	Xfree(dpy->lock);
 	dpy->lock = NULL;
     }
     if (dpy->lock_fns != NULL) {
-	Xfree((char *)dpy->lock_fns);
+	Xfree(dpy->lock_fns);
 	dpy->lock_fns = NULL;
     }
 }
@@ -439,15 +448,10 @@ static void _XDisplayLockWait(
     }
 }
 
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XLockDisplay(dpy, file, line)
-    Display *dpy;
-    char *file;			/* source file, from macro */
-    int line;
-#else
 static void _XLockDisplay(
-    Display *dpy)
-#endif
+    Display *dpy
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
     _XLockDisplayWarn(dpy, file, line);
@@ -456,23 +460,19 @@ static void _XLockDisplay(
 #endif
     if (dpy->lock->locking_level > 0)
 	_XDisplayLockWait(dpy);
+    _XIDHandler(dpy);
+    _XSeqSyncFunction(dpy);
 }
 
 /*
  * _XReply is allowed to exit from select/poll and clean up even if a
  * user-level lock is in force, so it uses this instead of _XFancyLockDisplay.
  */
-#if defined(XTHREADS_WARN) || defined(XTHREADS_FILE_LINE)
-static void _XInternalLockDisplay(dpy, wskip, file, line)
-    Display *dpy;
-    Bool wskip;
-    char *file;			/* source file, from macro */
-    int line;
-#else
 static void _XInternalLockDisplay(
     Display *dpy,
-    Bool wskip)
-#endif
+    Bool wskip
+    XTHREADS_FILE_LINE_ARGS
+    )
 {
 #ifdef XTHREADS_WARN
     _XLockDisplayWarn(dpy, file, line);
@@ -486,6 +486,8 @@ static void _XInternalLockDisplay(
 static void _XUserLockDisplay(
     register Display* dpy)
 {
+    _XDisplayLockWait(dpy);
+
     if (++dpy->lock->locking_level == 1) {
 	dpy->lock->lock_wait = _XDisplayLockWait;
 	dpy->lock->locking_thread = xthread_self();
@@ -510,10 +512,10 @@ void _XUserUnlockDisplay(
 static int _XInitDisplayLock(
     Display *dpy)
 {
-    dpy->lock_fns = (struct _XLockPtrs*)Xmalloc(sizeof(struct _XLockPtrs));
+    dpy->lock_fns = Xmalloc(sizeof(struct _XLockPtrs));
     if (dpy->lock_fns == NULL)
 	return -1;
-    dpy->lock = (struct _XLockInfo *)Xmalloc(sizeof(struct _XLockInfo));
+    dpy->lock = Xmalloc(sizeof(struct _XLockInfo));
     if (dpy->lock == NULL) {
 	_XFreeDisplayLock(dpy);
 	return -1;
@@ -561,11 +563,27 @@ static int _XInitDisplayLock(
     return 0;
 }
 
+#ifdef __UNIXWARE__
+xthread_t __x11_thr_self() { return 0; }
+xthread_t (*_x11_thr_self)() = __x11_thr_self;
+#endif
 
-Status XInitThreads()
+
+Status XInitThreads(void)
 {
     if (_Xglobal_lock)
 	return 1;
+#ifdef __UNIXWARE__
+    else {
+       void *dl_handle = dlopen(NULL, RTLD_LAZY);
+       if (!dl_handle ||
+         ((_x11_thr_self = (xthread_t(*)())dlsym(dl_handle,"thr_self")) == 0)) {
+	       _x11_thr_self = __x11_thr_self;
+	       (void) fprintf (stderr,
+	"XInitThreads called, but no libthread in the calling program!\n" );
+       }
+    }
+#endif /* __UNIXWARE__ */
 #ifdef xthread_init
     xthread_init();		/* return value? */
 #endif
@@ -600,7 +618,7 @@ Status XInitThreads()
 }
 
 #else /* XTHREADS */
-Status XInitThreads()
+Status XInitThreads(void)
 {
     return 0;
 }

@@ -1,4 +1,3 @@
-/* $Xorg: PeekIfEv.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,9 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/PeekIfEv.c,v 1.4 2001/12/14 19:54:03 dawes Exp $ */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /*
@@ -36,15 +36,15 @@ in this Software without prior written authorization from The Open Group.
  */
 
 int
-XPeekIfEvent (dpy, event, predicate, arg)
-	register Display *dpy;
-	register XEvent *event;
+XPeekIfEvent (
+	register Display *dpy,
+	register XEvent *event,
 	Bool (*predicate)(
 			  Display*			/* display */,
 			  XEvent*			/* event */,
 			  char*				/* arg */
-			  );
-	char *arg;
+			  ),
+	char *arg)
 {
 	register _XQEvent *prev, *qelt;
 	unsigned long qe_serial = 0;
@@ -57,7 +57,12 @@ XPeekIfEvent (dpy, event, predicate, arg)
 		 prev = qelt, qelt = qelt->next) {
 		if(qelt->qserial_num > qe_serial
 		   && (*predicate)(dpy, &qelt->event, arg)) {
+		    XEvent copy;
 		    *event = qelt->event;
+		    if (_XCopyEventCookie(dpy, &event->xcookie, &copy.xcookie)) {
+			_XStoreEventCookie(dpy, &copy);
+			*event = copy;
+		    }
 		    UnlockDisplay(dpy);
 		    return 0;
 		}

@@ -1,4 +1,3 @@
-/* $Xorg: ParseGeom.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 
 /*
 
@@ -27,28 +26,12 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ParseGeom.c,v 1.3 2001/12/14 19:54:03 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xutil.h"
-
-#ifdef notdef
-/* 
- *Returns pointer to first char ins search which is also in what, else NULL.
- */
-static char *strscan (search, what)
-char *search, *what;
-{
-	int i, len = strlen (what);
-	char c;
-
-	while ((c = *(search++)) != NULL)
-		for (i = 0; i < len; i++)
-			if (c == what [i])
-				return (--search);
-	return (NULL);
-}
-#endif
 
 /*
  *    XParseGeometry parses strings of the form
@@ -59,7 +42,7 @@ char *search, *what;
  *   It returns a bitmask that indicates which of the four values
  *   were actually found in the string.  For each value found,
  *   the corresponding argument is updated;  for each value
- *   not found, the corresponding argument is left unchanged. 
+ *   not found, the corresponding argument is left unchanged.
  */
 
 static int
@@ -67,7 +50,7 @@ ReadInteger(char *string, char **NextString)
 {
     register int Result = 0;
     int Sign = 1;
-    
+
     if (*string == '+')
 	string++;
     else if (*string == '-')
@@ -107,13 +90,13 @@ unsigned int *height)    /* RETURN */
 	strind = (char *)string;
 	if (*strind != '+' && *strind != '-' && *strind != 'x') {
 		tempWidth = ReadInteger(strind, &nextCharacter);
-		if (strind == nextCharacter) 
+		if (strind == nextCharacter)
 		    return (0);
 		strind = nextCharacter;
 		mask |= WidthValue;
 	}
 
-	if (*strind == 'x' || *strind == 'X') {	
+	if (*strind == 'x' || *strind == 'X') {
 		strind++;
 		tempHeight = ReadInteger(strind, &nextCharacter);
 		if (strind == nextCharacter)
@@ -161,7 +144,7 @@ unsigned int *height)    /* RETURN */
 			mask |= YValue;
 		}
 	}
-	
+
 	/* If strind isn't at the end of the string the it's an invalid
 		geometry specification. */
 

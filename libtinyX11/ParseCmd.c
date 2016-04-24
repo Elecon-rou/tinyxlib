@@ -1,15 +1,13 @@
-/* $XConsortium: ParseCmd.c,v 1.25 94/04/17 20:20:22 gildea Exp $ */
 
 /***********************************************************
 
-Copyright (c) 1987, 1988  X Consortium
+Copyright 1987, 1988, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -17,26 +15,26 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 
 Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -57,39 +55,29 @@ SOFTWARE.
    other options appearing before the longer version in the table.
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
-#include "Xresource.h"
+#include <X11/Xresource.h>
 #include <stdio.h>
 
 
-static void _XReportParseError(arg, msg)
-    XrmOptionDescRec *arg;
-    char *msg;
+static void _XReportParseError(XrmOptionDescRec *arg, const char *msg)
 {
-#if 0
     (void) fprintf(stderr, "Error parsing argument \"%s\" (%s); %s\n",
 		   arg->option, arg->specifier, msg);
-#endif
     exit(1);
 }
 
-#if NeedFunctionPrototypes
-void XrmParseCommand(
+void
+XrmParseCommand(
     XrmDatabase		*pdb,		/* data base */
     register XrmOptionDescList options, /* pointer to table of valid options */
     int			num_options,	/* number of options		     */
     _Xconst char	*prefix,	/* name to prefix resources with     */
     int			*argc,		/* address of argument count 	     */
     char		**argv)		/* argument list (command line)	     */
-#else
-void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
-    XrmDatabase		*pdb;		/* data base */
-    register XrmOptionDescList options; /* pointer to table of valid options */
-    int			num_options;	/* number of options		     */
-    char		*prefix;	/* name to prefix resources with     */
-    int			*argc;		/* address of argument count 	     */
-    char		**argv;		/* argument list (command line)	     */
-#endif
 {
     int 		foundOption;
     char		**argsave;
@@ -98,7 +86,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
     XrmQuark		quarks[100];
     XrmBinding		*start_bindings;
     XrmQuark		*start_quarks;
-    char		*optP, *argP=NULL, optchar, argchar;
+    char		*optP, *argP = NULL, optchar, argchar = 0;
     int			matches;
     enum {DontCare, Check, NotSorted, Sorted} table_is_sorted;
     char		**argend;
@@ -110,7 +98,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
     XrmQPutStringResource(pdb, bindings, quarks, value_str);    \
     } /* PutCommandResource */
 
-    myargc = (*argc); 
+    myargc = (*argc);
     argend = argv + myargc;
     argsave = ++argv;
 
@@ -169,7 +157,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
 		    --(*argc);
 		    PutCommandResource(options[i].value);
 		    break;
-			    
+
 		case XrmoptionIsArg:
 		    --(*argc);
 		    PutCommandResource(*argv);
@@ -187,7 +175,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
 		    } else
 			(*argsave++) = (*argv);
 		    break;
-		
+
 		case XrmoptionResArg:
 		    if (myargc > 1) {
 			++argv; --myargc; --(*argc); --(*argc);
@@ -195,13 +183,13 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
 		    } else
 			(*argsave++) = (*argv);
 		    break;
-		
+
 		case XrmoptionSkipArg:
 		    if (myargc > 1) {
 			--myargc;
 			(*argsave++) = (*argv++);
 		    }
-		    (*argsave++) = (*argv); 
+		    (*argsave++) = (*argv);
 		    break;
 
 		case XrmoptionSkipLine:
@@ -211,7 +199,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
 
 		case XrmoptionSkipNArgs:
 		    {
-			register int j = 1 + (int) options[i].value;
+			register int j = 1 + (long) options[i].value;
 
 			if (j > myargc) j = myargc;
 			for (; j > 0; j--) {
@@ -229,7 +217,7 @@ void XrmParseCommand(pdb, options, num_options, prefix, argc, argv)
 		}
 	}
 	else
-	    (*argsave++) = (*argv);  /*compress arglist*/ 
+	    (*argsave++) = (*argv);  /*compress arglist*/
     }
 
     if (argsave < argend)

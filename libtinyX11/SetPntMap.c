@@ -1,4 +1,3 @@
-/* $Xorg: SetPntMap.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,10 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/SetPntMap.c,v 1.4 2001/12/14 19:54:06 dawes Exp $ */
 
-#define NEED_REPLIES
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 /* returns either  DeviceMappingSuccess or DeviceMappingBusy  */
 
@@ -44,8 +43,8 @@ XSetPointerMapping (
     GetReq (SetPointerMapping, req);
     req->nElts = nmaps;
     req->length += (nmaps + 3)>>2;
-    Data (dpy, (char *)map, (long) nmaps);
-    if (_XReply (dpy, (xReply *)&rep, 0, xFalse) == 0) 
+    Data (dpy, (_Xconst char *)map, (long) nmaps);
+    if (_XReply (dpy, (xReply *)&rep, 0, xFalse) == 0)
 	rep.success = MappingSuccess;
     UnlockDisplay(dpy);
     SyncHandle();
@@ -53,14 +52,13 @@ XSetPointerMapping (
     }
 
 int
-XChangeKeyboardMapping (dpy, first_keycode, keysyms_per_keycode, 
-		     keysyms, nkeycodes)
-    register Display *dpy;
-    int first_keycode;
-    int keysyms_per_keycode;
-    KeySym *keysyms;
-    int nkeycodes;
-    {
+XChangeKeyboardMapping (
+    register Display *dpy,
+    int first_keycode,
+    int keysyms_per_keycode,
+    KeySym *keysyms,
+    int nkeycodes)
+{
     register long nbytes;
     register xChangeKeyboardMappingReq *req;
 
@@ -69,7 +67,6 @@ XChangeKeyboardMapping (dpy, first_keycode, keysyms_per_keycode,
     req->firstKeyCode = first_keycode;
     req->keyCodes = nkeycodes;
     req->keySymsPerKeyCode = keysyms_per_keycode;
-    req->firstKeyCode = first_keycode;
     req->length += nkeycodes * keysyms_per_keycode;
     nbytes = keysyms_per_keycode * nkeycodes * 4;
     Data32 (dpy, (long *)keysyms, nbytes);
@@ -77,4 +74,4 @@ XChangeKeyboardMapping (dpy, first_keycode, keysyms_per_keycode,
     SyncHandle();
     return 0;
     }
-    
+

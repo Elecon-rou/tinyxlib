@@ -1,4 +1,3 @@
-/* $Xorg: WarpPtr.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,19 +23,24 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/WarpPtr.c,v 1.3 2001/01/17 19:41:47 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XWarpPointer(dpy, src_win, dest_win, src_x, src_y, src_width, src_height,
-	     dest_x, dest_y)
-     register Display *dpy;
-     Window src_win, dest_win;
-     int src_x, src_y;
-     unsigned int src_width, src_height;
-     int dest_x, dest_y;
-{       
+XWarpPointer(
+     register Display *dpy,
+     Window src_win,
+     Window dest_win,
+     int src_x,
+     int src_y,
+     unsigned int src_width,
+     unsigned int src_height,
+     int dest_x,
+     int dest_y)
+{
     register xWarpPointerReq *req;
 
     LockDisplay(dpy);

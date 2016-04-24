@@ -2,7 +2,6 @@
 #ifndef _CV_H_
 #define _CV_H_
 
-#include <X11/Xcms.h>
 /* variables */
 extern const char      _XcmsCIEXYZ_prefix[];
 extern const char      _XcmsCIEuvY_prefix[];

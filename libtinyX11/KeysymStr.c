@@ -1,4 +1,3 @@
-/* $Xorg: KeysymStr.c,v 1.5 2001/02/09 02:03:34 xorgcvs Exp $ */
 
 /*
 
@@ -25,15 +24,16 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/KeysymStr.c,v 3.9 2003/04/13 19:22:16 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xresource.h>
 #include <X11/keysymdef.h>
+#include "Xresinternal.h"
 
 #include <stdio.h> /* sprintf */
-
-typedef unsigned long Signature;
 
 #define NEEDVTABLE
 #include "ks_tables.h"
@@ -68,32 +68,30 @@ SameValue(
     return False;
 }
 
-char *XKeysymToString(ks)
-    KeySym ks;
+char *XKeysymToString(KeySym ks)
 {
-    register int i, n;
-    int h;
-    register int idx;
-    const unsigned char *entry;
-    unsigned char val1, val2;
     XrmDatabase keysymdb;
 
     if (!ks || (ks & ((unsigned long) ~0x1fffffff)) != 0)
 	return ((char *)NULL);
     if (ks == XK_VoidSymbol)
 	ks = 0;
-    if (ks <= 0xffff)
+    if (ks <= 0x1fffffff)
     {
-	val1 = ks >> 8;
-	val2 = ks & 0xff;
-	i = ks % VTABLESIZE;
-	h = i + 1;
-	n = VMAXHASH;
+	unsigned char val1 = ks >> 24;
+	unsigned char val2 = (ks >> 16) & 0xff;
+	unsigned char val3 = (ks >> 8) & 0xff;
+	unsigned char val4 = ks & 0xff;
+	int i = ks % VTABLESIZE;
+	int h = i + 1;
+	int n = VMAXHASH;
+	int idx;
 	while ((idx = hashKeysym[i]))
 	{
-	    entry = &_XkeyTable[idx];
-	    if ((entry[0] == val1) && (entry[1] == val2))
-		return ((char *)entry + 2);
+	    const unsigned char *entry = &_XkeyTable[idx];
+	    if ((entry[0] == val1) && (entry[1] == val2) &&
+                (entry[2] == val3) && (entry[3] == val4))
+		return ((char *)entry + 4);
 	    if (!--n)
 		break;
 	    i += h;
@@ -109,7 +107,7 @@ char *XKeysymToString(ks)
 	XrmQuark empty = NULLQUARK;
 	GRNData data;
 
-	sprintf(buf, "%lX", ks);
+	snprintf(buf, sizeof(buf), "%lX", ks);
 	resval.addr = (XPointer)buf;
 	resval.size = strlen(buf) + 1;
 	data.name = (char *)NULL;
@@ -120,7 +118,7 @@ char *XKeysymToString(ks)
         if (data.name)
 	    return data.name;
     }
-    if ((ks & 0xff000000) == 0x01000000){
+    if (ks >= 0x01000100 && ks <= 0x0110ffff) {
         KeySym val = ks & 0xffffff;
         char *s;
         int i;
@@ -134,7 +132,7 @@ char *XKeysymToString(ks)
         i--;
         s[i--] = '\0';
         for (; i; i--){
-            val1 = val & 0xf;
+            unsigned char val1 = val & 0xf;
             val >>= 4;
             if (val1 < 10)
                 s[i] = '0'+ val1;
@@ -142,7 +140,7 @@ char *XKeysymToString(ks)
                 s[i] = 'A'+ val1 - 10;
         }
         s[i] = 'U';
-        return s; 
+        return s;
     }
     return ((char *) NULL);
 }

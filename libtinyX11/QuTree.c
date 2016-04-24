@@ -1,4 +1,3 @@
-/* $Xorg: QuTree.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,20 +23,21 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/QuTree.c,v 1.5 2001/01/17 19:41:42 dawes Exp $ */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Status XQueryTree (dpy, w, root, parent, children, nchildren)
-    register Display *dpy;
-    Window w;
-    Window *root;	/* RETURN */
-    Window *parent;	/* RETURN */
-    Window **children;	/* RETURN */
-    unsigned int *nchildren;  /* RETURN */
+Status XQueryTree (
+    register Display *dpy,
+    Window w,
+    Window *root,	/* RETURN */
+    Window *parent,	/* RETURN */
+    Window **children,	/* RETURN */
+    unsigned int *nchildren)  /* RETURN */
 {
-    long nbytes;
+    unsigned long nbytes;
     xQueryTreeReply rep;
     register xResourceReq *req;
 
@@ -49,17 +49,17 @@ Status XQueryTree (dpy, w, root, parent, children, nchildren)
 	return (0);
 	}
 
-    *children = (Window *) NULL; 
+    *children = (Window *) NULL;
     if (rep.nChildren != 0) {
 	nbytes = rep.nChildren * sizeof(Window);
-	*children = (Window *) Xmalloc((unsigned) nbytes);
-	nbytes = rep.nChildren << 2;
+	*children = Xmalloc(nbytes);
 	if (! *children) {
-	    _XEatData(dpy, (unsigned long) nbytes);
+	    _XEatDataWords(dpy, rep.length);
 	    UnlockDisplay(dpy);
 	    SyncHandle();
 	    return (0);
 	}
+	nbytes = rep.nChildren << 2;
 	_XRead32 (dpy, (long *) *children, nbytes);
     }
     *parent = rep.parent;

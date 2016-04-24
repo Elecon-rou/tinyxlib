@@ -1,5 +1,4 @@
 /*
- * $Xorg: ErrDes.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $
  */
 
 /***********************************************************
@@ -31,13 +30,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -48,49 +47,61 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/X11/ErrDes.c,v 3.11 2003/08/06 14:03:59 eich Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xos.h>
 #include "Xresource.h"
 #include <stdio.h>
 
 #ifndef ERRORDB
+#ifndef XERRORDB
 #define ERRORDB "/usr/lib/X11/XErrorDB"
+#else
+#define ERRORDB XERRORDB
+#endif
 #endif
 
 /*
  * descriptions of errors in Section 4 of Protocol doc (pp. 350-351); more
  * verbose descriptions are given in the error database
  */
-static const char * const _XErrorList[] = {
-    /* No error	*/		"no error",
-    /* BadRequest */		"BadRequest",
-    /* BadValue	*/		"BadValue",
-    /* BadWindow */		"BadWindow",
-    /* BadPixmap */		"BadPixmap",
-    /* BadAtom */		"BadAtom",
-    /* BadCursor */		"BadCursor",
-    /* BadFont */		"BadFont",
-    /* BadMatch	*/		"BadMatch",
-    /* BadDrawable */		"BadDrawable",
-    /* BadAccess */		"BadAccess",
-    /* BadAlloc	*/		"BadAlloc",
-    /* BadColor */  		"BadColor",
-    /* BadGC */  		"BadGC",
-    /* BadIDChoice */		"BadIDChoice",
-    /* BadName */		"BadName",
-    /* BadLength */		"BadLength",
-    /* BadImplementation */	"BadImplementation",
+static const char _XErrorList[] =
+    /* No error */          "no error\0"
+    /* BadRequest */        "BadRequest\0"
+    /* BadValue */          "BadValue\0"
+    /* BadWindow */         "BadWindow\0"
+    /* BadPixmap */         "BadPixmap\0"
+    /* BadAtom */           "BadAtom\0"
+    /* BadCursor */         "BadCursor\0"
+    /* BadFont */           "BadFont\0"
+    /* BadMatch */          "BadMatch\0"
+    /* BadDrawable */       "BadDrawable\0"
+    /* BadAccess */         "BadAccess\0"
+    /* BadAlloc */          "BadAlloc\0"
+    /* BadColor */          "BadColor\0"
+    /* BadGC */             "BadGC\0"
+    /* BadIDChoice */       "BadIDChoice\0"
+    /* BadName */           "BadName\0"
+    /* BadLength */         "BadLength\0"
+    /* BadImplementation */ "BadImplementation"
+;
+
+/* offsets into _XErrorList */
+static const unsigned char _XErrorOffsets[] = {
+    0, 9, 20, 29, 39, 49, 57, 67, 75, 84, 96,
+    106, 115, 124, 130, 142, 150, 160
 };
 
 
 int
-XGetErrorText(dpy, code, buffer, nbytes)
-    register int code;
-    register Display *dpy;
-    char *buffer;
-    int nbytes;
+XGetErrorText(
+    register Display *dpy,
+    register int code,
+    char *buffer,
+    int nbytes)
 {
     char buf[150];
     register _XExtension *ext;
@@ -98,8 +109,9 @@ XGetErrorText(dpy, code, buffer, nbytes)
 
     if (nbytes == 0) return 0;
     if (code <= BadImplementation && code > 0) {
-	sprintf(buf, "%d", code);
-	(void) XGetErrorDatabaseText(dpy, "XProtoError", buf, _XErrorList[code],
+        snprintf(buf, sizeof(buf), "%d", code);
+        (void) XGetErrorDatabaseText(dpy, "XProtoError", buf,
+                                     _XErrorList + _XErrorOffsets[code],
 				     buffer, nbytes);
     } else
 	buffer[0] = '\0';
@@ -108,16 +120,17 @@ XGetErrorText(dpy, code, buffer, nbytes)
  	if (ext->error_string)
  	    (*ext->error_string)(dpy, code, &ext->codes, buffer, nbytes);
 	if (ext->codes.first_error &&
-	    ext->codes.first_error < code &&
+	    ext->codes.first_error <= code &&
 	    (!bext || ext->codes.first_error > bext->codes.first_error))
 	    bext = ext;
-    }    
+    }
     if (!buffer[0] && bext) {
-	sprintf(buf, "%s.%d", bext->name, code - bext->codes.first_error);
+	snprintf(buf, sizeof(buf), "%s.%d",
+                 bext->name, code - bext->codes.first_error);
 	(void) XGetErrorDatabaseText(dpy, "XProtoError", buf, "", buffer, nbytes);
     }
     if (!buffer[0])
-	sprintf(buffer, "%d", code);
+	snprintf(buffer, nbytes, "%d", code);
     return 0;
 }
 
@@ -146,9 +159,17 @@ XGetErrorDatabaseText(
 	   mutex unlocked. */
 	XrmDatabase temp_db;
 	int do_destroy;
+	const char *dbname;
 
 	XrmInitialize();
-	temp_db = XrmGetFileDatabase(ERRORDB);
+#ifdef WIN32
+	dbname = getenv("XERRORDB");
+	if (!dbname)
+	    dbname = ERRORDB;
+#else
+    dbname = ERRORDB;
+#endif
+	temp_db = XrmGetFileDatabase(dbname);
 
 	_XLockMutex(_Xglobal_lock);
 	if (!db) {
@@ -165,13 +186,13 @@ XGetErrorDatabaseText(
     if (db)
     {
 	tlen = strlen (name) + strlen (type) + 2;
-	if (tlen <= BUFSIZE)
+	if (tlen <= sizeof(temp))
 	    tptr = temp;
 	else
 	    tptr = Xmalloc (tlen);
 	if (tptr) {
-	    sprintf(tptr, "%s.%s", name, type);
-	    XrmGetResource(db, tptr, "ErrorType.ErrorNumber", 
+	    snprintf(tptr, tlen, "%s.%s", name, type);
+	    XrmGetResource(db, tptr, "ErrorType.ErrorNumber",
 	      &type_str, &result);
 	    if (tptr != temp)
 		Xfree (tptr);

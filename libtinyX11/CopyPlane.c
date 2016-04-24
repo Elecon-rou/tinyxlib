@@ -1,4 +1,3 @@
-/* $Xorg: CopyPlane.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,23 +23,27 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/CopyPlane.c,v 1.3 2001/01/17 19:41:33 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XCopyPlane(dpy, src_drawable, dst_drawable, gc,
-	  src_x, src_y, width, height,
-	  dst_x, dst_y, bit_plane)
-     register Display *dpy;
-     Drawable src_drawable, dst_drawable;
-     GC gc;
-     int src_x, src_y;
-     unsigned int width, height;
-     int dst_x, dst_y;
-     unsigned long bit_plane;
+XCopyPlane(
+     register Display *dpy,
+     Drawable src_drawable,
+     Drawable dst_drawable,
+     GC gc,
+     int src_x,
+     int src_y,
+     unsigned int width,
+     unsigned int height,
+     int dst_x,
+     int dst_y,
+     unsigned long bit_plane)
 
-{       
+{
     register xCopyPlaneReq *req;
 
     LockDisplay(dpy);

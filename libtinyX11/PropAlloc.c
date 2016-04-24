@@ -1,4 +1,3 @@
-/* $Xorg: PropAlloc.c,v 1.5 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -24,51 +23,47 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/PropAlloc.c,v 1.3 2001/01/17 19:41:41 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xutil.h"
 #include <stdio.h>
 
 
 /*
- * Routines for allocating space for structures that are expected to get 
+ * Routines for allocating space for structures that are expected to get
  * longer at some point.
  */
 
-XSizeHints *XAllocSizeHints ()
+XSizeHints *XAllocSizeHints (void)
 {
-    return ((XSizeHints *) Xcalloc (1, (unsigned) sizeof (XSizeHints)));
+    return Xcalloc (1, sizeof (XSizeHints));
 }
 
 
-XStandardColormap *XAllocStandardColormap ()
+XStandardColormap *XAllocStandardColormap (void)
 {
-    return ((XStandardColormap *)
-	    Xcalloc (1, (unsigned) sizeof (XStandardColormap)));
+    return Xcalloc (1, sizeof (XStandardColormap));
 }
 
 
-XWMHints *XAllocWMHints ()
+XWMHints *XAllocWMHints (void)
 {
-    return ((XWMHints *) Xcalloc (1, (unsigned) sizeof (XWMHints)));
+    return Xcalloc (1, sizeof (XWMHints));
 }
 
 
-XClassHint *XAllocClassHint ()
+XClassHint *XAllocClassHint (void)
 {
-    register XClassHint *h;
-
-    if ((h = (XClassHint *) Xcalloc (1, (unsigned) sizeof (XClassHint))))
-      h->res_name = h->res_class = NULL;
-
-    return h;
+    return Xcalloc (1, sizeof (XClassHint));
 }
 
 
-XIconSize *XAllocIconSize ()
+XIconSize *XAllocIconSize (void)
 {
-    return ((XIconSize *) Xcalloc (1, (unsigned) sizeof (XIconSize)));
+    return Xcalloc (1, sizeof (XIconSize));
 }
 
 

@@ -1,4 +1,3 @@
-/* $Xorg: DrLine.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/DrLine.c,v 1.3 2001/01/17 19:41:34 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /* precompute the maximum size of batching request allowed */
@@ -34,19 +35,16 @@ in this Software without prior written authorization from The Open Group.
 #define zsize (SIZEOF(xPolySegmentReq) + ZLNSPERBATCH * SIZEOF(xSegment))
 
 int
-XDrawLine (dpy, d, gc, x1, y1, x2, y2)
-    register Display *dpy;
-    Drawable d;
-    GC gc;
-    int x1, y1, x2, y2;
+XDrawLine (
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    int x1,
+    int y1,
+    int x2,
+    int y2)
 {
     register xSegment *segment;
-#ifdef MUSTCOPY
-    xSegment segmentdata;
-    long len = SIZEOF(xSegment);
-
-    segment = &segmentdata;
-#endif /* not MUSTCOPY */
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
@@ -63,31 +61,21 @@ XDrawLine (dpy, d, gc, x1, y1, x2, y2)
        && (((char *)dpy->bufptr - (char *)req) < (gc->values.line_width ?
 						  wsize : zsize)) ) {
 	 req->length += SIZEOF(xSegment) >> 2;
-#ifndef MUSTCOPY
          segment = (xSegment *) dpy->bufptr;
 	 dpy->bufptr += SIZEOF(xSegment);
-#endif /* not MUSTCOPY */
 	 }
 
     else {
 	GetReqExtra (PolySegment, SIZEOF(xSegment), req);
 	req->drawable = d;
 	req->gc = gc->gid;
-#ifdef MUSTCOPY
-	dpy->bufptr -= SIZEOF(xSegment);
-#else
 	segment = (xSegment *) NEXTPTR(req,xPolySegmentReq);
-#endif /* MUSTCOPY */
 	}
 
     segment->x1 = x1;
     segment->y1 = y1;
     segment->x2 = x2;
     segment->y2 = y2;
-
-#ifdef MUSTCOPY
-    Data (dpy, (char *) &segmentdata, len);
-#endif /* MUSTCOPY */
 
     UnlockDisplay(dpy);
     SyncHandle();

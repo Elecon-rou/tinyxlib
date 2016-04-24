@@ -1,4 +1,3 @@
-/* $Xorg: StName.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/StName.c,v 1.4 2001/12/14 19:54:07 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 
@@ -35,8 +36,8 @@ XStoreName (
     Window w,
     _Xconst char *name)
 {
-    return XChangeProperty(dpy, w, XA_WM_NAME, XA_STRING, 
-			   8, PropModeReplace, (unsigned char *)name,
+    return XChangeProperty(dpy, w, XA_WM_NAME, XA_STRING,
+			   8, PropModeReplace, (_Xconst unsigned char *)name,
 			   name ? strlen(name) : 0);
 }
 
@@ -46,7 +47,7 @@ XSetIconName (
     Window w,
     _Xconst char *icon_name)
 {
-    return XChangeProperty(dpy, w, XA_WM_ICON_NAME, XA_STRING, 
-			   8, PropModeReplace, (unsigned char *)icon_name,
+    return XChangeProperty(dpy, w, XA_WM_ICON_NAME, XA_STRING, 8,
+                           PropModeReplace, (_Xconst unsigned char *)icon_name,
 			   icon_name ? strlen(icon_name) : 0);
 }

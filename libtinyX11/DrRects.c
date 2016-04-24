@@ -23,17 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/DrRects.c,v 1.5 2006/01/09 14:58:26 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XDrawRectangles(dpy, d, gc, rects, n_rects)
-register Display *dpy;
-Drawable d;
-GC gc;
-XRectangle *rects;
-int n_rects;
+XDrawRectangles(
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    XRectangle *rects,
+    int n_rects)
 {
     register xPolyRectangleReq *req;
     long len;

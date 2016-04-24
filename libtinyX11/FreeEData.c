@@ -1,4 +1,3 @@
-/* $Xorg: FreeEData.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,21 +23,22 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FreeEData.c,v 1.3 2001/01/17 19:41:36 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-_XFreeExtData (extension)
-     XExtData *extension;
+_XFreeExtData (XExtData *extension)
 {
 	XExtData *temp;
 	while (extension) {
-		if (extension->free_private) 
+		if (extension->free_private)
 		    (*extension->free_private)(extension);
-		else Xfree ((char *)extension->private_data);
+		else Xfree (extension->private_data);
 		temp = extension->next;
-		Xfree ((char *)extension);
+		Xfree (extension);
 		extension = temp;
 	}
 	return 0;

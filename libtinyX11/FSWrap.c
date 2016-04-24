@@ -1,4 +1,3 @@
-/* $XConsortium: FSWrap.c /main/13 1995/09/16 08:59:10 kaleb $ */
 
 /*
  * Copyright 1991 by the Open Software Foundation
@@ -18,27 +17,25 @@
  * OPEN SOFTWARE FOUNDATION DISCLAIMS ALL WARRANTIES WITH REGARD TO
  * THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS, IN NO EVENT SHALL OPEN SOFTWARE FOUNDATIONN BE
- * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- * 
- *		 M. Collins		OSF  
+ *
+ *		 M. Collins		OSF
  *
  *		 Katsuhisa Yano		TOSHIBA Corp.
- */				
+ */
 
 /*
 
-Copyright (c) 1991  X Consortium
+Copyright 1991, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -46,34 +43,38 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
 
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xlcint.h"
 #include <ctype.h>
 #include <X11/Xos.h>
 
 
-#define	MAXLIST	256
+#define	XMAXLIST	256
 
 char **
-_XParseBaseFontNameList(str, num)
-    char           *str;
-    int            *num;
+_XParseBaseFontNameList(
+    char           *str,
+    int            *num)
 {
-    char           *plist[MAXLIST];
+    char           *plist[XMAXLIST];
     char          **list;
-    char           *ptr;
+    char           *ptr, *psave;
 
     *num = 0;
     if (!str || !*str) {
@@ -84,12 +85,13 @@ _XParseBaseFontNameList(str, num)
     if (!*str)
 	return (char **)NULL;
 
-    if (!(ptr = Xmalloc((unsigned)strlen(str) + 1))) {
+    if (!(ptr = strdup(str))) {
 	return (char **)NULL;
     }
-    strcpy(ptr, str);
 
-    while (1) {
+    psave = ptr;
+    /* somebody who specifies more than XMAXLIST basefontnames will lose */
+    while (*num < (sizeof plist / sizeof plist[0])) {
 	char	*back;
 
 	plist[*num] = ptr;
@@ -110,8 +112,8 @@ _XParseBaseFontNameList(str, num)
 	if (!*ptr)
 	    break;
     }
-    if (!(list = (char **) Xmalloc((unsigned)sizeof(char *) * (*num + 1)))) {
-	Xfree(ptr);
+    if (!(list = Xmalloc(sizeof(char *) * (*num + 1)))) {
+	Xfree(psave);
 	return (char **)NULL;
     }
     memcpy((char *)list, (char *)plist, sizeof(char *) * (*num));
@@ -121,17 +123,17 @@ _XParseBaseFontNameList(str, num)
 }
 
 static char **
-copy_string_list(string_list, list_count)
-    char **string_list;
-    int list_count;
+copy_string_list(
+    char **string_list,
+    int list_count)
 {
     char **string_list_ret, **list_src, **list_dst, *dst;
     int length, count;
 
-    if (string_list == NULL)
+    if (string_list == NULL || list_count <= 0)
 	return (char **) NULL;
 
-    string_list_ret = (char **) Xmalloc(sizeof(char *) * list_count);
+    string_list_ret = Xmalloc(sizeof(char *) * list_count);
     if (string_list_ret == NULL)
 	return (char **) NULL;
 
@@ -140,7 +142,7 @@ copy_string_list(string_list, list_count)
     for (length = 0; count-- > 0; list_src++)
 	length += strlen(*list_src) + 1;
 
-    dst = (char *) Xmalloc(length);
+    dst = Xmalloc(length);
     if (dst == NULL) {
 	Xfree(string_list_ret);
 	return (char **) NULL;
@@ -158,7 +160,6 @@ copy_string_list(string_list, list_count)
     return string_list_ret;
 }
 
-#if NeedFunctionPrototypes
 XFontSet
 XCreateFontSet (
     Display        *dpy,
@@ -166,16 +167,6 @@ XCreateFontSet (
     char         ***missing_charset_list,
     int            *missing_charset_count,
     char          **def_string)
-#else
-XFontSet
-XCreateFontSet (dpy, base_font_name_list, missing_charset_list,
-	        missing_charset_count, def_string)
-    Display        *dpy;
-    char           *base_font_name_list;
-    char         ***missing_charset_list;
-    int            *missing_charset_count;
-    char          **def_string;
-#endif
 {
     XOM om;
     XOC oc;
@@ -183,19 +174,17 @@ XCreateFontSet (dpy, base_font_name_list, missing_charset_list,
 
     *missing_charset_list = NULL;
     *missing_charset_count = 0;
-#if 0
+
     om = XOpenOM(dpy, NULL, NULL, NULL);
-#endif
-om=NULL;
     if (om == NULL)
 	return (XFontSet) NULL;
-    
+
     if ((oc = XCreateOC(om, XNBaseFontName, base_font_name_list, NULL))) {
 	list = &oc->core.missing_list;
 	oc->core.om_automatic = True;
     } else
 	list = &om->core.required_charset;
-    
+
     *missing_charset_list = copy_string_list(list->charset_list,
 					     list->charset_count);
     *missing_charset_count = list->charset_count;
@@ -208,20 +197,18 @@ om=NULL;
 	if (!*def_string)
 	    *def_string = "";
     }
-    
-#if 0
+
     if (oc == NULL)
 	XCloseOM(om);
-#endif
 
     return (XFontSet) oc;
 }
 
 int
-XFontsOfFontSet(font_set, font_struct_list, font_name_list)
-    XFontSet        font_set;
-    XFontStruct  ***font_struct_list;
-    char         ***font_name_list;
+XFontsOfFontSet(
+    XFontSet        font_set,
+    XFontStruct  ***font_struct_list,
+    char         ***font_name_list)
 {
     *font_name_list   = font_set->core.font_info.font_name_list;
     *font_struct_list = font_set->core.font_info.font_struct_list;
@@ -229,53 +216,47 @@ XFontsOfFontSet(font_set, font_struct_list, font_name_list)
 }
 
 char *
-XBaseFontNameListOfFontSet(font_set)
-    XFontSet        font_set;
+XBaseFontNameListOfFontSet(XFontSet font_set)
 {
     return font_set->core.base_name_list;
 }
 
 char *
-XLocaleOfFontSet(font_set)
-    XFontSet        font_set;
+XLocaleOfFontSet(XFontSet font_set)
 {
     return font_set->core.om->core.lcd->core->name;
 }
 
-extern Bool XContextDependentDrawing(font_set)
-    XFontSet        font_set;
+Bool
+XContextDependentDrawing(XFontSet font_set)
 {
     return font_set->core.om->core.context_dependent;
 }
 
 Bool
-XDirectionalDependentDrawing(font_set)
-    XFontSet        font_set;
+XDirectionalDependentDrawing(XFontSet font_set)
 {
     return font_set->core.om->core.directional_dependent;
 }
 
 Bool
-XContextualDrawing(font_set)
-    XFontSet        font_set;
+XContextualDrawing(XFontSet font_set)
 {
     return font_set->core.om->core.contextual_drawing;
 }
 
 XFontSetExtents *
-XExtentsOfFontSet(font_set)
-    XFontSet        font_set;
+XExtentsOfFontSet(XFontSet font_set)
 {
+    if (!font_set)
+	return NULL;
     return &font_set->core.font_set_extents;
 }
 
 void
-XFreeFontSet(dpy, font_set)
-    Display        *dpy;
-    XFontSet        font_set;
+XFreeFontSet(
+    Display        *dpy,
+    XFontSet        font_set)
 {
-#if 0
     XCloseOM(font_set->core.om);
-#endif
-
 }

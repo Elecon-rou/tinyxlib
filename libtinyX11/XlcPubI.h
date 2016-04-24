@@ -1,4 +1,3 @@
-/* $Xorg: XlcPubI.h,v 1.4 2000/12/12 12:44:05 coskrey Exp $ */
 /*
  * Copyright 1992, 1993 by TOSHIBA Corp.
  *
@@ -23,7 +22,6 @@
  * Author: Katsuhisa Yano	TOSHIBA Corp.
  *			   	mopi@osa.ilab.toshiba.co.jp
  */
-/* $XFree86: xc/lib/X11/XlcPubI.h,v 3.14 2003/11/17 22:20:10 dawes Exp $ */
 
 #ifndef _XLCPUBLICI_H_
 #define _XLCPUBLICI_H_
@@ -98,7 +96,7 @@ typedef struct _XLCdPublicPart {
 } XLCdPublicPart;
 
 typedef struct _XLCdPublicRec {
-    XLCdCoreRec core;	
+    XLCdCoreRec core;
     XLCdPublicPart pub;
 } XLCdPublicRec, *XLCdPublic;
 
@@ -206,10 +204,16 @@ extern int _XlcResolveI18NPath(
     int			buf_len
 );
 
+extern char *_XlcLocaleLibDirName(
+     char*             /* dir_name */,
+     size_t,	       /* dir_len */
+     const char*       /* lc_name */
+);
+
 extern char *_XlcLocaleDirName(
      char*             /* dir_name */,
      size_t,	       /* dir_len */
-     char*             /* lc_name */
+     const char*       /* lc_name */
 );
 
 extern XPointer _XlcCreateLocaleDataBase(
@@ -228,16 +232,15 @@ extern void _XlcGetLocaleDataBase(
     int*		/* count */
 );
 
-#ifdef X_LOCALE
+#ifdef __APPLE__
 extern char *
 _Xsetlocale(
     int           category,
     _Xconst char  *name);
-#else
+#endif
 extern char *_XlcMapOSLocaleName(
     char *osname,
     char *siname);
-#endif
 
 extern int
 _Xmbstoutf8(
@@ -250,12 +253,11 @@ _Xlcmbstoutf8(
     char *ustr,
     const char *str,
     int len);
-//goingnuts deactivated below
-//extern int
-//_Xmbstowcs(
-//    wchar_t *wstr,
-//    char *str,
-//    int len);
+extern int
+_Xmbstowcs(
+    wchar_t *wstr,
+    char *str,
+    int len);
 extern int
 _Xlcwcstombs(
     XLCd lcd,

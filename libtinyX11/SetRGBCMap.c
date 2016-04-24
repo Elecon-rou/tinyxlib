@@ -1,4 +1,3 @@
-/* $Xorg: SetRGBCMap.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -28,17 +27,20 @@ from The Open Group.
 */
 
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xutil.h>
 #include "Xatomtype.h"
 #include <X11/Xatom.h>
 
-void XSetRGBColormaps (dpy, w, cmaps, count, property)
-    Display *dpy;
-    Window w;
-    XStandardColormap *cmaps;
-    int count;
-    Atom property;			/* XA_RGB_BEST_MAP, etc. */
+void XSetRGBColormaps (
+    Display *dpy,
+    Window w,
+    XStandardColormap *cmaps,
+    int count,
+    Atom property)			/* XA_RGB_BEST_MAP, etc. */
 {
     register int i;			/* iterator variable */
     register xPropStandardColormap *map;  /* tmp variable, data in prop */
@@ -46,7 +48,7 @@ void XSetRGBColormaps (dpy, w, cmaps, count, property)
     xPropStandardColormap *data, tmpdata;  /* scratch data */
     int mode = PropModeReplace;		/* for partial writes */
     Bool alloced_scratch_space;		/* do we need to free? */
-	
+
 
     if (count < 1) return;
 
@@ -93,6 +95,6 @@ void XSetRGBColormaps (dpy, w, cmaps, count, property)
 	XChangeProperty (dpy, w, property, XA_RGB_COLOR_MAP, 32,
 			 PropModeReplace, (unsigned char *) data,
 			 (int) (count * NumPropStandardColormapElements));
-	Xfree ((char *) data);
+	Xfree (data);
     }
 }

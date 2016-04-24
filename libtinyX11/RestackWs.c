@@ -1,4 +1,3 @@
-/* $Xorg: RestackWs.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,20 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/RestackWs.c,v 1.3 2001/01/17 19:41:43 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XRestackWindows (dpy, windows, n)
-    register Display *dpy;
-    register Window *windows;
-    int n;
-    {
+XRestackWindows (
+    register Display *dpy,
+    register Window *windows,
+    int n)
+{
     int i = 0;
-#ifdef MUSTCOPY
-    unsigned long val = Below;		/* needed for macro below */
-#endif
 
     LockDisplay(dpy);
     while (windows++, ++i < n) {
@@ -46,24 +44,18 @@ XRestackWindows (dpy, windows, n)
     	GetReqExtra (ConfigureWindow, 8, req);
 	req->window = *windows;
 	req->mask = CWSibling | CWStackMode;
-#ifdef MUSTCOPY
-	dpy->bufptr -= 8;
-	Data32 (dpy, (long *)(windows-1), 4);
-	Data32 (dpy, (long *)&val, 4);
-#else
 	{
 	    register CARD32 *values = (CARD32 *)
 	      NEXTPTR(req,xConfigureWindowReq);
 	    *values++ = *(windows-1);
 	    *values   = Below;
 	}
-#endif /* MUSTCOPY */
 	}
     UnlockDisplay(dpy);
     SyncHandle();
     return 1;
     }
 
-    
 
-    
+
+

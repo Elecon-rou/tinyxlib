@@ -1,4 +1,3 @@
-/* $Xorg: ChProp.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ChProp.c,v 1.4 2001/12/14 19:53:57 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
@@ -61,16 +62,16 @@ XChangeProperty (
 	len = ((long)nelements + 3)>>2;
 	if (dpy->bigreq_size || req->length + len <= (unsigned) 65535) {
 	    SetReqLen(req, len, len);
-	    Data (dpy, (char *)data, nelements);
+	    Data (dpy, (_Xconst char *)data, nelements);
 	} /* else force BadLength */
         break;
- 
+
       case 16:
 	len = ((long)nelements + 1)>>1;
 	if (dpy->bigreq_size || req->length + len <= (unsigned) 65535) {
 	    SetReqLen(req, len, len);
 	    len = (long)nelements << 1;
-	    Data16 (dpy, (short *) data, len);
+	    Data16 (dpy, (_Xconst short *) data, len);
 	} /* else force BadLength */
 	break;
 
@@ -79,7 +80,7 @@ XChangeProperty (
 	if (dpy->bigreq_size || req->length + len <= (unsigned) 65535) {
 	    SetReqLen(req, len, len);
 	    len = (long)nelements << 2;
-	    Data32 (dpy, (long *) data, len);
+	    Data32 (dpy, (_Xconst long *) data, len);
 	} /* else force BadLength */
 	break;
 

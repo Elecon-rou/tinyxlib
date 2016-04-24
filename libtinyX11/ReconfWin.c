@@ -1,4 +1,3 @@
-/* $Xorg: ReconfWin.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,20 +23,22 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ReconfWin.c,v 1.3 2001/01/17 19:41:42 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 #define AllMaskBits (CWX|CWY|CWWidth|CWHeight|\
 		     CWBorderWidth|CWSibling|CWStackMode)
 
 int
-XConfigureWindow(dpy, w, mask, changes)
-    register Display *dpy;
-    Window w;
-    unsigned int mask;
-    XWindowChanges *changes;
-    {
+XConfigureWindow(
+    register Display *dpy,
+    Window w,
+    unsigned int mask,
+    XWindowChanges *changes)
+{
     unsigned long values[7];
     register unsigned long *value = values;
     long nvalues;
@@ -51,7 +52,7 @@ XConfigureWindow(dpy, w, mask, changes)
 
     if (mask & CWX)
 	*value++ = changes->x;
-	
+
     if (mask & CWY)
     	*value++ = changes->y;
 

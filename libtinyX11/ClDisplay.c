@@ -1,4 +1,3 @@
-/* $Xorg: ClDisplay.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 
 /*
 
@@ -27,18 +26,16 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ClDisplay.c,v 1.4 2001/12/14 19:53:58 dawes Exp $ */
 
-#include <X11/Xtrans.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "Xxcbint.h"
 #include "Xlib.h"
 #include "Xlibint.h"
-#ifndef TINY
 #include "Xintconn.h"
-#endif
 
-extern void _XFreeDisplayStructure();
-extern void _XDisconnectDisplay();
-/* 
+/*
  * XCloseDisplay - XSync the connection to the X Server, close the connection,
  * and free all associated storage.  Extension close procs should only free
  * memory and must be careful about the types of requests they generate.
@@ -71,7 +68,7 @@ XCloseDisplay (
 	    if (dpy->request != dpy->last_request_read)
 		XSync(dpy, 1);
 	}
-	_XDisconnectDisplay(dpy->trans_conn);
+	xcb_disconnect(dpy->xcb->connection);
 	_XFreeDisplayStructure (dpy);
 	return 0;
 }

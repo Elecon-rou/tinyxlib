@@ -1,4 +1,3 @@
-/* $Xorg: ChKeyCon.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,15 +23,17 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ChKeyCon.c,v 1.3 2001/01/17 19:41:32 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XChangeKeyboardControl(dpy, mask, value_list)
-    register Display *dpy;
-    unsigned long mask;
-    XKeyboardControl *value_list;
+XChangeKeyboardControl(
+    register Display *dpy,
+    unsigned long mask,
+    XKeyboardControl *value_list)
 {
     unsigned long values[8];
     register unsigned long *value = values;
@@ -45,7 +46,7 @@ XChangeKeyboardControl(dpy, mask, value_list)
 
     if (mask & KBKeyClickPercent)
 	*value++ = value_list->key_click_percent;
-	
+
     if (mask & KBBellPercent)
     	*value++ = value_list->bell_percent;
 

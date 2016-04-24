@@ -1,4 +1,3 @@
-/* $Xorg: Depths.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,16 +24,19 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <stdio.h>
 
 /*
  * XListDepths - return info from connection setup
  */
-int *XListDepths (dpy, scrnum, countp)
-    Display *dpy;
-    int scrnum;
-    int *countp;
+int *XListDepths (
+    Display *dpy,
+    int scrnum,
+    int *countp)
 {
     Screen *scr;
     int count;
@@ -47,9 +49,9 @@ int *XListDepths (dpy, scrnum, countp)
 	register Depth *dp;
 	register int i;
 
-	depths = (int *) Xmalloc (count * sizeof(int));
+	depths = Xmalloc (count * sizeof(int));
 	if (!depths) return NULL;
-	for (i = 0, dp = scr->depths; i < count; i++, dp++) 
+	for (i = 0, dp = scr->depths; i < count; i++, dp++)
 	  depths[i] = dp->depth;
     } else {
 	/* a screen must have a depth */

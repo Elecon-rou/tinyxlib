@@ -1,4 +1,3 @@
-/* $Xorg: Flush.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,17 +23,18 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/Flush.c,v 1.3 2001/01/17 19:41:35 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /* Flush all buffered output requests. */
 /* NOTE: NOT necessary when calling any of the Xlib routines. */
 
 int
-XFlush (dpy)
-    register Display *dpy;
-    {
+XFlush (register Display *dpy)
+{
     LockDisplay(dpy);
     _XFlush (dpy);
     UnlockDisplay(dpy);

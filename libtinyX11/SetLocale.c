@@ -1,3 +1,4 @@
+
 /*
  * Copyright 1990, 1991 by OMRON Corporation, NTT Software Corporation,
  *                      and Nippon Telegraph and Telephone Corporation
@@ -16,7 +17,7 @@
  * OMRON, NTT SOFTWARE, AND NTT, DISCLAIM ALL WARRANTIES WITH REGARD
  * TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
  * AND FITNESS, IN NO EVENT SHALL OMRON, NTT SOFTWARE, OR NTT, BE
- * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
@@ -24,7 +25,7 @@
  *	Authors: Li Yuhong		OMRON Corporation
  *		 Tetsuya Kato		NTT Software Corporation
  *		 Hiroshi Kuribayashi	OMRON Corporation
- *   
+ *
  */
 /*
 
@@ -53,8 +54,10 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/SetLocale.c,v 3.22 2006/01/09 14:58:34 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xlcint.h"
 #include <X11/Xlocale.h>
@@ -63,58 +66,17 @@ from The Open Group.
 
 #define MAXLOCALE	64	/* buffer size of locale name */
 
-#ifdef X_LOCALE
 
-/* alternative setlocale() for when the OS does not provide one */
-
+#if defined(__APPLE__) || defined(__CYGWIN__)
 char *
 _Xsetlocale(
-    int		  category,
+    int           category,
     _Xconst char  *name
 )
 {
-    static char *xsl_name;
-    char *old_name;
-    XrmMethods methods;
-    XPointer state;
-
-    if (category != LC_CTYPE && category != LC_ALL)
-	return NULL;
-    if (!name) {
-	if (xsl_name)
-	    return xsl_name;
-	return "C";
-    }
-    if (!*name)
-	name = getenv("LC_CTYPE");
-    if (!name || !*name)
-	name = getenv("LANG");
-    if (name && strlen(name) >= MAXLOCALE)
-	name = NULL;
-    if (!name || !*name || !_XOpenLC((char *) name))
-	name = "C";
-    old_name = xsl_name;
-    xsl_name = (char *)name;
-    methods = _XrmInitParseInfo(&state);
-    xsl_name = old_name;
-    if (!methods)
-	return NULL;
-    name = (*methods->lcname)(state);
-    xsl_name = Xmalloc(strlen(name) + 1);
-    if (!xsl_name) {
-	xsl_name = old_name;
-	(*methods->destroy)(state);
-	return NULL;
-    }
-    strcpy(xsl_name, name);
-    if (old_name)
-	Xfree(old_name);
-    (*methods->destroy)(state);
-    return xsl_name;
+    return setlocale(category, name);
 }
-
-#else /* X_LOCALE */
-
+#endif /* __APPLE__ || __CYGWIN__ */
 
 /*
  * _XlcMapOSLocaleName is an implementation dependent routine that derives
@@ -122,12 +84,12 @@ _Xsetlocale(
  * returned by setlocale.
  *
  * Should match the code in Xt ExtractLocaleName.
- * 
+ *
  * This function name is a bit of a misnomer. Even the siname parameter
- * name is a misnomer. On most modern operating systems this function is 
- * a no-op, simply returning the osname; but on older operating systems 
- * like Ultrix, or HPUX 9.x and earlier, when you set LANG=german.88591 
- * then the string returned by setlocale(LC_ALL, "") will look something 
+ * name is a misnomer. On most modern operating systems this function is
+ * a no-op, simply returning the osname; but on older operating systems
+ * like Ultrix, or HPUX 9.x and earlier, when you set LANG=german.88591
+ * then the string returned by setlocale(LC_ALL, "") will look something
  * like: "german.88591 german.88591 ... german.88591". Then this function
  * will pick out the LC_CTYPE component and return a pointer to that.
  */
@@ -137,13 +99,46 @@ _XlcMapOSLocaleName(
     char *osname,
     char *siname)
 {
+#if defined(hpux) || defined(CSRG_BASED) || defined(sun) || defined(SVR4) || defined(sgi) || defined(__osf__) || defined(AIXV3) || defined(ultrix) || defined(WIN32) || defined(__UNIXOS2__) || defined(linux)
+# ifdef hpux
+#  ifndef _LastCategory
+   /* HPUX 9 and earlier */
+#   define SKIPCOUNT 2
+#   define STARTCHAR ':'
+#   define ENDCHAR ';'
+#  else
+   /* HPUX 10 */
+#   define ENDCHAR ' '
+#  endif
+# else
+#  ifdef ultrix
+#   define SKIPCOUNT 2
+#   define STARTCHAR '\001'
+#   define ENDCHAR '\001'
+#  else
+#   if defined(WIN32) || defined(__UNIXOS2__)
+#    define SKIPCOUNT 1
+#    define STARTCHAR '='
+#    define ENDCHAR ';'
+#    define WHITEFILL
+#   else
+#    if defined(__osf__) || (defined(AIXV3) && !defined(AIXV4))
+#     define STARTCHAR ' '
+#     define ENDCHAR ' '
+#    else
 #     if defined(linux)
 #      define STARTSTR "LC_CTYPE="
 #      define ENDCHAR ';'
 #     else
+#      if !defined(sun) || defined(SVR4)
 #       define STARTCHAR '/'
 #       define ENDCHAR '/'
+#      endif
 #     endif
+#    endif
+#   endif
+#  endif
+# endif
 
     char           *start;
     char           *end;
@@ -162,7 +157,7 @@ _XlcMapOSLocaleName(
 	start = osname;
 # endif
 # ifdef STARTCHAR
-    if (start && (start = strchr (start, STARTCHAR))) 
+    if (start && (start = strchr (start, STARTCHAR)))
 # elif  defined (STARTSTR)
     if (start && (start = strstr (start,STARTSTR)))
 # endif
@@ -201,7 +196,7 @@ _XlcMapOSLocaleName(
 # undef STARTCHAR
 # undef ENDCHAR
 # undef WHITEFILL
+#endif
     return osname;
 }
 
-#endif  /* X_LOCALE */

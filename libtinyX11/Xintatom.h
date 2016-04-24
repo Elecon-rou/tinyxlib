@@ -1,26 +1,26 @@
-/* $XFree86: xc/lib/X11/Xintatom.h,v 1.1 2001/08/18 02:41:28 dawes Exp $ */
 
 #ifndef _XINTATOM_H_
 #define _XINTATOM_H_ 1
 
+#include <X11/Xlib.h>
 #include <X11/Xfuncproto.h>
 
 /* IntAtom.c */
 
 #define TABLESIZE 64
 
-/*typedef struct _Entry {
+typedef struct _Entry {
     unsigned long sig;
     Atom atom;
-} EntryRec, *Entry;*/
+} EntryRec, *Entry;
 
 #define RESERVED ((Entry) 1)
 
 #define EntryName(e) ((char *)(e+1))
 
-/*typedef struct _XDisplayAtoms {
+typedef struct _XDisplayAtoms {
     Entry table[TABLESIZE];
-} AtomTable;*/
+} AtomTable;
 
 _XFUNCPROTOBEGIN
 

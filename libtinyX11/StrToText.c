@@ -1,4 +1,3 @@
-/* $Xorg: StrToText.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,21 +24,24 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
 /*
- * XStringListToTextProperty - fill in TextProperty structure with 
- * concatenated list of null-separated strings.  Return True if successful 
+ * XStringListToTextProperty - fill in TextProperty structure with
+ * concatenated list of null-separated strings.  Return True if successful
  * else False.  Allocate room on end for trailing NULL, but don't include in
  * count.
  */
 
-Status XStringListToTextProperty (argv, argc, textprop)
-    char **argv;
-    int argc;
-    XTextProperty *textprop;
+Status XStringListToTextProperty (
+    char **argv,
+    int argc,
+    XTextProperty *textprop)
 {
     register int i;
     register unsigned int nbytes;
@@ -76,7 +78,7 @@ Status XStringListToTextProperty (argv, argc, textprop)
 	    }
 	}
     } else {
-	proto.value = (unsigned char *) Xmalloc (1);	/* easier for client */
+	proto.value = Xmalloc (1);		/* easier for client */
 	if (!proto.value) return False;
 
 	proto.value[0] = '\0';

@@ -1,4 +1,3 @@
-/* $Xorg: mbWMProps.c,v 1.4 2001/02/09 02:03:40 xorgcvs Exp $ */
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -26,8 +25,10 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/mbWMProps.c,v 1.5 2001/12/14 19:54:10 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -60,9 +61,9 @@ XmbSetWMProperties (
     XSetWMProperties(dpy, w, wprop, iprop, argv, argc,
 		     sizeHints, wmHints, classHints);
     if (wprop)
-	Xfree((char *)wname.value);
+	Xfree(wname.value);
     if (iprop)
-	Xfree((char *)iname.value);
+	Xfree(iname.value);
 
     /* Note: The WM_LOCALE_NAME property is set by XSetWMProperties. */
 }

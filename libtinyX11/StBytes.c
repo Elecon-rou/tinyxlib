@@ -1,4 +1,3 @@
-/* $Xorg: StBytes.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,13 +23,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/StBytes.c,v 1.4 2001/12/14 19:54:07 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 
 /* insulate predefined atom numbers from cut routines */
-static Atom n_to_atom[8] = { 
+static const Atom n_to_atom[8] = {
 	XA_CUT_BUFFER0,
 	XA_CUT_BUFFER1,
 	XA_CUT_BUFFER2,
@@ -41,17 +42,20 @@ static Atom n_to_atom[8] = {
 	XA_CUT_BUFFER7};
 
 int
-XRotateBuffers (dpy, rotate)
-    register Display *dpy;
-    int rotate;
+XRotateBuffers (
+    register Display *dpy,
+    int rotate)
 {
-    return XRotateWindowProperties(dpy, RootWindow(dpy, 0), n_to_atom, 8, rotate);
+    /* XRotateWindowProperties wants a non-const Atom*, but it doesn't
+     * modify it, so this is safe.
+     */
+    return XRotateWindowProperties(dpy, RootWindow(dpy, 0), (Atom *)n_to_atom, 8, rotate);
 }
-    
-char *XFetchBuffer (dpy, nbytes, buffer)
-    register Display *dpy;
-    int *nbytes;
-    register int buffer;
+
+char *XFetchBuffer (
+    register Display *dpy,
+    int *nbytes,
+    register int buffer)
 {
     Atom actual_type;
     int actual_format;
@@ -61,8 +65,8 @@ char *XFetchBuffer (dpy, nbytes, buffer)
     *nbytes = 0;
     if ((buffer < 0) || (buffer > 7)) return (NULL);
 /* XXX should be (sizeof (maxint) - 1)/4 */
-    if (XGetWindowProperty(dpy, RootWindow(dpy, 0), n_to_atom[buffer], 
-	0L, 10000000L, False, XA_STRING, 
+    if (XGetWindowProperty(dpy, RootWindow(dpy, 0), n_to_atom[buffer],
+	0L, 10000000L, False, XA_STRING,
 	&actual_type, &actual_format, &nitems, &leftover, &data) != Success) {
 	return (NULL);
 	}
@@ -70,13 +74,13 @@ char *XFetchBuffer (dpy, nbytes, buffer)
 	*nbytes = nitems;
 	return((char *)data);
 	}
-    if ((char *) data != NULL) Xfree ((char *)data);
+    Xfree (data);
     return(NULL);
 }
 
-char *XFetchBytes (dpy, nbytes)
-    register Display *dpy;
-    int *nbytes;
+char *XFetchBytes (
+    register Display *dpy,
+    int *nbytes)
 {
     return (XFetchBuffer (dpy, nbytes, 0));
 }
@@ -89,8 +93,8 @@ XStoreBuffer (
     register int buffer)
 {
     if ((buffer < 0) || (buffer > 7)) return 0;
-    return XChangeProperty(dpy, RootWindow(dpy, 0), n_to_atom[buffer], 
-	XA_STRING, 8, PropModeReplace, (unsigned char *) bytes, nbytes);
+    return XChangeProperty(dpy, RootWindow(dpy, 0), n_to_atom[buffer],
+	XA_STRING, 8, PropModeReplace, (_Xconst unsigned char *) bytes, nbytes);
 }
 
 int

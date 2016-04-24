@@ -1,4 +1,3 @@
-/* $Xorg: ClearArea.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,17 +23,21 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ClearArea.c,v 1.3 2001/01/17 19:41:33 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XClearArea (dpy, w, x, y, width, height, exposures)
-    register Display *dpy;
-    Window w;
-    int x, y;
-    unsigned int width, height;
-    Bool exposures;
+XClearArea (
+    register Display *dpy,
+    Window w,
+    int x,
+    int y,
+    unsigned int width,
+    unsigned int height,
+    Bool exposures)
 {
     register xClearAreaReq *req;
 

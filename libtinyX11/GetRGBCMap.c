@@ -1,4 +1,3 @@
-/* $Xorg: GetRGBCMap.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 
 /*
 
@@ -28,17 +27,20 @@ from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xutil.h>
 #include "Xatomtype.h"
 #include <X11/Xatom.h>
 
-Status XGetRGBColormaps (dpy, w, stdcmap, count, property)
-    Display *dpy;
-    Window w;
-    XStandardColormap **stdcmap;	/* RETURN */
-    int *count;				/* RETURN */
-    Atom property;			/* XA_RGB_BEST_MAP, etc. */
+Status XGetRGBColormaps (
+    Display *dpy,
+    Window w,
+    XStandardColormap **stdcmap,	/* RETURN */
+    int *count,				/* RETURN */
+    Atom property)			/* XA_RGB_BEST_MAP, etc. */
 {
     register int i;			/* iterator variable */
     xPropStandardColormap *data = NULL;	 /* data read in from prop */
@@ -61,12 +63,12 @@ Status XGetRGBColormaps (dpy, w, stdcmap, count, property)
     /* if wrong type or format, or too small for us, then punt */
     if ((actual_type != XA_RGB_COLOR_MAP) || (actual_format != 32) ||
 	(nitems < OldNumPropStandardColormapElements)) {
-	if (data) Xfree ((char *) data);
+	Xfree (data);
 	return False;
     }
 
     /*
-     * See how many properties were found; if pre-ICCCM then assume 
+     * See how many properties were found; if pre-ICCCM then assume
      * default visual and a kill id of 1.
      */
     if (nitems < NumPropStandardColormapElements) {
@@ -76,31 +78,30 @@ Status XGetRGBColormaps (dpy, w, stdcmap, count, property)
 	    Screen *sp = _XScreenOfWindow (dpy, w);
 
 	    if (!sp) {
-		if (data) Xfree ((char *) data);
+		Xfree (data);
 		return False;
 	    }
 	    def_visual = sp->root_visual->visualid;
 	}
     } else {
 	/*
-	 * make sure we have an integral number of colormaps 
+	 * make sure we have an integral number of colormaps
 	 */
 	ncmaps = (nitems / NumPropStandardColormapElements);
 	if ((((unsigned long) ncmaps) * NumPropStandardColormapElements) !=
 	    nitems) {
-	    if (data) Xfree ((char *) data);
+	    Xfree (data);
 	    return False;
 	}
     }
 
-    
+
     /*
      * allocate array
      */
-    cmaps = (XStandardColormap *) Xmalloc (ncmaps *
-					   sizeof (XStandardColormap));
+    cmaps = Xmalloc (ncmaps * sizeof (XStandardColormap));
     if (!cmaps) {
-	if (data) Xfree ((char *) data);
+	Xfree (data);
 	return False;
     }
 
@@ -125,7 +126,7 @@ Status XGetRGBColormaps (dpy, w, stdcmap, count, property)
 	    map->killid     = (old_style ? None : prop->killid);
 	}
     }
-    Xfree ((char *) data);
+    Xfree (data);
     *stdcmap = cmaps;
     *count = ncmaps;
     return True;

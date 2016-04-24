@@ -22,8 +22,10 @@
  * Author: Katsuhisa Yano	TOSHIBA Corp.
  *			   	mopi@osa.ilab.toshiba.co.jp
  */
-/* $XFree86: xc/lib/X11/OCWrap.c,v 1.5 2006/01/09 14:58:31 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xlcint.h"
 
@@ -59,8 +61,7 @@ XCreateOC(XOM om, ...)
 }
 
 void
-XDestroyOC(oc)
-    XOC oc;
+XDestroyOC(XOC oc)
 {
     XOC prev, oc_list;
 
@@ -81,8 +82,7 @@ XDestroyOC(oc)
 }
 
 XOM
-XOMOfOC(oc)
-    XOC oc;
+XOMOfOC(XOC oc)
 {
     return oc->core.om;
 }

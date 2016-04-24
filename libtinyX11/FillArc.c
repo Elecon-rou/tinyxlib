@@ -1,4 +1,3 @@
-/* $Xorg: FillArc.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FillArc.c,v 1.3 2001/01/17 19:41:35 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /* precompute the maximum size of batching request allowed */
@@ -33,21 +34,18 @@ in this Software without prior written authorization from The Open Group.
 #define size (SIZEOF(xPolyFillArcReq) + FARCSPERBATCH * SIZEOF(xArc))
 
 int
-XFillArc(dpy, d, gc, x, y, width, height, angle1, angle2)
-    register Display *dpy;
-    Drawable d;
-    GC gc;
-    int x, y; /* INT16 */
-    unsigned int width, height; /* CARD16 */
-    int angle1, angle2; /* INT16 */
+XFillArc(
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    int x,
+    int y, /* INT16 */
+    unsigned int width,
+    unsigned int height, /* CARD16 */
+    int angle1,
+    int angle2) /* INT16 */
 {
     xArc *arc;
-#ifdef MUSTCOPY
-    xArc arcdata;
-    long len = SIZEOF(xArc);
-
-    arc = &arcdata;
-#endif /* MUSTCOPY */
 
     LockDisplay(dpy);
     FlushGC(dpy, gc);
@@ -63,10 +61,8 @@ XFillArc(dpy, d, gc, x, y, width, height, angle1, angle2)
        && ((dpy->bufptr + SIZEOF(xArc)) <= dpy->bufmax)
        && (((char *)dpy->bufptr - (char *)req) < size) ) {
 	 req->length += SIZEOF(xArc) >> 2;
-#ifndef MUSTCOPY
          arc = (xArc *) dpy->bufptr;
 	 dpy->bufptr += SIZEOF(xArc);
-#endif /* not MUSTCOPY */
 	 }
 
     else {
@@ -74,11 +70,7 @@ XFillArc(dpy, d, gc, x, y, width, height, angle1, angle2)
 
 	req->drawable = d;
 	req->gc = gc->gid;
-#ifdef MUSTCOPY
-	dpy->bufptr -= SIZEOF(xArc);
-#else
 	arc = (xArc *) NEXTPTR(req,xPolyFillArcReq);
-#endif /* MUSTCOPY */
 	}
     arc->x = x;
     arc->y = y;
@@ -86,10 +78,6 @@ XFillArc(dpy, d, gc, x, y, width, height, angle1, angle2)
     arc->height = height;
     arc->angle1 = angle1;
     arc->angle2 = angle2;
-
-#ifdef MUSTCOPY
-    Data (dpy, (char *) arc, len);
-#endif /* MUSTCOPY */
 
     }
     UnlockDisplay(dpy);

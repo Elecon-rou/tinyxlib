@@ -1,7 +1,6 @@
-/* $Xorg: LockDis.c,v 1.4 2001/02/09 02:03:34 xorgcvs Exp $ */
 
 /*
- 
+
 Copyright 1993, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -25,7 +24,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86$ */
 
 /*
  * Author: Stephen Gildea, MIT X Consortium
@@ -33,6 +31,9 @@ in this Software without prior written authorization from The Open Group.
  * XLockDis.c - multi-thread application-level locking routines
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #ifdef XTHREADS
 #include "locking.h"

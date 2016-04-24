@@ -1,4 +1,3 @@
-/* $Xorg: CrPixmap.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86$ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 #ifdef USE_DYNAMIC_XCURSOR
@@ -36,10 +37,12 @@ _XNoticeCreateBitmap (Display	    *dpy,
 		      unsigned int  height);
 #endif
 
-Pixmap XCreatePixmap (dpy, d, width, height, depth)
-    register Display *dpy;
-    Drawable d;
-    unsigned int width, height, depth;
+Pixmap XCreatePixmap (
+    register Display *dpy,
+    Drawable d,
+    unsigned int width,
+    unsigned int height,
+    unsigned int depth)
 {
     Pixmap pid;
     register xCreatePixmapReq *req;

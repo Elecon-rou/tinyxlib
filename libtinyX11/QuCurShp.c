@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/X11/QuCurShp.c,v 1.3 2006/01/09 14:58:33 dawes Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,15 +24,19 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Status XQueryBestCursor(dpy, drawable, width, height, ret_width, ret_height)
-    register Display *dpy;
-    Drawable drawable;
-    unsigned int width, height;
-    unsigned int *ret_width, *ret_height;
-{       
+Status XQueryBestCursor(
+    register Display *dpy,
+    Drawable drawable,
+    unsigned int width,
+    unsigned int height,
+    unsigned int *ret_width,
+    unsigned int *ret_height)
+{
     xQueryBestSizeReply rep;
     register xQueryBestSizeReq *req;
 

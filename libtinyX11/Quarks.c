@@ -1,17 +1,16 @@
-/* $XConsortium: Quarks.c,v 1.40 94/04/17 20:20:41 rws Exp $ */
 
 /***********************************************************
 Copyright 1987, 1988, 1990 by Digital Equipment Corporation, Maynard,
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -24,15 +23,13 @@ SOFTWARE.
 ******************************************************************/
 /*
 
-Copyright (c) 1987, 1988, 1990  X Consortium
+Copyright 1987, 1988, 1990, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -40,29 +37,32 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
-#include "Xresource.h"
+#include <X11/Xresource.h>
+#include "Xresinternal.h"
 
 /* Not cost effective, at least for vanilla MIT clients */
 /* #define PERMQ */
 
-typedef unsigned long Signature;
-typedef unsigned long Entry;
 #ifdef PERMQ
 typedef unsigned char Bits;
 #endif
+typedef unsigned long Entry; /* dont confuse with EntryRec from Xintatom.h */
 
 static XrmQuark nextQuark = 1;	/* next available quark number */
 static unsigned long quarkMask = 0;
@@ -83,7 +83,7 @@ static XrmQuark nextUniq = -1;	/* next quark from XrmUniqueQuark */
 #define LARGEQUARK	((Entry)0x80000000L)
 #define QUARKSHIFT	18
 #define QUARKMASK	((LARGEQUARK - 1) >> QUARKSHIFT)
-#define SIGMASK		((1L << QUARKSHIFT) - 1)
+#define XSIGMASK	((1L << QUARKSHIFT) - 1)
 
 #define STRQUANTSIZE	(sizeof(XrmString) * (QUANTUMMASK + 1))
 #ifdef PERMQ
@@ -113,8 +113,7 @@ static XrmQuark nextUniq = -1;	/* next quark from XrmUniqueQuark */
 static char *neverFreeTable = NULL;
 static int  neverFreeTableSize = 0;
 
-static char *permalloc(length)
-    register unsigned int length;
+static char *permalloc(unsigned int length)
 {
     char *ret;
 
@@ -132,16 +131,13 @@ static char *permalloc(length)
     return(ret);
 }
 
-#ifndef WORD64
 typedef struct {char a; double b;} TestType1;
 typedef struct {char a; unsigned long b;} TestType2;
-#endif
 
 #ifdef XTHREADS
-static char *_Xpermalloc();
+static char *_Xpermalloc(unsigned int length);
 
-char *Xpermalloc(length)
-    unsigned int length;
+char *Xpermalloc(unsigned int length)
 {
     char *p;
 
@@ -154,21 +150,18 @@ char *Xpermalloc(length)
 
 static
 #endif /* XTHREADS */
-char *Xpermalloc(length)
-    unsigned int length;
+char *Xpermalloc(unsigned int length)
 {
     int i;
 
     if (neverFreeTableSize && length < NEVERFREETABLESIZE) {
-#ifndef WORD64
 	if ((sizeof(TestType1) !=
 	     (sizeof(TestType2) - sizeof(unsigned long) + sizeof(double))) &&
 	    !(length & (DALIGN-1)) &&
-	    (i = (NEVERFREETABLESIZE - neverFreeTableSize) & (DALIGN-1))) {
+	    ((i = (NEVERFREETABLESIZE - neverFreeTableSize) & (DALIGN-1)))) {
 	    neverFreeTableSize -= DALIGN - i;
 	    neverFreeTable += DALIGN - i;
 	} else
-#endif
 	    if ((i = (NEVERFREETABLESIZE - neverFreeTableSize) & (WALIGN-1))) {
 		neverFreeTableSize -= WALIGN - i;
 		neverFreeTable += WALIGN - i;
@@ -178,7 +171,7 @@ char *Xpermalloc(length)
 }
 
 static Bool
-ExpandQuarkTable()
+ExpandQuarkTable(void)
 {
     unsigned long oldmask, newmask;
     register char c, *s;
@@ -193,15 +186,14 @@ ExpandQuarkTable()
 	newmask = (oldmask << 1) + 1;
     else {
 	if (!stringTable) {
-	    stringTable = (XrmString **)Xmalloc(sizeof(XrmString *) *
-						CHUNKPER);
+	    stringTable = Xmalloc(sizeof(XrmString *) * CHUNKPER);
 	    if (!stringTable)
 		return False;
 	    stringTable[0] = (XrmString *)NULL;
 	}
 #ifdef PERMQ
 	if (!permTable)
-	    permTable = (Bits **)Xmalloc(sizeof(Bits *) * CHUNKPER);
+	    permTable = Xmalloc(sizeof(Bits *) * CHUNKPER);
 	if (!permTable)
 	    return False;
 #endif
@@ -213,10 +205,9 @@ ExpandQuarkTable()
 #endif
 	newmask = 0x1ff;
     }
-    entries = (Entry *)Xmalloc(sizeof(Entry) * (newmask + 1));
+    entries = Xcalloc(newmask + 1, sizeof(Entry));
     if (!entries)
 	return False;
-    bzero((char *)entries, sizeof(Entry) * (newmask + 1));
     quarkTable = entries;
     quarkMask = newmask;
     quarkRehash = quarkMask - 2;
@@ -239,21 +230,14 @@ ExpandQuarkTable()
 	}
     }
     if (oldmask)
-	Xfree((char *)oldentries);
+	Xfree(oldentries);
     return True;
 }
 
-#if NeedFunctionPrototypes
-XrmQuark _XrmInternalStringToQuark(
+XrmQuark
+_XrmInternalStringToQuark(
     register _Xconst char *name, register int len, register Signature sig,
     Bool permstring)
-#else
-XrmQuark _XrmInternalStringToQuark(name, len, sig, permstring)
-    register XrmString name;
-    register int len;
-    register Signature sig;
-    Bool permstring;
-#endif
 {
     register XrmQuark q;
     register Entry entry;
@@ -269,7 +253,7 @@ XrmQuark _XrmInternalStringToQuark(name, len, sig, permstring)
 	if (entry & LARGEQUARK)
 	    q = entry & (LARGEQUARK-1);
 	else {
-	    if ((entry - sig) & SIGMASK)
+	    if ((entry - sig) & XSIGMASK)
 		goto nomatch;
 	    q = (entry >> QUARKSHIFT) & QUARKMASK;
 	}
@@ -304,13 +288,13 @@ nomatch:    if (!rehash)
     q = nextQuark;
     if (!(q & QUANTUMMASK)) {
 	if (!(q & CHUNKMASK)) {
-	    if (!(new = Xrealloc((char *)stringTable,
+	    if (!(new = Xrealloc(stringTable,
 				 sizeof(XrmString *) *
 				 ((q >> QUANTUMSHIFT) + CHUNKPER))))
 		goto fail;
 	    stringTable = (XrmString **)new;
 #ifdef PERMQ
-	    if (!(new = Xrealloc((char *)permTable,
+	    if (!(new = Xrealloc(permTable,
 				 sizeof(Bits *) *
 				 ((q >> QUANTUMSHIFT) + CHUNKPER))))
 		goto fail;
@@ -346,7 +330,7 @@ nomatch:    if (!rehash)
     }
     NAME(q) = (char *)name;
     if (q <= QUARKMASK)
-	entry = (q << QUARKSHIFT) | (sig & SIGMASK);
+	entry = (q << QUARKSHIFT) | (sig & XSIGMASK);
     else
 	entry = q | LARGEQUARK;
     quarkTable[idx] = entry;
@@ -358,33 +342,25 @@ nomatch:    if (!rehash)
     return NULLQUARK;
 }
 
-#if NeedFunctionPrototypes
-XrmQuark XrmStringToQuark(
+XrmQuark
+XrmStringToQuark(
     _Xconst char *name)
-#else
-XrmQuark XrmStringToQuark(name)
-    XrmString name;
-#endif
 {
     register char c, *tname;
     register Signature sig = 0;
 
     if (!name)
 	return (NULLQUARK);
-    
+
     for (tname = (char *)name; (c = *tname++); )
 	sig = (sig << 1) + c;
 
     return _XrmInternalStringToQuark(name, tname-(char *)name-1, sig, False);
 }
 
-#if NeedFunctionPrototypes
-XrmQuark XrmPermStringToQuark(
+XrmQuark
+XrmPermStringToQuark(
     _Xconst char *name)
-#else
-XrmQuark XrmPermStringToQuark(name)
-    XrmString name;
-#endif
 {
     register char c, *tname;
     register Signature sig = 0;
@@ -398,7 +374,7 @@ XrmQuark XrmPermStringToQuark(name)
     return _XrmInternalStringToQuark(name, tname-(char *)name-1, sig, True);
 }
 
-XrmQuark XrmUniqueQuark()
+XrmQuark XrmUniqueQuark(void)
 {
     XrmQuark q;
 
@@ -411,8 +387,7 @@ XrmQuark XrmUniqueQuark()
     return q;
 }
 
-XrmString XrmQuarkToString(quark)
-    register XrmQuark quark;
+XrmString XrmQuarkToString(register XrmQuark quark)
 {
     XrmString s;
 

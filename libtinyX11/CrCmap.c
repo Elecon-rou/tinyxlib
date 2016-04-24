@@ -1,4 +1,3 @@
-/* $Xorg: CrCmap.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,17 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/CrCmap.c,v 1.4 2001/12/14 19:53:59 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xcmsint.h"
 
 
-Colormap XCreateColormap(dpy, w, visual, alloc)
-register Display *dpy;
-Window w;
-Visual *visual;
-int alloc;
+Colormap XCreateColormap(
+    register Display *dpy,
+    Window w,
+    Visual *visual,
+    int alloc)
 {
     register xCreateColormapReq *req;
     Colormap mid;
@@ -49,8 +50,10 @@ int alloc;
 
     UnlockDisplay(dpy);
     SyncHandle();
-#ifndef TINY
+
+#ifdef XCMS
     _XcmsAddCmapRec(dpy, mid, w, visual);
 #endif
+
     return(mid);
 }

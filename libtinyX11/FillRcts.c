@@ -1,4 +1,3 @@
-/* $Xorg: FillRcts.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,17 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FillRcts.c,v 1.3 2001/01/17 19:41:35 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XFillRectangles(dpy, d, gc, rectangles, n_rects)
-register Display *dpy;
-Drawable d;
-GC gc;
-XRectangle *rectangles;
-int n_rects;
+XFillRectangles(
+    register Display *dpy,
+    Drawable d,
+    GC gc,
+    XRectangle *rectangles,
+    int n_rects)
 {
     register xPolyFillRectangleReq *req;
     long len;
@@ -62,4 +63,4 @@ int n_rects;
     SyncHandle();
     return 1;
 }
-    
+

@@ -1,4 +1,3 @@
-/* $Xorg: ConfWind.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,16 +23,20 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ConfWind.c,v 1.3 2001/01/17 19:41:33 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XMoveResizeWindow(dpy, w, x, y, width, height)
-register Display *dpy;
-Window w;
-int x, y;
-unsigned int width, height;
+XMoveResizeWindow(
+    register Display *dpy,
+    Window w,
+    int x,
+    int y,
+    unsigned int width,
+    unsigned int height)
 {
     register xConfigureWindowReq *req;
 
@@ -41,18 +44,6 @@ unsigned int width, height;
     GetReqExtra(ConfigureWindow, 16, req);
     req->window = w;
     req->mask = CWX | CWY | CWWidth | CWHeight;
-#ifdef MUSTCOPY
-    {
-	long lx = x, ly = y;
-	unsigned long lwidth = width, lheight = height;
-
-	dpy->bufptr -= 16;
-	Data32 (dpy, (long *) &lx, 4);	/* order must match values of */
-	Data32 (dpy, (long *) &ly, 4);	/* CWX, CWY, CWWidth, and CWHeight */
-	Data32 (dpy, (long *) &lwidth, 4);
-	Data32 (dpy, (long *) &lheight, 4);
-    }
-#else
     {
 	register CARD32 *valuePtr =
 	  (CARD32 *) NEXTPTR(req,xConfigureWindowReq);
@@ -61,7 +52,6 @@ unsigned int width, height;
 	*valuePtr++ = width;
 	*valuePtr   = height;
     }
-#endif /* MUSTCOPY */
     UnlockDisplay(dpy);
     SyncHandle();
     return 1;

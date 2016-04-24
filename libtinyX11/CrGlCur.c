@@ -1,4 +1,3 @@
-/* $Xorg: CrGlCur.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,21 +23,39 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/CrGlCur.c,v 1.7 2003/04/13 19:22:15 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 #ifdef USE_DYNAMIC_XCURSOR
 
+#ifdef __UNIXOS2__
+#define RTLD_LAZY 1
+#define LIBXCURSOR "Xcursor.dll"
+#endif
 #include <stdio.h>
 #include <string.h>
+#if defined(hpux)
+#include <dl.h>
+#else
 #include <dlfcn.h>
+#endif
 #include "Cr.h"
 
+#ifdef __CYGWIN__
+#define LIBXCURSOR "cygXcursor-1.dll"
+#endif
+
+#if defined(hpux)
+typedef shl_t	XModuleType;
+#else
 typedef void *XModuleType;
+#endif
 
 #ifndef LIBXCURSOR
-#define LIBXCURSOR "libXcursor.so"
+#define LIBXCURSOR "libXcursor.so.1"
 #endif
 
 static char libraryName[] = LIBXCURSOR;
@@ -51,7 +68,11 @@ open_library (void)
     XModuleType	module;
     for (;;)
     {
+#if defined(hpux)
+	module = shl_load(library, BIND_DEFERRED, 0L);
+#else
 	module =  dlopen(library, RTLD_LAZY);
+#endif
 	if (module)
 	    return module;
 	dot = strrchr (library, '.');
@@ -59,17 +80,36 @@ open_library (void)
 	    break;
 	*dot = '\0';
     }
-    return 0;
+    return NULL;
 }
 
 static void *
-fetch_symbol (XModuleType module, char *under_symbol)
+fetch_symbol (XModuleType module, const char *under_symbol)
 {
     void *result = NULL;
-    char *symbol = under_symbol + 1;
+    const char *symbol = under_symbol + 1;
+#if defined(hpux)
+    int getsyms_cnt, i;
+    struct shl_symbol *symbols;
+
+    getsyms_cnt = shl_getsymbols(module, TYPE_PROCEDURE,
+				 EXPORT_SYMBOLS, malloc, &symbols);
+
+    for(i=0; i<getsyms_cnt; i++) {
+        if(!strcmp(symbols[i].name, symbol)) {
+	    result = symbols[i].value;
+	    break;
+         }
+    }
+
+    if(getsyms_cnt > 0) {
+        free(symbols);
+    }
+#else
     result = dlsym (module, symbol);
     if (!result)
 	result = dlsym (module, under_symbol);
+#endif
     return result;
 }
 
@@ -182,20 +222,20 @@ _XTryShapeBitmapCursor (Display		*dpy,
 }
 #endif
 
-Cursor XCreateGlyphCursor(dpy, source_font, mask_font,
-		   source_char, mask_char,
-		   foreground, background)
-     register Display *dpy;
-     Font source_font, mask_font;
-     unsigned int source_char, mask_char;
-     XColor /*_Xconst*/ *foreground, *background;
-
-{       
+Cursor XCreateGlyphCursor(
+     register Display *dpy,
+     Font source_font,
+     Font mask_font,
+     unsigned int source_char,
+     unsigned int mask_char,
+     XColor _Xconst *foreground,
+     XColor _Xconst *background)
+{
     Cursor cid;
     register xCreateGlyphCursorReq *req;
 
 #ifdef USE_DYNAMIC_XCURSOR
-    cid = _XTryShapeCursor (dpy, source_font, mask_font, 
+    cid = _XTryShapeCursor (dpy, source_font, mask_font,
 			    source_char, mask_char, foreground, background);
     if (cid)
 	return cid;

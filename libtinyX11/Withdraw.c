@@ -1,17 +1,16 @@
-/* $Xorg: Withdraw.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 
 /***********************************************************
 Copyright 1988 by Wyse Technology, Inc., San Jose, Ca.,
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name Wyse not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 WYSE DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -50,7 +49,9 @@ from The Open Group.
 
 */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 #include <X11/Xos.h>
@@ -61,21 +62,23 @@ from The Open Group.
  * This function instructs the window manager to change this window from
  * NormalState or IconicState to Withdrawn.
  */
-Status XWithdrawWindow (dpy, w, screen)
-    Display *dpy;
-    Window w;
-    int screen;
+Status XWithdrawWindow (
+    Display *dpy,
+    Window w,
+    int screen)
 {
-    XUnmapEvent ev;
-    Window root = RootWindow (dpy, screen);
-
     XUnmapWindow (dpy, w);
 
-    ev.type = UnmapNotify;
-    ev.event = root;
-    ev.window = w;
-    ev.from_configure = False;
-    return (XSendEvent (dpy, root, False,
-			SubstructureRedirectMask|SubstructureNotifyMask,
-			(XEvent *)&ev));
+    {
+        Window root = RootWindow (dpy, screen);
+        XUnmapEvent ev = {
+            .type = UnmapNotify,
+            .event = root,
+            .window = w,
+            .from_configure = False
+        };
+        return (XSendEvent (dpy, root, False,
+                            SubstructureRedirectMask|SubstructureNotifyMask,
+                            (XEvent *)&ev));
+    }
 }

@@ -1,4 +1,3 @@
-/* $Xorg: QuKeybd.c,v 1.4 2001/02/09 02:03:35 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,9 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/QuKeybd.c,v 1.3 2001/01/17 19:41:42 dawes Exp $ */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 struct kmap {
@@ -34,17 +34,16 @@ struct kmap {
 };
 
 int
-XQueryKeymap(dpy, keys)
-    register Display *dpy;
-    char keys[32];
-
-{       
+XQueryKeymap(
+    register Display *dpy,
+    char keys[32])
+{
     xQueryKeymapReply rep;
     register xReq *req;
 
     LockDisplay(dpy);
     GetEmptyReq(QueryKeymap, req);
-    (void) _XReply(dpy, (xReply *)&rep, 
+    (void) _XReply(dpy, (xReply *)&rep,
        (SIZEOF(xQueryKeymapReply) - SIZEOF(xReply)) >> 2, xTrue);
     *(struct kmap *) keys = *(struct kmap *)rep.map;  /* faster than memcpy */
     UnlockDisplay(dpy);

@@ -1,4 +1,3 @@
-/* $Xorg: LiICmaps.c,v 1.4 2001/02/09 02:03:34 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,17 +23,18 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/LiICmaps.c,v 1.3 2001/01/17 19:41:39 dawes Exp $ */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Colormap *XListInstalledColormaps(dpy, win, n)
-register Display *dpy;
-Window win;
-int *n;  /* RETURN */
+Colormap *XListInstalledColormaps(
+    register Display *dpy,
+    Window win,
+    int *n)  /* RETURN */
 {
-    long nbytes;
+    unsigned long nbytes;
     Colormap *cmaps;
     xListInstalledColormapsReply rep;
     register xResourceReq *req;
@@ -51,18 +51,18 @@ int *n;  /* RETURN */
 
     if (rep.nColormaps) {
 	nbytes = rep.nColormaps * sizeof(Colormap);
-	cmaps = (Colormap *) Xmalloc((unsigned) nbytes);
-	nbytes = rep.nColormaps << 2;
+	cmaps = Xmalloc(nbytes);
 	if (! cmaps) {
-	    _XEatData(dpy, (unsigned long) nbytes);
+	    _XEatDataWords(dpy, rep.length);
 	    UnlockDisplay(dpy);
 	    SyncHandle();
 	    return((Colormap *) NULL);
 	}
+	nbytes = rep.nColormaps << 2;
 	_XRead32 (dpy, (long *) cmaps, nbytes);
     }
     else cmaps = (Colormap *) NULL;
-    
+
     *n = rep.nColormaps;
     UnlockDisplay(dpy);
     SyncHandle();

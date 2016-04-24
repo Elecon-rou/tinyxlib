@@ -1,14 +1,12 @@
-/* $XConsortium: GetAtomNm.c,v 11.23 95/05/02 15:07:06 converse Exp $ */
 /*
 
-Copyright (c) 1986  X Consortium
+Copyright 1986, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,40 +14,26 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
-#include "Xintatom.h"	//gn add
-extern void _XFreeAtomTable();
-
-/* XXX this table def is duplicated in IntAtom.c, keep them consistent! */
-
-#define TABLESIZE 64
-
-typedef struct _Entry {
-    unsigned long sig;
-    Atom atom;
-} EntryRec, *Entry;
-
-#define EntryName(e) ((char *)(e+1))
-
-typedef struct _XDisplayAtoms {
-    Entry table[TABLESIZE];
-} AtomTable;
+#include "Xintatom.h"
 
 static
-char *_XGetAtomName(dpy, atom)
-    Display *dpy;
-    Atom atom;
+char *_XGetAtomName(
+    Display *dpy,
+    Atom atom)
 {
     xResourceReq *req;
     char *name;
@@ -62,19 +46,19 @@ char *_XGetAtomName(dpy, atom)
 	for (idx = TABLESIZE; --idx >= 0; ) {
 	    if ((e = *table++) && (e->atom == atom)) {
 		idx = strlen(EntryName(e)) + 1;
-		if ((name = (char *)Xmalloc(idx)))
+		if ((name = Xmalloc(idx)))
 		    strcpy(name, EntryName(e));
 		return name;
-	    }		
+	    }
 	}
     }
     GetResReq(GetAtomName, atom, req);
     return (char *)NULL;
 }
 
-char *XGetAtomName(dpy, atom)
-    register Display *dpy;
-    Atom atom;
+char *XGetAtomName(
+    register Display *dpy,
+    Atom atom)
 {
     xGetAtomNameReply rep;
     char *name;
@@ -83,18 +67,18 @@ char *XGetAtomName(dpy, atom)
     if ((name = _XGetAtomName(dpy, atom))) {
 	UnlockDisplay(dpy);
 	return name;
-    }	
+    }
     if (_XReply(dpy, (xReply *)&rep, 0, xFalse) == 0) {
 	UnlockDisplay(dpy);
 	SyncHandle();
 	return(NULL);
     }
-    if ((name = (char *) Xmalloc(rep.nameLength+1))) {
+    if ((name = Xmalloc(rep.nameLength + 1))) {
 	_XReadPad(dpy, name, (long)rep.nameLength);
 	name[rep.nameLength] = '\0';
 	_XUpdateAtomCache(dpy, name, atom, 0, -1, 0);
     } else {
-	_XEatData(dpy, (unsigned long) (rep.nameLength + 3) & ~3);
+	_XEatDataWords(dpy, rep.length);
 	name = (char *) NULL;
     }
     UnlockDisplay(dpy);
@@ -113,12 +97,12 @@ typedef struct {
 } _XGetAtomNameState;
 
 static
-Bool _XGetAtomNameHandler(dpy, rep, buf, len, data)
-    register Display *dpy;
-    register xReply *rep;
-    char *buf;
-    int len;
-    XPointer data;
+Bool _XGetAtomNameHandler(
+    register Display *dpy,
+    register xReply *rep,
+    char *buf,
+    int len,
+    XPointer data)
 {
     register _XGetAtomNameState *state;
     xGetAtomNameReply replbuf;
@@ -140,7 +124,7 @@ Bool _XGetAtomNameHandler(dpy, rep, buf, len, data)
 	_XGetAsyncReply(dpy, (char *)&replbuf, rep, buf, len,
 			(SIZEOF(xGetAtomNameReply) - SIZEOF(xReply)) >> 2,
 			False);
-    state->names[state->idx] = (char *) Xmalloc(repl->nameLength+1);
+    state->names[state->idx] = Xmalloc(repl->nameLength + 1);
     _XGetAsyncData(dpy, state->names[state->idx], buf, len,
 		   SIZEOF(xGetAtomNameReply), repl->nameLength,
 		   repl->length << 2);
@@ -155,11 +139,11 @@ Bool _XGetAtomNameHandler(dpy, rep, buf, len, data)
 }
 
 Status
-XGetAtomNames (dpy, atoms, count, names_return)
-    Display *dpy;
-    Atom *atoms;
-    int count;
-    char **names_return;
+XGetAtomNames (
+    Display *dpy,
+    Atom *atoms,
+    int count,
+    char **names_return)
 {
     _XAsyncHandler async;
     _XGetAtomNameState async_state;
@@ -186,13 +170,13 @@ XGetAtomNames (dpy, atoms, count, names_return)
     }
     if (missed >= 0) {
 	if (_XReply(dpy, (xReply *)&rep, 0, xFalse)) {
-	    if ((names_return[missed] = (char *) Xmalloc(rep.nameLength+1))) {
+	    if ((names_return[missed] = Xmalloc(rep.nameLength + 1))) {
 		_XReadPad(dpy, names_return[missed], (long)rep.nameLength);
 		names_return[missed][rep.nameLength] = '\0';
 		_XUpdateAtomCache(dpy, names_return[missed], atoms[missed],
 				  0, -1, 0);
 	    } else {
-		_XEatData(dpy, (unsigned long) (rep.nameLength + 3) & ~3);
+		_XEatDataWords(dpy, rep.length);
 		async_state.status = 0;
 	    }
 	}

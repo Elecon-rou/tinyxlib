@@ -1,4 +1,3 @@
-/* $Xorg: ChWindow.c,v 1.4 2001/02/09 02:03:31 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,15 +23,18 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ChWindow.c,v 1.5 2001/01/17 19:41:32 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XResizeWindow(dpy, w, width, height)
-register Display *dpy;
-Window w;
-unsigned int width, height;
+XResizeWindow(
+    register Display *dpy,
+    Window w,
+    unsigned int width,
+    unsigned int height)
 {
     register xConfigureWindowReq *req;
 
@@ -41,20 +43,11 @@ unsigned int width, height;
 
     req->window = w;
     req->mask = CWWidth | CWHeight;
-#ifdef MUSTCOPY
-    {
-	unsigned long lwidth = width, lheight = height;
-    dpy->bufptr -= 8;
-    Data32 (dpy, (long *) &lwidth, 4);	/* order dictated by values of */
-    Data32 (dpy, (long *) &lheight, 4);	/* CWWidth and CWHeight */
-    }
-#else
     {
 	CARD32 *valuePtr = (CARD32 *) NEXTPTR(req,xConfigureWindowReq);
 	*valuePtr++ = width;
 	*valuePtr = height;
     }
-#endif /* MUSTCOPY */
     UnlockDisplay(dpy);
     SyncHandle();
     return 1;

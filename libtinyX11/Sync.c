@@ -1,4 +1,3 @@
-/* $Xorg: Sync.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,18 +23,18 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/Sync.c,v 1.3 2001/01/17 19:41:44 dawes Exp $ */
 
-#define NEED_REPLIES
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 /* Synchronize with errors and events, optionally discarding pending events */
 
 int
-XSync (dpy, discard)
-    register Display *dpy;
-    Bool discard;
+XSync (
+    register Display *dpy,
+    Bool discard)
 {
     xGetInputFocusReply rep;
     register xReq *req;

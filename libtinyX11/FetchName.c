@@ -1,4 +1,3 @@
-/* $Xorg: FetchName.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,23 +24,26 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 #include <X11/Xos.h>
 #include <stdio.h>
 
 
-Status XFetchName (dpy, w, name)
-    register Display *dpy;
-    Window w;
-    char **name;
+Status XFetchName (
+    register Display *dpy,
+    Window w,
+    char **name)
 {
     Atom actual_type;
     int actual_format;
     unsigned long nitems;
     unsigned long leftover;
     unsigned char *data = NULL;
-    if (XGetWindowProperty(dpy, w, XA_WM_NAME, 0L, (long)BUFSIZ, False, XA_STRING, 
+    if (XGetWindowProperty(dpy, w, XA_WM_NAME, 0L, (long)BUFSIZ, False, XA_STRING,
 	&actual_type,
 	&actual_format, &nitems, &leftover, &data) != Success) {
         *name = NULL;
@@ -56,15 +58,15 @@ Status XFetchName (dpy, w, name)
 	*name = (char *)data;
 	return(1);
 	}
-    if (data) Xfree ((char *)data);
+    Xfree (data);
     *name = NULL;
     return(0);
 }
 
-Status XGetIconName (dpy, w, icon_name)
-    register Display *dpy;
-    Window w;
-    char **icon_name;
+Status XGetIconName (
+    register Display *dpy,
+    Window w,
+    char **icon_name)
 {
     Atom actual_type;
     int actual_format;
@@ -72,7 +74,7 @@ Status XGetIconName (dpy, w, icon_name)
     unsigned long leftover;
     unsigned char *data = NULL;
     if (XGetWindowProperty(dpy, w, XA_WM_ICON_NAME, 0L, (long)BUFSIZ, False,
-        XA_STRING, 
+        XA_STRING,
 	&actual_type,
 	&actual_format, &nitems, &leftover, &data) != Success) {
         *icon_name = NULL;
@@ -87,7 +89,7 @@ Status XGetIconName (dpy, w, icon_name)
 	*icon_name = (char*)data;
 	return(1);
 	}
-    if (data) Xfree ((char *)data);
+    Xfree (data);
     *icon_name = NULL;
     return(0);
 }

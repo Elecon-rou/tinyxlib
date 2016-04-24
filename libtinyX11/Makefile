@@ -2,8 +2,10 @@ include	../config.mk
 
 #-DXOS_USE_MTSAFE_PWDAPI needed for GetDflt.c
 
-CPPFLAGS+=-DXTHREADS -D_POSIX_C_SOURCE=2  -DFUNCPROTO=15 -DNARROWPROTO -DMALLOC_0_RETURNS_NULL -DLIBX11 -DUNIXCONN -DTCPCONN -DX11_t -DTRANS_CLIENT \
- -DKEYSYMDB=\"${KEYSYMDB}\" \
+CPPFLAGS+=-DXTHREADS -DXKB -D_POSIX_C_SOURCE=2  -DFUNCPROTO=15 -DNARROWPROTO -DMALLOC_0_RETURNS_NULL -DLIBX11 -DUNIXCONN -DTCPCONN -DTRANS_CLIENT \
+ -DKEYSYMDB=\"$(KEYSYMDB)\" \
+ -DXCMSDIR=\"$(XCMSDIR)\" \
+ -DXLOCALELIBDIR=\"$(XLOCALELIBDIR)\" \
  -DTINY -DXOS_USE_MTSAFE_PWDAPI
 
 OBJS=$(wildcard *.c)
@@ -29,7 +31,7 @@ pkgconf:
 	@echo "" >> x11.pc
 	@echo "Name: X11" >> x11.pc
 	@echo "Description: X Library" >> x11.pc
-	@echo "Version: 1.1.3" >> x11.pc
+	@echo "Version: 1.6.3" >> x11.pc
 	@echo "Requires: xau xdmcp " >> x11.pc
 	@echo "Requires.private: xau xdmcp " >> x11.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> x11.pc

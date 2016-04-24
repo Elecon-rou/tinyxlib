@@ -1,4 +1,3 @@
-/* $Xorg: lcWrap.c,v 1.6 2001/02/09 02:03:39 xorgcvs Exp $ */
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -44,23 +43,28 @@ from The Open Group.
  * OPEN SOFTWARE FOUNDATION AND TOSHIBA DISCLAIM ALL WARRANTIES WITH REGARD TO
  * THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS, IN NO EVENT SHALL OPEN SOFTWARE FOUNDATIONN OR TOSHIBA BE
- * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- * 
- *		 M. Collins		OSF  
+ *
+ *		 M. Collins		OSF
  *
  *		 Katsuhisa Yano		TOSHIBA Corp.
- */				
-/* $XFree86: xc/lib/X11/lcWrap.c,v 3.15 2003/04/13 19:22:22 dawes Exp $ */
+ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdlib.h>
 #include "Xlibint.h"
 #include "Xlcint.h"
-#include "Xlocale.h"
+#include <X11/Xlocale.h>
 #include <X11/Xos.h>
-#include <Xutil.h>
+#ifdef WIN32
+#undef close
+#endif
+#include <X11/Xutil.h>
 #include "XlcPubI.h"
 
 #ifdef XTHREADS
@@ -73,24 +77,23 @@ XSetLocaleModifiers(
 {
     XLCd lcd = _XlcCurrentLC();
     char *user_mods;
+    char *mapped_mods;
 
     if (!lcd)
 	return (char *) NULL;
     if (!modifiers)
 	return lcd->core->modifiers;
     user_mods = getenv("XMODIFIERS");
-    modifiers = (*lcd->methods->map_modifiers) (lcd,
-						user_mods, (char *)modifiers);
-    if (modifiers) {
-	if (lcd->core->modifiers)
-	    Xfree(lcd->core->modifiers);
-	lcd->core->modifiers = (char *)modifiers;
+    mapped_mods = (*lcd->methods->map_modifiers) (lcd, user_mods, modifiers);
+    if (mapped_mods) {
+	Xfree(lcd->core->modifiers);
+	lcd->core->modifiers = mapped_mods;
     }
-    return (char *)modifiers;
+    return mapped_mods;
 }
 
 Bool
-XSupportsLocale()
+XSupportsLocale(void)
 {
     return _XlcCurrentLC() != (XLCd)NULL;
 }
@@ -109,6 +112,9 @@ Bool _XlcValidModSyntax(
 	for (ptr = valid_mods; *ptr; ptr++) {
 	    i = strlen(*ptr);
 	    if (strncmp(mods, *ptr, i) || ((mods[i] != '=')
+#ifdef WIN32
+					   && (mods[i] != '#')
+#endif
 					   ))
 		continue;
 	    mods = strchr(mods+i+1, '@');
@@ -142,6 +148,19 @@ _XlcDefaultMapModifiers(
 	strcpy(mods, prog_mods);
 	if (user_mods)
 	    strcat(mods, user_mods);
+#ifdef WIN32
+	{
+	    char *s;
+	    for (s = mods; (s = strchr(s, '@')); s++) {
+		for (s++; *s && *s != '='; s++) {
+		    if (*s == '#') {
+			*s = '=';
+			break;
+		    }
+		}
+	    }
+	}
+#endif
     }
     return mods;
 }
@@ -198,7 +217,7 @@ _XlcAddLoader(
 
     _XlcRemoveLoader(proc);		/* remove old loader, if exist */
 
-    loader = (XlcLoaderList) Xmalloc(sizeof(XlcLoaderListRec));
+    loader = Xmalloc(sizeof(XlcLoaderListRec));
     if (loader == NULL)
 	return False;
 
@@ -214,7 +233,7 @@ _XlcAddLoader(
 	last = loader_list;
 	while (last->next)
 	    last = last->next;
-	
+
 	loader->next = NULL;
 	last->next = loader;
     }
@@ -234,14 +253,13 @@ _XOpenLC(
     char sinamebuf[256];
     char* siname = sinamebuf;
 #endif
-//goingnuts hardcoded "C" below
-	name="C";
+
     if (name == NULL) {
 	name = setlocale (LC_CTYPE, (char *)NULL);
 #if !defined(X_LOCALE)
-        /* 
-         * _XlMapOSLocaleName will return the same string or a substring 
-         * of name, so strlen(name) is okay 
+        /*
+         * _XlMapOSLocaleName will return the same string or a substring
+         * of name, so strlen(name) is okay
          */
         if ((len = strlen(name)) >= sizeof sinamebuf) {
             siname = Xmalloc (len + 1);
@@ -264,9 +282,9 @@ _XOpenLC(
 	    goto found;
 	}
     }
-	//goingnuts deactivated below
-    //if (!loader_list)
-	//_XlcInitLoader();
+
+    if (!loader_list)
+	_XlcInitLoader();
 
     /*
      * not there, so try to get and add to list
@@ -274,7 +292,7 @@ _XOpenLC(
     for (loader = loader_list; loader; loader = loader->next) {
 	lcd = (*loader->proc)(name);
 	if (lcd) {
-	    cur = (XLCdList) Xmalloc (sizeof(XLCdListRec));
+	    cur = Xmalloc (sizeof(XLCdListRec));
 	    if (cur) {
 		cur->lcd = lcd;
 		cur->ref_count = 1;
@@ -316,11 +334,11 @@ _XCloseLC(
 	    break;
 	}
     }
-	//goingnuts deactivated below
-    //if(loader_list) {
-	//_XlcDeInitLoader();
-	//loader_list = NULL;
-    //}
+
+    if(loader_list) {
+	_XlcDeInitLoader();
+	loader_list = NULL;
+    }
 }
 
 /*
@@ -328,7 +346,7 @@ _XCloseLC(
  */
 
 XLCd
-_XlcCurrentLC()
+_XlcCurrentLC(void)
 {
     XLCd lcd;
     static XLCd last_lcd = NULL;
@@ -337,7 +355,7 @@ _XlcCurrentLC()
 
     if (last_lcd)
 	_XCloseLC(last_lcd);
-    
+
     last_lcd = lcd;
 
     return lcd;
@@ -348,10 +366,10 @@ _XrmInitParseInfo(
     XPointer *state)
 {
     XLCd lcd = _XOpenLC((char *) NULL);
-    
+
     if (lcd == (XLCd) NULL)
 	return (XrmMethods) NULL;
-    
+
     return (*lcd->methods->init_parse_info)(lcd, state);
 }
 
@@ -363,7 +381,7 @@ XmbTextPropertyToTextList(
     int *count_ret)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -379,7 +397,7 @@ XwcTextPropertyToTextList(
     int *count_ret)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -395,7 +413,7 @@ Xutf8TextPropertyToTextList(
     int *count_ret)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -412,7 +430,7 @@ XmbTextListToTextProperty(
     XTextProperty *text_prop)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -429,7 +447,7 @@ XwcTextListToTextProperty(
     XTextProperty *text_prop)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -446,7 +464,7 @@ Xutf8TextListToTextProperty(
     XTextProperty *text_prop)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return XLocaleNotSupported;
 
@@ -459,7 +477,7 @@ XwcFreeStringList(
     wchar_t **list)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return;
 
@@ -467,13 +485,13 @@ XwcFreeStringList(
 }
 
 const char *
-XDefaultString()
+XDefaultString(void)
 {
     XLCd lcd = _XlcCurrentLC();
-    
+
     if (lcd == NULL)
 	return (char *) NULL;
-    
+
     return (*lcd->methods->default_string)(lcd);
 }
 
@@ -534,7 +552,7 @@ _XlcCountVaList(
 
     for (count = 0; va_arg(var, char *); count++)
 	(void)va_arg(var, XPointer);
-    
+
     *count_ret = count;
 }
 
@@ -546,10 +564,10 @@ _XlcVaToArgList(
 {
     XlcArgList args;
 
-    *args_ret = args = (XlcArgList) Xmalloc(sizeof(XlcArg) * count);
+    *args_ret = args = Xmalloc(sizeof(XlcArg) * count);
     if (args == (XlcArgList) NULL)
 	return;
-    
+
     for ( ; count-- > 0; args++) {
 	args->name = va_arg(var, char *);
 	args->value = va_arg(var, XPointer);

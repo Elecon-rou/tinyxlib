@@ -23,9 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/ImText16.c,v 1.6 2006/01/09 14:58:29 dawes Exp $ */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
@@ -37,7 +38,7 @@ XDrawImageString16(
     int y,
     _Xconst XChar2b *string,
     int length)
-{   
+{
     register xImageText16Req *req;
     XChar2b *CharacterOffset = (XChar2b *)string;
     int FirstTimeThrough = True;
@@ -46,7 +47,7 @@ XDrawImageString16(
     LockDisplay(dpy);
     FlushGC(dpy, gc);
 
-    while (length > 0) 
+    while (length > 0)
     {
 	int Unit, Datalength;
 

@@ -1,16 +1,12 @@
-/* $XConsortium: RdBitF.c,v 1.19 94/04/17 20:20:42 rws Exp $ */
-/* $XFree86: xc/lib/X11/RdBitF.c,v 3.0 1994/10/20 06:03:09 dawes Exp $ */
 /*
 
-Copyright (c) 1987  X Consortium
+Copyright 1987, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -18,33 +14,36 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
 
 /*
- *	Code to read bitmaps from disk files. Interprets 
+ *	Code to read bitmaps from disk files. Interprets
  *	data from X10 and X11 bitmap files and creates
  *	Pixmap representations of files. Returns Pixmap
  *	ID and specifics about image.
  *
  *	Modified for speedup by Jim Becker, changed image
- *	data parsing logic (removed some fscanf()s). 
+ *	data parsing logic (removed some fscanf()s).
  *	Aug 5, 1988
  *
  * Note that this file and ../Xmu/RdBitF.c look very similar....  Keep them
- * that way (but don't use common source code so that people can have one 
+ * that way (but don't use common source code so that people can have one
  * without the other).
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xos.h>
 #include "Xutil.h"
@@ -55,55 +54,36 @@ from the X Consortium.
 #define MAX_SIZE 255
 
 /* shared data for the image read/parse logic */
-static short hexTable[256];		/* conversion value */
-static Bool initialized = False;	/* easier to fill in at run time */
+static const short hexTable[256] = {
+    ['0'] = 0,  ['1'] = 1,
+    ['2'] = 2,  ['3'] = 3,
+    ['4'] = 4,  ['5'] = 5,
+    ['6'] = 6,  ['7'] = 7,
+    ['8'] = 8,  ['9'] = 9,
+    ['A'] = 10, ['B'] = 11,
+    ['C'] = 12, ['D'] = 13,
+    ['E'] = 14, ['F'] = 15,
+    ['a'] = 10, ['b'] = 11,
+    ['c'] = 12, ['d'] = 13,
+    ['e'] = 14, ['f'] = 15,
 
-
-/*
- *	Table index for the hex values. Initialized once, first time.
- *	Used for translation value or delimiter significance lookup.
- */
-static void initHexTable()
-{
-    /*
-     * We build the table at run time for several reasons:
-     *
-     *     1.  portable to non-ASCII machines.
-     *     2.  still reentrant since we set the init flag after setting table.
-     *     3.  easier to extend.
-     *     4.  less prone to bugs.
-     */
-    hexTable['0'] = 0;	hexTable['1'] = 1;
-    hexTable['2'] = 2;	hexTable['3'] = 3;
-    hexTable['4'] = 4;	hexTable['5'] = 5;
-    hexTable['6'] = 6;	hexTable['7'] = 7;
-    hexTable['8'] = 8;	hexTable['9'] = 9;
-    hexTable['A'] = 10;	hexTable['B'] = 11;
-    hexTable['C'] = 12;	hexTable['D'] = 13;
-    hexTable['E'] = 14;	hexTable['F'] = 15;
-    hexTable['a'] = 10;	hexTable['b'] = 11;
-    hexTable['c'] = 12;	hexTable['d'] = 13;
-    hexTable['e'] = 14;	hexTable['f'] = 15;
-
-    /* delimiters of significance are flagged w/ negative value */
-    hexTable[' '] = -1;	hexTable[','] = -1;
-    hexTable['}'] = -1;	hexTable['\n'] = -1;
-    hexTable['\t'] = -1;
-	
-    initialized = True;
-}
+    [' '] = -1, [','] = -1,
+    ['}'] = -1, ['\n'] = -1,
+    ['\t'] = -1
+};
 
 /*
  *	read next hex value in the input stream, return -1 if EOF
  */
-static int NextInt (fstream)
-    FILE *fstream;
+static int
+NextInt (
+    FILE *fstream)
 {
     int	ch;
     int	value = 0;
     int gotone = 0;
     int done = 0;
-    
+
     /* loop, accumulate hex value until find delimiter  */
     /* skip any initial delimiters found in read stream */
 
@@ -125,21 +105,14 @@ static int NextInt (fstream)
     return value;
 }
 
-#if NeedFunctionPrototypes
-int XReadBitmapFileData (
+int
+XReadBitmapFileData (
     _Xconst char *filename,
     unsigned int *width,                /* RETURNED */
     unsigned int *height,               /* RETURNED */
     unsigned char **data,               /* RETURNED */
     int *x_hot,                         /* RETURNED */
     int *y_hot)                         /* RETURNED */
-#else
-int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
-    char *filename;
-    unsigned int *width, *height;       /* RETURNED */
-    unsigned char **data;               /* RETURNED */
-    int *x_hot, *y_hot;                 /* RETURNED */
-#endif
 {
     FILE *fstream;			/* handle on file  */
     unsigned char *bits = NULL;		/* working variable */
@@ -156,15 +129,15 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
     int hx = -1;			/* x hotspot */
     int hy = -1;			/* y hotspot */
 
-    /* first time initialization */
-    if (initialized == False) initHexTable();
-
+#ifdef __UNIXOS2__
+    filename = __XOS2RedirRoot(filename);
+#endif
     if (!(fstream = fopen(filename, "r")))
 	return BitmapOpenFailed;
 
     /* error cleanup and return macro	*/
 #define	RETURN(code) \
-{ if (bits) Xfree ((char *)bits); fclose (fstream); return code; }
+{ Xfree (bits); fclose (fstream); return code; }
 
     while (fgets(line, MAX_SIZE, fstream)) {
 	if (strlen(line) == MAX_SIZE-1)
@@ -189,7 +162,7 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
 	    }
 	    continue;
 	}
-    
+
 	if (sscanf(line, "static short %s = {", name_and_type) == 1)
 	  version10p = 1;
 	else if (sscanf(line,"static unsigned char %s = {",name_and_type) == 1)
@@ -206,7 +179,7 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
 
 	if (strcmp("bits[]", type))
 	  continue;
-    
+
 	if (!ww || !hh)
 	  RETURN (BitmapFileInvalid);
 
@@ -218,8 +191,8 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
 	bytes_per_line = (ww+7)/8 + padding;
 
 	size = bytes_per_line * hh;
-	bits = (unsigned char *) Xmalloc ((unsigned int) size);
-	if (!bits) 
+	bits = Xmalloc (size);
+	if (!bits)
 	  RETURN (BitmapNoMemory);
 
 	if (version10p) {
@@ -238,11 +211,16 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
 	    int bytes;
 
 	    for (bytes=0, ptr=bits; bytes<size; bytes++, ptr++) {
-		if ((value = NextInt(fstream)) < 0) 
+		if ((value = NextInt(fstream)) < 0)
 		  RETURN (BitmapFileInvalid);
 		*ptr=value;
 	    }
 	}
+
+	/* If we got to this point, we read a full bitmap file. Break so we don't
+	 * start reading another one from the same file and leak the memory
+	 * allocated for the previous one. */
+	break;
     }					/* end while */
 
     fclose(fstream);
@@ -258,8 +236,8 @@ int XReadBitmapFileData (filename, width, height, data, x_hot, y_hot)
     return (BitmapSuccess);
 }
 
-#if NeedFunctionPrototypes
-int XReadBitmapFile (
+int
+XReadBitmapFile (
     Display *display,
     Drawable d,
     _Xconst char *filename,
@@ -268,17 +246,7 @@ int XReadBitmapFile (
     Pixmap *pixmap,                     /* RETURNED */
     int *x_hot,                         /* RETURNED */
     int *y_hot)                         /* RETURNED */
-#else
-int XReadBitmapFile (display, d, filename, width, height, pixmap, x_hot, y_hot)
-    Display *display;
-    Drawable d;
-    char *filename;
-    unsigned int *width, *height;       /* RETURNED */
-    Pixmap *pixmap;                     /* RETURNED */
-    int *x_hot, *y_hot;                 /* RETURNED */
-#endif
 {
-    Pixmap pix;				/* value to return */
     unsigned char *data;
     int res;
 
@@ -286,7 +254,7 @@ int XReadBitmapFile (display, d, filename, width, height, pixmap, x_hot, y_hot)
     if (res != BitmapSuccess)
 	return res;
     *pixmap = XCreateBitmapFromData(display, d, (char *)data, *width, *height);
-    Xfree((char *)data);
+    Xfree(data);
     if (*pixmap == None)
 	return (BitmapNoMemory);
     return (BitmapSuccess);

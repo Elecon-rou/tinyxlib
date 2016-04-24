@@ -1,4 +1,3 @@
-/* $Xorg: mbWrap.c,v 1.4 2001/02/09 02:03:40 xorgcvs Exp $ */
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -33,7 +32,7 @@ from The Open Group.
  * documentation for any purpose is hereby granted without fee, provided that
  * the above copyright notice appear in all copies and that both that
  * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Open Software Foundation 
+ * documentation, and that the name of Open Software Foundation
  * not be used in advertising or publicity pertaining to distribution of the
  * software without specific, written prior permission.  Open Software
  * Foundation makes no representations about the suitability of this
@@ -43,15 +42,17 @@ from The Open Group.
  * OPEN SOFTWARE FOUNDATION DISCLAIMS ALL WARRANTIES WITH REGARD TO
  * THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
  * FITNESS, IN NO EVENT SHALL OPEN SOFTWARE FOUNDATIONN BE
- * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
+ * LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- * 
- *		 M. Collins		OSF  
- */				
-/* $XFree86: xc/lib/X11/mbWrap.c,v 1.6 2001/12/14 19:54:10 dawes Exp $ */
+ *
+ *		 M. Collins		OSF
+ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include "Xlcint.h"
 
@@ -100,7 +101,7 @@ XmbDrawString(
     int                 text_len)
 {
     (void)(*font_set->methods->mb_draw_string) (dpy, d, font_set, gc, x, y,
-						(char *)text, text_len);
+						text, text_len);
 }
 
 
@@ -116,17 +117,16 @@ XmbDrawImageString(
     int                 text_len)
 {
     (*font_set->methods->mb_draw_image_string) (dpy, d, font_set, gc, x, y,
-						(char *)text, text_len);
+						text, text_len);
 }
 
-int 
+int
 XmbTextEscapement(
     XFontSet        font_set,
     _Xconst char   *text,
     int             text_len)
 {
-    return (*font_set->methods->mb_escapement) (font_set,
-						(char *)text, text_len);
+    return (*font_set->methods->mb_escapement) (font_set, text, text_len);
 }
 
 int
@@ -137,8 +137,7 @@ XmbTextExtents(
     XRectangle     *overall_ink_extents,
     XRectangle     *overall_logical_extents)
 {
-    return (*font_set->methods->mb_extents) (font_set,
-					     (char *)text, text_len,
+    return (*font_set->methods->mb_extents) (font_set, text, text_len,
 					     overall_ink_extents,
 					     overall_logical_extents);
 }
@@ -156,7 +155,7 @@ XmbTextPerCharExtents(
     XRectangle     *max_logical_extents)
 {
     return (*font_set->methods->mb_extents_per_char)
-	     (font_set, (char *)text, text_len, 
+	     (font_set, text, text_len,
 	      ink_extents_buffer, logical_extents_buffer,
 	      buffer_size, num_chars, max_ink_extents, max_logical_extents);
 }

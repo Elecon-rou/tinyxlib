@@ -1,4 +1,3 @@
-/* $Xorg: CrWindow.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,16 +24,21 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Window XCreateSimpleWindow(dpy, parent, x, y, width, height, 
-                      borderWidth, border, background)
-    register Display *dpy;
-    Window parent;
-    int x, y;
-    unsigned int width, height, borderWidth;
-    unsigned long border;
-    unsigned long background;
+Window XCreateSimpleWindow(
+    register Display *dpy,
+    Window parent,
+    int x,
+    int y,
+    unsigned int width,
+    unsigned int height,
+    unsigned int borderWidth,
+    unsigned long border,
+    unsigned long background)
 {
     Window wid;
     register xCreateWindowReq *req;
@@ -53,20 +57,11 @@ Window XCreateSimpleWindow(dpy, parent, x, y, width, height,
     wid = req->wid = XAllocID(dpy);
     req->mask = CWBackPixel | CWBorderPixel;
 
-#ifdef MUSTCOPY
-    {
-	unsigned long lbackground = background, lborder = border;
-	dpy->bufptr -= 8;
-	Data32 (dpy, (long *) &lbackground, 4);
-	Data32 (dpy, (long *) &lborder, 4);
-    }
-#else
     {
 	register CARD32 *valuePtr = (CARD32 *) NEXTPTR(req,xCreateWindowReq);
 	*valuePtr++ = background;
 	*valuePtr = border;
     }
-#endif /* MUSTCOPY */
 
     UnlockDisplay(dpy);
     SyncHandle();

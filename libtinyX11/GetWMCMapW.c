@@ -1,4 +1,3 @@
-/* $Xorg: GetWMCMapW.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 
 /***********************************************************
 
@@ -29,13 +28,13 @@ Copyright 1987 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -47,15 +46,18 @@ SOFTWARE.
 
 ******************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xatom.h>
 #include <stdio.h>
 
-Status XGetWMColormapWindows (dpy, w, colormapWindows, countReturn)
-    Display *dpy;
-    Window w;
-    Window **colormapWindows;
-    int *countReturn;
+Status XGetWMColormapWindows (
+    Display *dpy,
+    Window w,
+    Window **colormapWindows,
+    int *countReturn)
 {
     Atom *data = NULL;
     Atom actual_type;
@@ -75,7 +77,7 @@ Status XGetWMColormapWindows (dpy, w, colormapWindows, countReturn)
       return False;
 
     if (actual_type != XA_WINDOW || actual_format != 32) {
-	if (data) Xfree ((char *) data);
+        Xfree (data);
 	return False;
     }
 

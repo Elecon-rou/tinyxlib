@@ -1,4 +1,3 @@
-/* $Xorg: TextToStr.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1989, 1998  The Open Group
@@ -25,8 +24,10 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-/* $XFree86: xc/lib/X11/TextToStr.c,v 1.4 2001/01/17 19:41:45 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xlibint.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
@@ -37,10 +38,10 @@ in this Software without prior written authorization from The Open Group.
  * null-separated STRING property.
  */
 
-Status XTextPropertyToStringList (tp, list_return, count_return)
-    XTextProperty *tp;
-    char ***list_return;
-    int *count_return;
+Status XTextPropertyToStringList (
+    XTextProperty *tp,
+    char ***list_return,
+    int *count_return)
 {
     char **list;			/* return value */
     int nelements;			/* return value */
@@ -71,12 +72,12 @@ Status XTextPropertyToStringList (tp, list_return, count_return)
     /*
      * allocate list and duplicate
      */
-    list = (char **) Xmalloc (nelements * sizeof (char *));
+    list = Xmalloc (nelements * sizeof (char *));
     if (!list) return False;
-	
-    start = (char *) Xmalloc ((datalen + 1) * sizeof (char));	/* for <NUL> */
+
+    start = Xmalloc ((datalen + 1) * sizeof (char));	/* for <NUL> */
     if (!start) {
-	Xfree ((char *) list);
+	Xfree (list);
 	return False;
     }
 
@@ -106,12 +107,11 @@ Status XTextPropertyToStringList (tp, list_return, count_return)
 }
 
 
-void XFreeStringList (list)
-    char **list;
+void XFreeStringList (char **list)
 {
     if (list) {
 	if (list[0]) Xfree (list[0]);
-	Xfree ((char *) list);
+	Xfree (list);
 	list = NULL;
     }
 }

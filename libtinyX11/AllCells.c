@@ -1,4 +1,3 @@
-/* $Xorg: AllCells.c,v 1.4 2001/02/09 02:03:30 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,18 +24,19 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Status XAllocColorCells(dpy, cmap, contig, masks, nplanes, pixels, ncolors)
-register Display *dpy;
-Colormap cmap;
-Bool contig;
-unsigned int ncolors; /* CARD16 */
-unsigned int nplanes; /* CARD16 */
-unsigned long *masks; /* LISTofCARD32 */ /* RETURN */
-unsigned long *pixels; /* LISTofCARD32 */ /* RETURN */
+Status XAllocColorCells(
+    register Display *dpy,
+    Colormap cmap,
+    Bool contig,
+    unsigned long *masks, /* LISTofCARD32 */ /* RETURN */
+    unsigned int nplanes, /* CARD16 */
+    unsigned long *pixels, /* LISTofCARD32 */ /* RETURN */
+    unsigned int ncolors) /* CARD16 */
 {
 
     Status status;
@@ -53,8 +53,13 @@ unsigned long *pixels; /* LISTofCARD32 */ /* RETURN */
     status = _XReply(dpy, (xReply *)&rep, 0, xFalse);
 
     if (status) {
-	_XRead32 (dpy, (long *) pixels, 4L * (long) (rep.nPixels));
-	_XRead32 (dpy, (long *) masks, 4L * (long) (rep.nMasks));
+	if ((rep.nPixels > ncolors) || (rep.nMasks > nplanes)) {
+	    _XEatDataWords(dpy, rep.length);
+	    status = 0; /* Failure */
+	} else {
+	    _XRead32 (dpy, (long *) pixels, 4L * (long) (rep.nPixels));
+	    _XRead32 (dpy, (long *) masks, 4L * (long) (rep.nMasks));
+	}
     }
 
     UnlockDisplay(dpy);

@@ -1,4 +1,3 @@
-/* $Xorg: CopyCmap.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,19 +23,26 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/CopyCmap.c,v 1.3 2001/01/17 19:41:33 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#else
+#define XCMS 1
+#endif
 #include "Xlibint.h"
+
+#if XCMS
 #include "Xcmsint.h"
-#ifndef TINY
+
 /* cmsCmap.c */
 extern XcmsCmapRec * _XcmsCopyCmapRecAndFree(Display *dpy,
 					     Colormap src_cmap,
 					     Colormap copy_cmap);
 #endif
-Colormap XCopyColormapAndFree(dpy, src_cmap)
-register Display *dpy;
-Colormap src_cmap;
+
+Colormap XCopyColormapAndFree(
+    register Display *dpy,
+    Colormap src_cmap)
 {
     Colormap mid;
     register xCopyColormapAndFreeReq *req;
@@ -49,8 +55,10 @@ Colormap src_cmap;
 
     UnlockDisplay(dpy);
     SyncHandle();
-#ifdef USECMS
+
+#if XCMS
     _XcmsCopyCmapRecAndFree(dpy, src_cmap, mid);
 #endif
+
     return(mid);
 }

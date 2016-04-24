@@ -1,14 +1,12 @@
-/* $XConsortium: GetPntMap.c,v 1.16 94/04/17 20:19:41 rws Exp $ */
 /*
 
-Copyright (c) 1986  X Consortium
+Copyright 1986, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,53 +14,77 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
+#include <limits.h>
 
 #ifdef MIN		/* some systems define this in <sys/param.h> */
 #undef MIN
 #endif
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-int XGetPointerMapping (dpy, map, nmaps)
-    register Display *dpy;
-    unsigned char *map;	/* RETURN */
-    int nmaps;
+int XGetPointerMapping (
+    register Display *dpy,
+    unsigned char *map,	/* RETURN */
+    int nmaps)
 
 {
     unsigned char mapping[256];	/* known fixed size */
-    long nbytes;
+    unsigned long nbytes, remainder = 0;
     xGetPointerMappingReply rep;
     register xReq *req;
 
     LockDisplay(dpy);
     GetEmptyReq(GetPointerMapping, req);
-    (void) _XReply(dpy, (xReply *)&rep, 0, xFalse);
+    if (! _XReply(dpy, (xReply *)&rep, 0, xFalse)) {
+	UnlockDisplay(dpy);
+	SyncHandle();
+	return 0;
+    }
 
-    nbytes = (long)rep.length << 2;
+    /* Don't count on the server returning a valid value */
+    if (rep.length >= (INT_MAX >> 2)) {
+	_XEatDataWords(dpy, rep.length);
+	UnlockDisplay(dpy);
+	SyncHandle();
+	return 0;
+    }
+
+    nbytes = (unsigned long) rep.length << 2;
+    if (nbytes > sizeof mapping) {
+	remainder = nbytes - sizeof mapping;
+	nbytes = sizeof mapping;
+    }
     _XRead (dpy, (char *)mapping, nbytes);
     /* don't return more data than the user asked for. */
     if (rep.nElts) {
-	    memcpy ((char *) map, (char *) mapping, 
+	    memcpy ((char *) map, (char *) mapping,
 		MIN((int)rep.nElts, nmaps) );
 	}
+
+    if (remainder)
+	_XEatData(dpy, remainder);
+
     UnlockDisplay(dpy);
     SyncHandle();
     return ((int) rep.nElts);
 }
 
-#if NeedFunctionPrototypes
-KeySym *XGetKeyboardMapping (Display *dpy,
+KeySym *
+XGetKeyboardMapping (Display *dpy,
 #if NeedWidePrototypes
 			     unsigned int first_keycode,
 #else
@@ -70,16 +92,9 @@ KeySym *XGetKeyboardMapping (Display *dpy,
 #endif
 			     int count,
 			     int *keysyms_per_keycode)
-#else
-KeySym *XGetKeyboardMapping (dpy, first_keycode, count, keysyms_per_keycode)
-    register Display *dpy;
-    KeyCode first_keycode;
-    int count;
-    int *keysyms_per_keycode;		/* RETURN */
-#endif
 {
-    long nbytes;
-    unsigned long nkeysyms;
+    unsigned long nbytes;
+    CARD32 nkeysyms;
     register KeySym *mapping = NULL;
     xGetKeyboardMappingReply rep;
     register xGetKeyboardMappingReq *req;
@@ -94,18 +109,20 @@ KeySym *XGetKeyboardMapping (dpy, first_keycode, count, keysyms_per_keycode)
 	return (KeySym *) NULL;
     }
 
-    nkeysyms = (unsigned long) rep.length;
+    nkeysyms = rep.length;
     if (nkeysyms > 0) {
-	nbytes = nkeysyms * sizeof (KeySym);
-	mapping = (KeySym *) Xmalloc ((unsigned) nbytes);
-	nbytes = nkeysyms << 2;
+	if (nkeysyms < (INT_MAX / sizeof (KeySym))) {
+	    nbytes = nkeysyms * sizeof (KeySym);
+	    mapping = Xmalloc (nbytes);
+	}
 	if (! mapping) {
-	    _XEatData(dpy, (unsigned long) nbytes);
+	    _XEatDataWords(dpy, rep.length);
 	    UnlockDisplay(dpy);
 	    SyncHandle();
 	    return (KeySym *) NULL;
 	}
-	_XRead32 (dpy, (char *) mapping, nbytes);
+	nbytes = nkeysyms << 2;
+	_XRead32 (dpy, (long *) mapping, nbytes);
     }
     *keysyms_per_keycode = rep.keySymsPerKeyCode;
     UnlockDisplay(dpy);

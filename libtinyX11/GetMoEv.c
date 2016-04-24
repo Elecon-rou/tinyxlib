@@ -1,4 +1,3 @@
-/* $Xorg: GetMoEv.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,19 +24,22 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
+#include <limits.h>
 
-XTimeCoord *XGetMotionEvents(dpy, w, start, stop, nEvents)
-    register Display *dpy;
-    Time start, stop;
-    Window w;
-    int *nEvents;  /* RETURN */
-{       
+XTimeCoord *XGetMotionEvents(
+    register Display *dpy,
+    Window w,
+    Time start,
+    Time stop,
+    int *nEvents)  /* RETURN */
+{
     xGetMotionEventsReply rep;
     register xGetMotionEventsReq *req;
     XTimeCoord *tc = NULL;
-    long nbytes;
     LockDisplay(dpy);
     GetReq(GetMotionEvents, req);
     req->window = w;
@@ -49,27 +51,23 @@ XTimeCoord *XGetMotionEvents(dpy, w, start, stop, nEvents)
         SyncHandle();
 	return (NULL);
 	}
-    
-    if (rep.nEvents) {
-	if (! (tc = (XTimeCoord *)
-	       Xmalloc( (unsigned) 
-		       (nbytes = (long) rep.nEvents * sizeof(XTimeCoord))))) {
-	    _XEatData (dpy, (unsigned long) nbytes);
-	    UnlockDisplay(dpy);
-	    SyncHandle();
-	    return (NULL);
-	}
-    }
 
-    *nEvents = rep.nEvents;
-    nbytes = SIZEOF (xTimecoord);
+    if (rep.nEvents && (rep.nEvents < (INT_MAX / sizeof(XTimeCoord))))
+	tc = Xmalloc(rep.nEvents * sizeof(XTimeCoord));
+    if (tc == NULL) {
+	/* server returned either no events or a bad event count */
+	*nEvents = 0;
+	_XEatDataWords (dpy, rep.length);
+    }
+    else
     {
 	register XTimeCoord *tcptr;
-	register int i;
+	unsigned int i;
 	xTimecoord xtc;
 
+	*nEvents = (int) rep.nEvents;
 	for (i = rep.nEvents, tcptr = tc; i > 0; i--, tcptr++) {
-	    _XRead (dpy, (char *) &xtc, nbytes);
+	    _XRead (dpy, (char *) &xtc, SIZEOF (xTimecoord));
 	    tcptr->time = xtc.time;
 	    tcptr->x    = cvtINT16toShort (xtc.x);
 	    tcptr->y    = cvtINT16toShort (xtc.y);

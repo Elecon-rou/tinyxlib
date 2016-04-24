@@ -1,4 +1,3 @@
-/* $Xorg: FilterEv.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 
  /*
   * Copyright 1990, 1991 by OMRON Corporation
@@ -19,12 +18,12 @@
   * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
   * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
   * TORTUOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-  * PERFORMANCE OF THIS SOFTWARE. 
+  * PERFORMANCE OF THIS SOFTWARE.
   *
   *	Author:	Seiji Kuwari	OMRON Corporation
   *				kuwa@omron.co.jp
   *				kuwa%omron.co.jp@uunet.uu.net
-  */				
+  */
 
 /*
 
@@ -53,11 +52,16 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FilterEv.c,v 3.4 2001/07/29 05:01:11 tsi Exp $ */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#else
+#define XLOCALE 1
+#endif
 #include "Xlibint.h"
+#if XLOCALE
 #include "Xlcint.h"
+#endif
 
 extern long const _Xevent_to_mask[];
 
@@ -65,10 +69,11 @@ extern long const _Xevent_to_mask[];
  * Look up if there is a specified filter for the event.
  */
 Bool
-XFilterEvent(ev, window)
-    XEvent *ev;
-    Window window;
+XFilterEvent(
+    XEvent *ev,
+    Window window)
 {
+#if XLOCALE
     XFilterEventList	p;
     Window		win;
     long		mask;
@@ -88,13 +93,14 @@ XFilterEvent(ev, window)
 	if (win == p->window) {
 	    if ((mask & p->event_mask) ||
 		(ev->type >= p->start_type && ev->type <= p->end_type)) {
+		UnlockDisplay(ev->xany.display);
 		ret = (*(p->filter))(ev->xany.display, p->window, ev,
 				      p->client_data);
-		UnlockDisplay(ev->xany.display);
 		return(ret);
 	    }
 	}
     }
     UnlockDisplay(ev->xany.display);
+#endif
     return(False);
 }

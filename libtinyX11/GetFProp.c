@@ -1,4 +1,3 @@
-/* $Xorg: GetFProp.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,29 +24,29 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Bool XGetFontProperty (fs, name, valuePtr)
-    XFontStruct *fs;
-    register Atom name;
-    unsigned long *valuePtr;
-    {
+Bool
+XGetFontProperty(
+    XFontStruct *fs,
+    register Atom name,
+    unsigned long *valuePtr)
+{
     /* XXX this is a simple linear search for now.  If the
-      protocol is changed to sort the property list, this should
-      become a binary search. */
+       protocol is changed to sort the property list, this should
+       become a binary search. */
     register XFontProp *prop = fs->properties;
     register XFontProp *last = prop + fs->n_properties;
+
     while (prop != last) {
-	if (prop->name == name) {
-	    *valuePtr = prop->card32;
-	    return (1);
-	    }
-	prop++;
-	}
-    return (0);
+        if (prop->name == name) {
+            *valuePtr = prop->card32;
+            return (1);
+        }
+        prop++;
     }
-
-	
-    
-
-      
+    return (0);
+}

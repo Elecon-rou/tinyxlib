@@ -1,4 +1,3 @@
-/* $Xorg: FreeGC.c,v 1.4 2001/02/09 02:03:33 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,14 +23,16 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/FreeGC.c,v 1.4 2001/08/18 02:41:28 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XFreeGC (dpy, gc)
-    register Display *dpy;
-    GC gc;
+XFreeGC (
+    register Display *dpy,
+    GC gc)
     {
     register xResourceReq *req;
     register _XExtension *ext;
@@ -43,7 +44,7 @@ XFreeGC (dpy, gc)
     UnlockDisplay(dpy);
     SyncHandle();
     _XFreeExtData(gc->ext_data);
-    Xfree ((char *) gc);
+    Xfree (gc);
     return 1;
     }
-    
+

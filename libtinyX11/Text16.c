@@ -1,4 +1,3 @@
-/* $Xorg: Text16.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/Text16.c,v 1.5 2001/12/14 19:54:07 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
@@ -37,7 +38,7 @@ XDrawString16(
     int y,
     _Xconst XChar2b *string,
     int length)
-{   
+{
     int Datalength = 0;
     register xPolyText16Req *req;
 
@@ -59,11 +60,11 @@ XDrawString16(
     req->length += (Datalength + 3)>>2;  /* convert to number of 32-bit words */
 
 
-    /* 
+    /*
      * If the entire request does not fit into the remaining space in the
      * buffer, flush the buffer first.   If the request does fit into the
      * empty buffer, then we won't have to flush it at the end to keep
-     * the buffer 32-bit aligned. 
+     * the buffer 32-bit aligned.
      */
 
     if (dpy->bufptr + Datalength > dpy->bufmax)
@@ -81,41 +82,18 @@ XDrawString16(
 	    BufAlloc (xTextElt *, elt, nbytes);
 	    elt->delta = 0;
 	    elt->len = 254;
-#if defined(MUSTCOPY) || defined(MUSTCOPY2B)
-	    {
-		register int i;
-		register unsigned char *cp;
-		for (i = 0, cp = ((unsigned char *)elt) + 2; i < 254; i++) {
-		    *cp++ = CharacterOffset[i].byte1;
-		    *cp++ = CharacterOffset[i].byte2;
-		}
-	    }
-#else
             memcpy (((char *) elt) + 2, (char *)CharacterOffset, 254 * 2);
-#endif
 	    PartialNChars = PartialNChars - 254;
 	    CharacterOffset += 254;
 	}
-	    
+
         if (PartialNChars)
         {
 	    nbytes = PartialNChars * 2  + SIZEOF(xTextElt);
-	    BufAlloc (xTextElt *, elt, nbytes); 
+	    BufAlloc (xTextElt *, elt, nbytes);
 	    elt->delta = 0;
 	    elt->len = PartialNChars;
-#if defined(MUSTCOPY) || defined(MUSTCOPY2B)
-	    {
-		register int i;
-		register unsigned char *cp;
-		for (i = 0, cp = ((unsigned char *)elt) + 2; i < PartialNChars;
-		     i++) {
-		    *cp++ = CharacterOffset[i].byte1;
-		    *cp++ = CharacterOffset[i].byte2;
-		}
-	    }
-#else
             memcpy(((char *)elt) + 2, (char *)CharacterOffset, PartialNChars * 2);
-#endif
 	 }
     }
 
@@ -123,23 +101,23 @@ XDrawString16(
 
     if (Datalength &= 3) {
 	char *pad;
-	/* 
+	/*
 	 * BufAlloc is a macro that uses its last argument more than
-	 * once, otherwise I'd write "BufAlloc (char *, pad, 4-length)" 
+	 * once, otherwise I'd write "BufAlloc (char *, pad, 4-length)"
 	 */
 	length = 4 - Datalength;
 	BufAlloc (char *, pad, length);
-	/* 
+	/*
 	 * if there are 3 bytes of padding, the first byte MUST be 0
-	 * so the pad bytes aren't mistaken for a final xTextElt 
+	 * so the pad bytes aren't mistaken for a final xTextElt
 	 */
 	*pad = 0;
         }
 
-    /* 
+    /*
      * If the buffer pointer is not now pointing to a 32-bit boundary,
      * we must flush the buffer so that it does point to a 32-bit boundary
-     * at the end of this routine. 
+     * at the end of this routine.
      */
 
     if ((dpy->bufptr - dpy->buffer) & 3)

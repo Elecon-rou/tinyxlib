@@ -1,4 +1,3 @@
-/* $Xorg: ScrResStr.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,11 +24,13 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 #include <X11/Xatom.h>
 
-char *XScreenResourceString(screen)
-	Screen *screen;
+char *XScreenResourceString(Screen *screen)
 {
     Atom prop_name;
     Atom actual_type;
@@ -47,8 +48,7 @@ char *XScreenResourceString(screen)
 			   (unsigned char **) &val) == Success) {
 	if ((actual_type == XA_STRING) && (actual_format == 8))
 	    return val;
-	if (val)
-	    Xfree(val);
+	Xfree(val);
     }
     return (char *)NULL;
 }

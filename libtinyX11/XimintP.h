@@ -1,7 +1,27 @@
-/* $XConsortium: XimintP.h,v 1.6 94/03/26 16:57:21 rws Exp $ */
+/*
+ * Copyright 1991, 1992 Oracle and/or its affiliates. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
 /******************************************************************
 
-           Copyright 1991, 1992 by Sun Microsystems, Inc.
            Copyright 1992, 1993, 1994 by FUJITSU LIMITED
            Copyright 1993, 1994       by Sony Corporation
 
@@ -9,25 +29,23 @@ Permission to use, copy, modify, distribute, and sell this software and
 its documentation for any purpose is hereby granted without fee, provided
 that the above copyright notice appear in all copies and that both that
 copyright notice and this permission notice appear in supporting
-documentation, and that the name of Sun Microsystems, Inc., FUJITSU
-LIMITED and Sony Corporation not be used in advertising or publicity
-pertaining to distribution of the software without specific, written
-prior permission.  Sun Microsystems, Inc., FUJITSU LIMITED and Sony
-Corporation makes no representations about the suitability of this
+documentation, and that the name of FUJITSU LIMITED and Sony Corporation
+not be used in advertising or publicity pertaining to distribution of the
+software without specific, written prior permission.  FUJITSU LIMITED and
+Sony Corporation makes no representations about the suitability of this
 software for any purpose.  It is provided "as is" without express or
-implied warranty. 
+implied warranty.
 
-Sun Microsystems Inc. ,FUJITSU LIMITED AND SONY CORPORATION DISCLAIMS ALL
-WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES
-OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL Sun Microsystems, Inc.,
-FUJITSU LIMITED, SONY CORPORATIN BE LIABLE FOR ANY SPECIAL, INDIRECT OR
-CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF
-USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
+FUJITSU LIMITED AND SONY CORPORATION DISCLAIMS ALL WARRANTIES WITH REGARD
+TO THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS, IN NO EVENT SHALL FUJITSU LIMITED OR SONY CORPORATION BE LIABLE
+FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER
+RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE
+USE OR PERFORMANCE OF THIS SOFTWARE.
 
   Author: Hideki Hiura (hhiura@Sun.COM) Sun Microsystems, Inc.
-          Takashi Fujiwara     FUJITSU LIMITED 
+          Takashi Fujiwara     FUJITSU LIMITED
                                  fujiwara@a80.tech.yk.fujitsu.co.jp
 	  Makoto Wakamatsu     Sony Corporation
                                  makoto@sm.sony.co.jp
@@ -46,9 +64,7 @@ PERFORMANCE OF THIS SOFTWARE.
  * for protocol layer callback function
  */
 typedef Bool (*XimProtoIntrProc)(
-#if NeedFunctionPrototypes
 	Xim, INT16, XPointer, XPointer
-#endif
 );
 typedef struct _XimProtoIntrRec {
     XimProtoIntrProc		 func;
@@ -62,45 +78,41 @@ typedef struct _XimProtoIntrRec {
  * for transport layer methods
  */
 typedef Bool (*XimTransConnectProc)(
-#if NeedFunctionPrototypes
 	 Xim
-#endif
 );
 typedef Bool (*XimTransShutdownProc)(
-#if NeedFunctionPrototypes
 	 Xim
-#endif
 );
 typedef Bool (*XimTransWriteProc)(
-#if NeedFunctionPrototypes
 	 Xim, INT16, XPointer
-#endif
 );
 typedef Bool (*XimTransReadProc)(
-#if NeedFunctionPrototypes
 	 Xim, XPointer, int, int *
-#endif
 );
 typedef void (*XimTransFlushProc)(
-#if NeedFunctionPrototypes
 	 Xim
-#endif
 );
 typedef Bool (*XimTransRegDispatcher)(
-#if NeedNestedPrototypes
 	 Xim, Bool (*)(Xim, INT16, XPointer, XPointer), XPointer
-#endif
 );
 typedef Bool (*XimTransCallDispatcher)(
-#if NeedFunctionPrototypes
 	 Xim, INT16, XPointer
-#endif
 );
 
 /*
  * private part of IM
  */
 typedef struct _XimProtoPrivateRec {
+    /* The first fields are identical with XimCommonPrivateRec. */
+    XlcConv			 ctom_conv;
+    XlcConv			 ctow_conv;
+    XlcConv			 ctoutf8_conv;
+    XlcConv			 cstomb_conv;
+    XlcConv			 cstowc_conv;
+    XlcConv			 cstoutf8_conv;
+    XlcConv			 ucstoc_conv;
+    XlcConv			 ucstoutf8_conv;
+
     Window			 im_window;
     XIMID			 imid;
     CARD16			 unused;
@@ -126,9 +138,6 @@ typedef struct _XimProtoPrivateRec {
     XrmQuark			*saved_imvalues;
     int				 num_saved_imvalues;
 
-    XlcConv			 ctom_conv;
-    XlcConv			 ctow_conv;
-
     /*
      * transport specific
      */
@@ -152,6 +161,8 @@ typedef struct _XimProtoPrivateRec {
 #define DELAYBINDABLE		(1L << 3)
 #define RECONNECTABLE		(1L << 4)
 #endif /* XIM_CONNECTABLE */
+#define FABRICATED		(1L << 5)
+#define NEED_SYNC_REPLY		(1L << 6)
 
 /*
  * macro for the flag of XIMPrivateRec
@@ -189,6 +200,20 @@ typedef struct _XimProtoPrivateRec {
 #define UNMAKE_CONNECTABLE(im) \
     (((Xim)im)->private.proto.flag &= ~(DELAYBINDABLE|RECONNECTABLE))
 #endif /* XIM_CONNECTABLE */
+
+#define IS_FABRICATED(im) \
+		(((Xim)im)->private.proto.flag & FABRICATED)
+#define MARK_FABRICATED(im) \
+		(((Xim)im)->private.proto.flag |= FABRICATED)
+#define UNMARK_FABRICATED(im) \
+		(((Xim)im)->private.proto.flag &= ~FABRICATED)
+
+#define IS_NEED_SYNC_REPLY(im) \
+		(((Xim)im)->private.proto.flag & NEED_SYNC_REPLY)
+#define MARK_NEED_SYNC_REPLY(im) \
+		(((Xim)im)->private.proto.flag |= NEED_SYNC_REPLY)
+#define UNMARK_NEED_SYNC_REPLY(im) \
+		(((Xim)im)->private.proto.flag &= ~NEED_SYNC_REPLY)
 
 /*
  * bit mask for the register_filter_event of XIMPrivateRec/XICPrivateRec
@@ -250,8 +275,6 @@ typedef struct _XicProtoPrivateRec {
  * bit mask for the flag of XICPrivateRec
  */
 #define IC_CONNECTED		(1L)
-#define FABLICATED		(1L << 1)
-#define	NEED_SYNC_REPLY		(1L << 2)
 
 /*
  * macro for the flag of XICPrivateRec
@@ -262,20 +285,6 @@ typedef struct _XicProtoPrivateRec {
 		(((Xic)ic)->private.proto.flag |= IC_CONNECTED)
 #define	UNMARK_IC_CONNECTED(ic) \
 		(((Xic)ic)->private.proto.flag &= ~IC_CONNECTED)
-
-#define IS_FABLICATED(ic) \
-		(((Xic)ic)->private.proto.flag & FABLICATED)
-#define MARK_FABLICATED(ic) \
-		(((Xic)ic)->private.proto.flag |= FABLICATED)
-#define UNMARK_FABLICATED(ic) \
-		(((Xic)ic)->private.proto.flag &= ~FABLICATED)
-
-#define	IS_NEED_SYNC_REPLY(ic) \
-		(((Xic)ic)->private.proto.flag & NEED_SYNC_REPLY)
-#define	MARK_NEED_SYNC_REPLY(ic) \
-		(((Xic)ic)->private.proto.flag |= NEED_SYNC_REPLY)
-#define	UNMARK_NEED_SYNC_REPLY(ic) \
-		(((Xic)ic)->private.proto.flag &= ~NEED_SYNC_REPLY)
 
 /*
  * macro for the filter_event_mask of XICPrivateRec

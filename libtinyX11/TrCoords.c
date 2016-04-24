@@ -1,4 +1,3 @@
-/* $Xorg: TrCoords.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -25,17 +24,21 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-Bool XTranslateCoordinates(dpy, src_win, dest_win, src_x, src_y, 
-		      dst_x, dst_y, child)
-     register Display *dpy;
-     Window src_win, dest_win;
-     int src_x, src_y;
-     int *dst_x, *dst_y;
-     Window *child;
-{       
+Bool XTranslateCoordinates(
+     register Display *dpy,
+     Window src_win,
+     Window dest_win,
+     int src_x,
+     int src_y,
+     int *dst_x,
+     int *dst_y,
+     Window *child)
+{
     register xTranslateCoordsReq *req;
     xTranslateCoordsReply rep;
 
@@ -50,7 +53,7 @@ Bool XTranslateCoordinates(dpy, src_win, dest_win, src_x, src_y,
 	    SyncHandle();
 	    return(False);
 	}
-	
+
     *child = rep.child;
     *dst_x = cvtINT16toInt (rep.dstX);
     *dst_y = cvtINT16toInt (rep.dstY);

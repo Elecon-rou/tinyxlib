@@ -1,15 +1,12 @@
-/* $XConsortium: makekeys.c,v 11.8 94/04/17 20:22:22 gildea Exp $ */
 /*
 
-Copyright (c) 1990  X Consortium
+Copyright 1990, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
@@ -17,87 +14,140 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall
+Except as contained in this notice, the name of The Open Group shall
 not be used in advertising or otherwise to promote the sale, use or
 other dealings in this Software without prior written authorization
-from the X Consortium.
+from The Open Group.
 
 */
 
 /* Constructs hash tables for XStringToKeysym and XKeysymToString. */
 
-#include "../../../include/X.h"
-#include "../../../include//Xos.h"
-
-
-#include "../../../include/keysymdef.h"
+#include <X11/X.h>
+#include <X11/Xos.h>
+#include <X11/Xresource.h>
+#include <X11/keysymdef.h>
 #include <stdio.h>
-
 #include <stdlib.h>
 
-typedef unsigned long Signature;
+#include "../Xresinternal.h"
 
-#define KTNUM 3000
+#define KTNUM 4000
 
 static struct info {
     char	*name;
     KeySym	val;
 } info[KTNUM];
 
-#define MIN_REHASH 10
+#define MIN_REHASH 15
 #define MATCHES 10
 
-char tab[KTNUM];
-unsigned short offsets[KTNUM];
-unsigned short indexes[KTNUM];
-KeySym values[KTNUM];
-char buf[1024];
+static char tab[KTNUM];
+static unsigned short offsets[KTNUM];
+static unsigned short indexes[KTNUM];
+static KeySym values[KTNUM];
+static int ksnum = 0;
 
-main()
+static int
+parse_line(const char *buf, char *key, KeySym *val, char *prefix)
 {
-    int ksnum;
+    int i;
+    char alias[128];
+    char *tmp, *tmpa;
+
+    /* See if we can catch a straight XK_foo 0x1234-style definition first;
+     * the trickery around tmp is to account for prefices. */
+    i = sscanf(buf, "#define %127s 0x%lx", key, val);
+    if (i == 2 && (tmp = strstr(key, "XK_"))) {
+        memcpy(prefix, key, tmp - key);
+        prefix[tmp - key] = '\0';
+        tmp += 3;
+        memmove(key, tmp, strlen(tmp) + 1);
+        return 1;
+    }
+
+    /* Now try to catch alias (XK_foo XK_bar) definitions, and resolve them
+     * immediately: if the target is in the form XF86XK_foo, we need to
+     * canonicalise this to XF86foo before we do the lookup. */
+    i = sscanf(buf, "#define %127s %127s", key, alias);
+    if (i == 2 && (tmp = strstr(key, "XK_")) && (tmpa = strstr(alias, "XK_"))) {
+        memcpy(prefix, key, tmp - key);
+        prefix[tmp - key] = '\0';
+        tmp += 3;
+        memmove(key, tmp, strlen(tmp) + 1);
+        memmove(tmpa, tmpa + 3, strlen(tmpa + 3) + 1);
+
+        for (i = ksnum - 1; i >= 0; i--) {
+            if (strcmp(info[i].name, alias) == 0) {
+                *val = info[i].val;
+                return 1;
+            }
+        }
+
+        fprintf(stderr, "can't find matching definition %s for keysym %s%s\n",
+                alias, prefix, key);
+    }
+
+    return 0;
+}
+
+int
+main(int argc, char *argv[])
+{
     int max_rehash;
     Signature sig;
-    register int i, j, k, z;
-    register char *name;
-    register char c;
+    int i, j, k, l, z;
+    FILE *fptr;
+    char *name;
+    char c;
     int first;
     int best_max_rehash;
-    int best_z;
+    int best_z = 0;
     int num_found;
     KeySym val;
+    char key[128], prefix[128];
+    static char buf[1024];
 
-    for (ksnum = 0; 1; (void)fgets(buf, sizeof(buf), stdin)) {
-	i = scanf("#define XK_%s 0x%lx", buf, &info[ksnum].val);
-	if (i == EOF)
-	    break;
-	if (i != 2)
-	    continue;
-	if (info[ksnum].val == XK_VoidSymbol)
-	    info[ksnum].val = 0;
-	if (info[ksnum].val > 0xffff) {
-	    fprintf(stderr,
-		    "ignoring illegal keysym (%s), remove it from .h file!\n",
-		    buf);
-	    continue;
-	}
-	name = malloc((unsigned)strlen(buf)+1);
-	if (!name) {
-	    fprintf(stderr, "makekeys: out of memory!\n");
-	    exit(1);
-	}
-	(void)strcpy(name, buf);
-	info[ksnum].name = name;
-	ksnum++;
-	if (ksnum == KTNUM) {
-	    fprintf(stderr, "makekeys: too many keysyms!\n");
-	    exit(1);
-	}
+    for (l = 1; l < argc; l++) {
+        fptr = fopen(argv[l], "r");
+        if (!fptr) {
+            fprintf(stderr, "couldn't open %s\n", argv[l]);
+            continue;
+        }
+
+        while (fgets(buf, sizeof(buf), fptr)) {
+            if (!parse_line(buf, key, &val, prefix))
+                continue;
+
+            if (val == XK_VoidSymbol)
+                val = 0;
+            if (val > 0x1fffffff) {
+                fprintf(stderr, "ignoring illegal keysym (%s, %lx)\n", key,
+                        val);
+                continue;
+            }
+
+            name = malloc(strlen(prefix) + strlen(key) + 1);
+            if (!name) {
+                fprintf(stderr, "makekeys: out of memory!\n");
+                exit(1);
+            }
+            sprintf(name, "%s%s", prefix, key);
+            info[ksnum].name = name;
+            info[ksnum].val = val;
+            ksnum++;
+            if (ksnum == KTNUM) {
+                fprintf(stderr, "makekeys: too many keysyms!\n");
+                exit(1);
+            }
+        }
+
+        fclose(fptr);
     }
 
     printf("/* This file is generated from keysymdef.h. */\n");
@@ -113,7 +163,7 @@ main()
 	for (i = 0; i < ksnum; i++) {
 	    name = info[i].name;
 	    sig = 0;
-	    while (c = *name++)
+	    while ((c = *name++))
 		sig = (sig << 1) + c;
 	    first = j = sig % z;
 	    for (k = 0; tab[j]; k++) {
@@ -140,14 +190,19 @@ next1:	;
     }
 
     z = best_z;
+    if (z == 0) {
+	fprintf(stderr, "makekeys: failed to find small enough hash!\n"
+		"Try increasing KTNUM in makekeys.c\n");
+	exit(1);
+    }
     printf("#ifdef NEEDKTABLE\n");
-    printf("Const unsigned char _XkeyTable[] = {\n");
+    printf("const unsigned char _XkeyTable[] = {\n");
     printf("0,\n");
     k = 1;
     for (i = 0; i < ksnum; i++) {
 	name = info[i].name;
 	sig = 0;
-	while (c = *name++)
+	while ((c = *name++))
 	    sig = (sig << 1) + c;
 	first = j = sig % z;
 	while (offsets[j]) {
@@ -158,10 +213,11 @@ next1:	;
 	offsets[j] = k;
 	indexes[i] = k;
 	val = info[i].val;
-	printf("0x%.2x, 0x%.2x, 0x%.2x, 0x%.2x, ",
+	printf("0x%.2"PRIx32", 0x%.2"PRIx32", 0x%.2lx, 0x%.2lx, 0x%.2lx, 0x%.2lx, ",
 	       (sig >> 8) & 0xff, sig & 0xff,
+	       (val >> 24) & 0xff, (val >> 16) & 0xff,
 	       (val >> 8) & 0xff, val & 0xff);
-	for (name = info[i].name, k += 5; c = *name++; k++)
+	for (name = info[i].name, k += 7; (c = *name++); k++)
 	    printf("'%c',", c);
 	printf((i == (ksnum-1)) ? "0\n" : "0,\n");
     }
@@ -170,7 +226,7 @@ next1:	;
     printf("#define KTABLESIZE %d\n", z);
     printf("#define KMAXHASH %d\n", best_max_rehash + 1);
     printf("\n");
-    printf("static Const unsigned short hashString[KTABLESIZE] = {\n");
+    printf("static const unsigned short hashString[KTABLESIZE] = {\n");
     for (i = 0; i < z;) {
 	printf("0x%.4x", offsets[i]);
 	i++;
@@ -219,6 +275,11 @@ next2:	;
     }
 
     z = best_z;
+    if (z == 0) {
+	fprintf(stderr, "makekeys: failed to find small enough hash!\n"
+		"Try increasing KTNUM in makekeys.c\n");
+	exit(1);
+    }
     for (i = z; --i >= 0;)
 	offsets[i] = 0;
     for (i = 0; i < ksnum; i++) {
@@ -240,7 +301,7 @@ skip2:	;
     printf("#define VTABLESIZE %d\n", z);
     printf("#define VMAXHASH %d\n", best_max_rehash + 1);
     printf("\n");
-    printf("static Const unsigned short hashKeysym[VTABLESIZE] = {\n");
+    printf("static const unsigned short hashKeysym[VTABLESIZE] = {\n");
     for (i = 0; i < z;) {
 	printf("0x%.4x", offsets[i]);
 	i++;

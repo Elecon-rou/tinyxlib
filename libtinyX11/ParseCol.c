@@ -1,14 +1,12 @@
-/* $XConsortium: ParseCol.c,v 11.31 94/04/17 20:20:22 rws Exp $ */
 /*
 
-Copyright (c) 1985  X Consortium
+Copyright 1985, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,47 +14,37 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include "Xlibint.h"
-//#include "Xcmsint.h"
-#ifdef USECMS
-#include <X11/Xcms.h>
-#endif
+#include "Xcmsint.h"
 
-extern void _XcmsRGB_to_XColor();
 
-#if NeedFunctionPrototypes
-Status XParseColor (
+Status
+XParseColor (
 	register Display *dpy,
         Colormap cmap,
 	_Xconst char *spec,
 	XColor *def)
-#else
-Status XParseColor (dpy, cmap, spec, def)
-	register Display *dpy;
-        Colormap cmap;
-	char *spec;
-	XColor *def;
-#endif
 {
 	register int n, i;
 	int r, g, b;
 	char c;
-#ifdef USECMS
 	XcmsCCC ccc;
 	XcmsColor cmsColor;
-#endif
+
         if (!spec) return(0);
 	n = strlen (spec);
 	if (*spec == '#') {
@@ -95,23 +83,32 @@ Status XParseColor (dpy, cmap, spec, def)
 	}
 
 
+#ifdef XCMS
 	/*
 	 * Let's Attempt to use Xcms and i18n approach to Parse Color
 	 */
-#ifdef USECMS
 	if ((ccc = XcmsCCCOfColormap(dpy, cmap)) != (XcmsCCC)NULL) {
-	    if (_XcmsResolveColorString(ccc, &spec,
-		    &cmsColor, XcmsRGBFormat) >= XcmsSuccess) {
+	    const char *tmpName = spec;
+
+	    switch (_XcmsResolveColorString(ccc, &tmpName, &cmsColor,
+					    XcmsRGBFormat)) {
+	    case XcmsSuccess:
+	    case XcmsSuccessWithCompression:
 		cmsColor.pixel = def->pixel;
 		_XcmsRGB_to_XColor(&cmsColor, def, 1);
 		return(1);
+	    case XcmsFailure:
+	    case _XCMS_NEWNAME:
+		/*
+		 * if the result was _XCMS_NEWNAME tmpName points to
+		 * a string in cmsColNm.c:pairs table, for example,
+		 * gray70 would become tekhvc:0.0/70.0/0.0
+		 */
+		break;
 	    }
-	    /*
-	     * Otherwise we failed; or spec was changed with yet another
-	     * name.  Thus pass name to the X Server.
-	     */
 	}
 #endif
+
 	/*
 	 * Xcms and i18n methods failed, so lets pass it to the server
 	 * for parsing.

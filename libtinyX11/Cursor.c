@@ -1,4 +1,3 @@
-/* $Xorg: Cursor.c,v 1.4 2001/02/09 02:03:32 xorgcvs Exp $ */
 /*
 
 Copyright 1987, 1998  The Open Group
@@ -24,17 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/Cursor.c,v 1.3 2001/01/17 19:41:34 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 static XColor _Xconst foreground = { 0,    0,     0,     0  };  /* black */
 static XColor _Xconst background = { 0, 65535, 65535, 65535 };  /* white */
 
-Cursor XCreateFontCursor(dpy, which)
-	Display *dpy;
-	unsigned int which;
+Cursor XCreateFontCursor(
+	Display *dpy,
+	unsigned int which)
 {
-	/* 
+	/*
 	 * the cursor font contains the shape glyph followed by the mask
 	 * glyph; so character position 0 contains a shape, 1 the mask for 0,
 	 * 2 a shape, etc.  <X11/cursorfont.h> contains hash define names
@@ -46,7 +47,7 @@ Cursor XCreateFontCursor(dpy, which)
 	    if (dpy->cursor_font == None) return None;
 	}
 
-	return XCreateGlyphCursor (dpy, dpy->cursor_font, dpy->cursor_font, 
+	return XCreateGlyphCursor (dpy, dpy->cursor_font, dpy->cursor_font,
 				   which, which + 1, &foreground, &background);
 }
 

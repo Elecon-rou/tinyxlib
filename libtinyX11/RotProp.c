@@ -1,4 +1,3 @@
-/* $Xorg: RotProp.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,18 +23,20 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/RotProp.c,v 1.3 2001/01/17 19:41:43 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XRotateWindowProperties(dpy, w, properties, nprops, npositions)
-    register Display *dpy;
-    Window w;
-    Atom *properties;
-    register int nprops;
-    int npositions;
-    {
+XRotateWindowProperties(
+    register Display *dpy,
+    Window w,
+    Atom *properties,
+    register int nprops,
+    int npositions)
+{
     register long nbytes;
     register xRotatePropertiesReq *req;
 
@@ -44,7 +45,7 @@ XRotateWindowProperties(dpy, w, properties, nprops, npositions)
     req->window = w;
     req->nAtoms = nprops;
     req->nPositions = npositions;
-    
+
     req->length += nprops;
     nbytes = nprops << 2;
 /* XXX Cray needs packing here.... */

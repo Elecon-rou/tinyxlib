@@ -1,4 +1,3 @@
-/* $Xorg: IfEvent.c,v 1.4 2001/02/09 02:03:34 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,30 +23,31 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/IfEvent.c,v 1.4 2001/12/14 19:54:01 dawes Exp $ */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
-/* 
+/*
  * Flush output and (wait for and) return the next event matching the
  * predicate in the queue.
  */
 
 int
-XIfEvent (dpy, event, predicate, arg)
-	register Display *dpy;
+XIfEvent (
+	register Display *dpy,
+	register XEvent *event,
 	Bool (*predicate)(
 			  Display*			/* display */,
 			  XEvent*			/* event */,
 			  char*				/* arg */
-			  );		/* function to call */
-	register XEvent *event;
-	char *arg;
+			  ),		/* function to call */
+	char *arg)
 {
 	register _XQEvent *qelt, *prev;
 	unsigned long qe_serial = 0;
-	
+
         LockDisplay(dpy);
 	prev = NULL;
 	while (1) {
@@ -58,6 +58,7 @@ XIfEvent (dpy, event, predicate, arg)
 		   && (*predicate)(dpy, &qelt->event, arg)) {
 		    *event = qelt->event;
 		    _XDeq(dpy, prev, qelt);
+		    _XStoreEventCookie(dpy, event);
 		    UnlockDisplay(dpy);
 		    return 0;
 		}

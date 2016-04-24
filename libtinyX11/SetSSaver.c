@@ -1,4 +1,3 @@
-/* $Xorg: SetSSaver.c,v 1.4 2001/02/09 02:03:36 xorgcvs Exp $ */
 /*
 
 Copyright 1986, 1998  The Open Group
@@ -24,14 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/SetSSaver.c,v 1.3 2001/01/17 19:41:44 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 int
-XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp)
-    register Display *dpy;
-    int timeout, interval, prefer_blank, allow_exp;
+XSetScreenSaver(
+    register Display *dpy,
+    int timeout,
+    int interval,
+    int prefer_blank,
+    int allow_exp)
 
 {
     register xSetScreenSaverReq *req;

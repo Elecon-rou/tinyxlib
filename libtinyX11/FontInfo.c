@@ -1,14 +1,12 @@
-/* $XConsortium: FontInfo.c,v 11.22 94/04/17 20:19:23 rws Exp $ */
 /*
 
-Copyright (c) 1986  X Consortium
+Copyright 1986, 1998  The Open Group
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that
+copyright notice and this permission notice appear in supporting
+documentation.
 
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
@@ -16,39 +14,43 @@ all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-X CONSORTIUM BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
 AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Except as contained in this notice, the name of the X Consortium shall not be
+Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
-in this Software without prior written authorization from the X Consortium.
+in this Software without prior written authorization from The Open Group.
 
 */
 
-#define NEED_REPLIES
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
+#include <limits.h>
 
-#if NeedFunctionPrototypes
+#if defined(XF86BIGFONT)
+#define USE_XF86BIGFONT
+#endif
+#ifdef USE_XF86BIGFONT
+extern void _XF86BigfontFreeFontMetrics(
+    XFontStruct*	/* fs */
+);
+#endif
+
 char **XListFontsWithInfo(
 register Display *dpy,
 _Xconst char *pattern,  /* null-terminated */
 int maxNames,
 int *actualCount,	/* RETURN */
 XFontStruct **info)	/* RETURN */
-#else
-char **XListFontsWithInfo(dpy, pattern, maxNames, actualCount, info)
-register Display *dpy;
-char *pattern;  /* null-terminated */
-int maxNames;
-int *actualCount;	/* RETURN */
-XFontStruct **info;	/* RETURN */
-#endif
-{       
-    register long nbytes;
+{
+    unsigned long nbytes;
+    unsigned long reply_left;	/* unused data left in reply buffer */
     register int i;
     register XFontStruct *fs;
-    register int size = 0;
+    unsigned int size = 0;
     XFontStruct *finfo = NULL;
     char **flist = NULL;
     xListFontsWithInfoReply reply;
@@ -65,54 +67,47 @@ XFontStruct **info;	/* RETURN */
 
     for (i = 0; ; i++) {
 	if (!_XReply (dpy, (xReply *) &reply,
-		      ((SIZEOF(xListFontsWithInfoReply) - 
+		      ((SIZEOF(xListFontsWithInfoReply) -
 			SIZEOF(xGenericReply)) >> 2), xFalse)) {
-	    for (j=(i-1); (j >= 0); j--) {
-		Xfree(flist[j]);
-		if (finfo[j].properties) Xfree((char *) finfo[j].properties);
-	    }
-	    if (flist) Xfree((char *) flist);
-	    if (finfo) Xfree((char *) finfo);
-	    UnlockDisplay(dpy);
-	    SyncHandle();
-	    return ((char **) NULL);
+	    reply.nameLength = 0; /* avoid trying to read more replies */
+	    reply_left = 0;
+	    goto badmem;
 	}
-	if (reply.nameLength == 0)
+	reply_left = reply.length -
+	    ((SIZEOF(xListFontsWithInfoReply) -	SIZEOF(xGenericReply)) >> 2);
+	if (reply.nameLength == 0) {
+	    _XEatDataWords(dpy, reply_left);
 	    break;
+	}
+	if (reply.nReplies >= (INT_MAX - i)) /* avoid overflowing size */
+	    goto badmem;
 	if ((i + reply.nReplies) >= size) {
 	    size = i + reply.nReplies + 1;
 
-	    if (finfo) {
-		XFontStruct * tmp_finfo = (XFontStruct *) 
-		    Xrealloc ((char *) finfo,
-			      (unsigned) (sizeof(XFontStruct) * size));
-		char ** tmp_flist = (char **)
-		    Xrealloc ((char *) flist,
-			      (unsigned) (sizeof(char *) * (size+1)));
+	    if (size >= (INT_MAX / sizeof(XFontStruct)))
+		goto badmem;
 
-		if ((! tmp_finfo) || (! tmp_flist)) {
-		    /* free all the memory that we allocated */
-		    for (j=(i-1); (j >= 0); j--) {
-			Xfree(flist[j]);
-			if (finfo[j].properties)
-			    Xfree((char *) finfo[j].properties);
-		    }
-		    if (tmp_flist) Xfree((char *) tmp_flist);
-		    else Xfree((char *) flist);
-		    if (tmp_finfo) Xfree((char *) tmp_finfo);
-		    else Xfree((char *) finfo);
-		    goto clearwire;
-		}
-		finfo = tmp_finfo;
-		flist = tmp_flist;
+	    if (finfo) {
+		XFontStruct * tmp_finfo;
+		char ** tmp_flist;
+
+		tmp_finfo = Xrealloc (finfo, sizeof(XFontStruct) * size);
+		if (tmp_finfo)
+		    finfo = tmp_finfo;
+		else
+		    goto badmem;
+
+		tmp_flist = Xrealloc (flist, sizeof(char *) * (size+1));
+		if (tmp_flist)
+		    flist = tmp_flist;
+		else
+		    goto badmem;
 	    }
 	    else {
-		if (! (finfo = (XFontStruct *)
-		       Xmalloc((unsigned) (sizeof(XFontStruct) * size))))
+		if (! (finfo = Xmalloc(sizeof(XFontStruct) * size)))
 		    goto clearwire;
-		if (! (flist = (char **)
-		       Xmalloc((unsigned) (sizeof(char *) * (size+1))))) {
-		    Xfree((char *) finfo);
+		if (! (flist = Xmalloc(sizeof(char *) * (size+1)))) {
+		    Xfree(finfo);
 		    goto clearwire;
 		}
 	    }
@@ -131,52 +126,33 @@ XFontStruct **info;	/* RETURN */
 	fs->all_chars_exist 	= reply.allCharsExist;
 	fs->ascent 		= cvtINT16toInt (reply.fontAscent);
 	fs->descent 		= cvtINT16toInt (reply.fontDescent);
-    
-#ifdef MUSTCOPY
-	{
-	    xCharInfo *xcip;
 
-	    xcip = (xCharInfo *) &reply.minBounds;
-	    fs->min_bounds.lbearing = xcip->leftSideBearing;
-	    fs->min_bounds.rbearing = xcip->rightSideBearing;
-	    fs->min_bounds.width = xcip->characterWidth;
-	    fs->min_bounds.ascent = xcip->ascent;
-	    fs->min_bounds.descent = xcip->descent;
-	    fs->min_bounds.attributes = xcip->attributes;
-
-	    xcip = (xCharInfo *) &reply.maxBounds;
-	    fs->max_bounds.lbearing = xcip->leftSideBearing;
-	    fs->max_bounds.rbearing = xcip->rightSideBearing;
-	    fs->max_bounds.width = xcip->characterWidth;
-	    fs->max_bounds.ascent = xcip->ascent;
-	    fs->max_bounds.descent = xcip->descent;
-	    fs->max_bounds.attributes = xcip->attributes;
-	}
-#else
 	/* XXX the next two statements won't work if short isn't 16 bits */
 	fs->min_bounds = * (XCharStruct *) &reply.minBounds;
 	fs->max_bounds = * (XCharStruct *) &reply.maxBounds;
-#endif /* MUSTCOPY */
 
 	fs->n_properties = reply.nFontProps;
+	fs->properties = NULL;
 	if (fs->n_properties > 0) {
-	    nbytes = reply.nFontProps * sizeof(XFontProp);
-	    if (! (fs->properties = (XFontProp *) Xmalloc((unsigned) nbytes)))
-		goto badmem;
+	    /* nFontProps is a CARD16 */
 	    nbytes = reply.nFontProps * SIZEOF(xFontProp);
-	    _XRead32 (dpy, (char *)fs->properties, nbytes);
+	    if ((nbytes >> 2) <= reply_left) {
+		size_t pbytes = reply.nFontProps * sizeof(XFontProp);
+		fs->properties = Xmalloc (pbytes);
+	    }
+	    if (! fs->properties)
+		goto badmem;
+	    _XRead32 (dpy, (long *)fs->properties, nbytes);
+	    reply_left -= (nbytes >> 2);
+	}
 
-	} else
-	    fs->properties = NULL;
-
-	j = reply.nameLength + 1;
+	/* nameLength is a CARD8 */
+	nbytes = reply.nameLength + 1;
 	if (!i)
-	    j++; /* make first string 1 byte longer, to match XListFonts */
-	flist[i] = (char *) Xmalloc ((unsigned int) j);
+	    nbytes++; /* make first string 1 byte longer, to match XListFonts */
+	flist[i] = Xmalloc (nbytes);
 	if (! flist[i]) {
-	    if (finfo[i].properties) Xfree((char *) finfo[i].properties);
-	    nbytes = (reply.nameLength + 3) & ~3;
-	    _XEatData(dpy, (unsigned long) nbytes);
+	    if (finfo[i].properties) Xfree(finfo[i].properties);
 	    goto badmem;
 	}
 	if (!i) {
@@ -198,35 +174,33 @@ XFontStruct **info;	/* RETURN */
   badmem:
     /* Free all memory allocated by this function. */
     for (j=(i-1); (j >= 0); j--) {
-	Xfree(flist[j]);
-	if (finfo[j].properties) Xfree((char *) finfo[j].properties);
+        if (j == 0)
+            flist[j]--;         /* was incremented above */
+        Xfree(flist[j]);
+        if (finfo[j].properties) Xfree(finfo[j].properties);
     }
-    if (flist) Xfree((char *) flist);
-    if (finfo) Xfree((char *) finfo);
+    Xfree(flist);
+    Xfree(finfo);
 
   clearwire:
     /* Clear the wire. */
-    do {
-	if (reply.nFontProps)
-	    _XEatData(dpy, (unsigned long)
-		      (reply.nFontProps * SIZEOF(xFontProp)));
-	nbytes = (reply.nameLength + 3) & ~3;
-	_XEatData(dpy, (unsigned long) nbytes);
-    }
-    while (_XReply(dpy,(xReply *) &reply, ((SIZEOF(xListFontsWithInfoReply) -
-					    SIZEOF(xGenericReply)) >> 2),
-		   xFalse) && (reply.nameLength != 0));
-
+    _XEatDataWords(dpy, reply_left);
+    while ((reply.nameLength != 0) &&
+	   _XReply(dpy, (xReply *) &reply,
+		   ((SIZEOF(xListFontsWithInfoReply) - SIZEOF(xGenericReply))
+		    >> 2), xTrue));
     UnlockDisplay(dpy);
     SyncHandle();
+    *info = NULL;
+    *actualCount = 0;
     return (char **) NULL;
 }
 
-
-int XFreeFontInfo (names, info, actualCount)
-char **names;
-XFontStruct *info;
-int actualCount;
+int
+XFreeFontInfo (
+    char **names,
+    XFontStruct *info,
+    int actualCount)
 {
 	register int i;
 	if (names) {
@@ -234,16 +208,20 @@ int actualCount;
 		for (i = 1; i < actualCount; i++) {
 			Xfree (names[i]);
 		}
-		Xfree((char *) names);
+		Xfree(names);
 	}
 	if (info) {
 		for (i = 0; i < actualCount; i++) {
 			if (info[i].per_char)
-				Xfree ((char *) info[i].per_char);
+#ifdef USE_XF86BIGFONT
+				_XF86BigfontFreeFontMetrics(&info[i]);
+#else
+				Xfree (info[i].per_char);
+#endif
 			if (info[i].properties)
-				Xfree ((char *) info[i].properties);
+				Xfree (info[i].properties);
 			}
-		Xfree((char *) info);
+		Xfree(info);
 	}
-	return 0;
+	return 1;
 }

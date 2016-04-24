@@ -1,4 +1,3 @@
-/* $Xorg: WinEvent.c,v 1.4 2001/02/09 02:03:37 xorgcvs Exp $ */
 /*
 
 Copyright 1985, 1998  The Open Group
@@ -24,9 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/X11/WinEvent.c,v 3.5 2001/10/28 03:32:32 tsi Exp $ */
 
-#define NEED_EVENTS
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xlibint.h"
 
 extern long const _Xevent_to_mask[];
@@ -34,7 +34,7 @@ extern long const _Xevent_to_mask[];
 #define AllButtons (Button1MotionMask|Button2MotionMask|Button3MotionMask|\
 		    Button4MotionMask|Button5MotionMask)
 
-/* 
+/*
  * Return the next event in the queue
  * for the given window matching one of the events in the mask.
  * Events earlier in the queue are not discarded.
@@ -43,23 +43,27 @@ extern long const _Xevent_to_mask[];
  */
 
 int
-XWindowEvent (dpy, w, mask, event)
-        register Display *dpy;
-	Window w;		/* Selected window. */
-	long mask;		/* Selected event mask. */
-	register XEvent *event;	/* XEvent to be filled in. */
+XWindowEvent (
+        register Display *dpy,
+	Window w,		/* Selected window. */
+	long mask,		/* Selected event mask. */
+	register XEvent *event)	/* XEvent to be filled in. */
 {
 	register _XQEvent *prev, *qelt;
 	unsigned long qe_serial = 0;
 
         LockDisplay(dpy);
+
+	/* Delete unclaimed cookies */
+	_XFreeEventCookies(dpy);
+
 	prev = NULL;
 	while (1) {
 	    for (qelt = prev ? prev->next : dpy->head;
 		 qelt;
 		 prev = qelt, qelt = qelt->next) {
 		if ((qelt->event.xany.window == w) &&
-		    (qelt->event.type < LASTEvent) &&
+		    (qelt->event.type < GenericEvent) &&
 		    (_Xevent_to_mask[qelt->event.type] & mask) &&
 		    ((qelt->event.type != MotionNotify) ||
 		     (mask & AllPointers) ||
