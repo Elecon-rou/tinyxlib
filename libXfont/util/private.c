@@ -1,5 +1,3 @@
-/* $Xorg: private.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,14 +23,16 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/private.c,v 1.8 2001/12/14 19:56:57 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include    "fontmisc.h"
-#include     <X11/fonts/fontstruct.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include    <X11/fonts/fontmisc.h>
+#include    <X11/fonts/fontstruct.h>
 
 static int _FontPrivateAllocateIndex = 0;
 
@@ -42,7 +42,7 @@ AllocateFontPrivateIndex (void)
     return _FontPrivateAllocateIndex++;
 }
 
-FontPtr 
+FontPtr
 CreateFontRec (void)
 {
     FontPtr pFont;
@@ -50,10 +50,10 @@ CreateFontRec (void)
 
     size = sizeof(FontRec) + (sizeof(pointer) * _FontPrivateAllocateIndex);
 
-    pFont = (FontPtr)xalloc(size);
-    bzero((char*)pFont, size);
-    
+    pFont = malloc(size);
+
     if(pFont) {
+	bzero((char*)pFont, size);
 	pFont->maxPrivate = _FontPrivateAllocateIndex - 1;
 	if(_FontPrivateAllocateIndex)
 	    pFont->devPrivates = (pointer)(&pFont[1]);
@@ -62,11 +62,12 @@ CreateFontRec (void)
     return pFont;
 }
 
-void DestroyFontRec (FontPtr pFont)
+void
+DestroyFontRec (FontPtr pFont)
 {
    if (pFont->devPrivates && pFont->devPrivates != (pointer)(&pFont[1]))
-	xfree(pFont->devPrivates);
-   xfree(pFont);
+	free(pFont->devPrivates);
+   free(pFont);
 }
 
 void
@@ -82,11 +83,12 @@ _FontSetNewPrivate (FontPtr pFont, int n, pointer ptr)
 
     if (n > pFont->maxPrivate) {
 	if (pFont->devPrivates && pFont->devPrivates != (pointer)(&pFont[1])) {
-	    new = (pointer *) xrealloc (pFont->devPrivates, (n + 1) * sizeof (pointer));
+	    new = realloc (pFont->devPrivates, (n + 1) * sizeof (pointer));
 	    if (!new)
 		return FALSE;
 	} else {
-	    new = (pointer *) xalloc ((n + 1) * sizeof (pointer));
+	    /* omg realloc */
+	    new = malloc ((n + 1) * sizeof (pointer));
 	    if (!new)
 		return FALSE;
 	    if (pFont->devPrivates)

@@ -1,12 +1,16 @@
-/* $XFree86: xc/lib/font/stubs/initfshdl.c,v 1.1 1999/01/11 05:13:20 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-int
+#ifdef __SUNPRO_C
+#pragma weak init_fs_handlers
+#endif
+
+weak int
 init_fs_handlers(FontPathElementPtr fpe,
-                 void (*block_handler)())
+                 BlockHandlerProcPtr block_handler)
 {
+  OVERRIDE_SYMBOL(init_fs_handlers, fpe, block_handler);
   return Successful;
 }
-
-/* end of file */

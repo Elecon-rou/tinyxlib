@@ -1,5 +1,3 @@
-/* $Xorg: fontxlfd.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1990, 1998  The Open Group
@@ -27,19 +25,24 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/fontxlfd.c,v 3.13 2001/12/14 19:56:56 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include	"fontmisc.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include	<X11/fonts/fontmisc.h>
 #include	<X11/fonts/fontstruct.h>
-#include	"fontxlfd.h"
-#include	"fontutil.h"
+#include	<X11/fonts/fontxlfd.h>
+#include	<X11/fonts/fontutil.h>
 #include	<X11/Xos.h>
 #include	<math.h>
 #include	<stdlib.h>
+#if defined(sony) && !defined(SYSTYPE_SYSV) && !defined(_SYSTYPE_SYSV)
+#define NO_LOCALE
+#endif
 #ifndef NO_LOCALE
 #include	<locale.h>
 #endif
@@ -67,7 +70,7 @@ GetInt(char *ptr, int *val)
 #ifndef NO_LOCALE
 static struct lconv *locale = 0;
 #endif
-static char *radix = ".", *plus = "+", *minus = "-";
+static const char *radix = ".", *plus = "+", *minus = "-";
 
 static char *
 readreal(char *ptr, double *result)
@@ -113,7 +116,6 @@ readreal(char *ptr, double *result)
 static char *
 xlfd_double_to_text(double value, char *buffer, int space_required)
 {
-    char formatbuf[40];
     register char *p1;
     int ndigits, exponent;
 
@@ -129,14 +131,12 @@ xlfd_double_to_text(double value, char *buffer, int space_required)
 	    minus = locale->negative_sign;
     }
 #endif
-    /* Compute a format to use to render the number */
-    sprintf(formatbuf, "%%.%dle", XLFD_NDIGITS);
 
     if (space_required)
 	*buffer++ = ' ';
 
     /* Render the number using printf's idea of formatting */
-    sprintf(buffer, formatbuf, value);
+    sprintf(buffer, "%.*le", XLFD_NDIGITS, value);
 
     /* Find and read the exponent value */
     for (p1 = buffer + strlen(buffer);
@@ -153,16 +153,14 @@ xlfd_double_to_text(double value, char *buffer, int space_required)
     if (exponent >= XLFD_NDIGITS || ndigits - exponent > XLFD_NDIGITS + 1)
     {
 	/* Scientific */
-	sprintf(formatbuf, "%%.%dle", ndigits - 1);
-	sprintf(buffer, formatbuf, value);
+	sprintf(buffer, "%.*le", ndigits - 1, value);
     }
     else
     {
 	/* Fixed */
 	ndigits -= exponent + 1;
 	if (ndigits < 0) ndigits = 0;
-	sprintf(formatbuf, "%%.%dlf", ndigits);
-	sprintf(buffer, formatbuf, value);
+	sprintf(buffer, "%.*lf", ndigits, value);
 	if (exponent < 0)
 	{
 	    p1 = buffer;
@@ -191,10 +189,11 @@ xlfd_round_double(double x)
       a binary machine?  */
 
 #if defined(i386) || defined(__i386__) || \
-    defined(__amd64__) || defined(__x86_64__) || \
     defined(ia64) || defined(__ia64__) || \
     defined(__alpha__) || defined(__alpha) || \
-    defined(__hppa__)
+    defined(__hppa__) || \
+    defined(__amd64__) || defined(__amd64) || \
+    defined(sgi)
 #include <float.h>
 
 /* if we have IEEE 754 fp, we can round to binary digits... */
@@ -210,27 +209,27 @@ xlfd_round_double(double x)
 
 /* convert # of decimal digits to # of binary digits */
 #define XLFD_NDIGITS_2 ((int)(XLFD_NDIGITS * M_LN10 / M_LN2 + 0.5))
-   
+
    union conv_d {
       double d;
       unsigned char b[8];
    } d;
    int i,j,k,d_exp;
-   
-   if (x == 0) 
+
+   if (x == 0)
       return x;
 
    /* do minor sanity check for IEEE 754 fp and correct byte order */
    d.d = 1.0;
    if (sizeof(double) == 8 && d.b[7] == 0x3f && d.b[6] == 0xf0) {
-      
-      /* 
+
+      /*
        * this code will round IEEE 754 double to XLFD_NDIGITS_2 binary digits
        */
-      
+
       d.d = x;
       d_exp = (d.b[7] << 4) | (d.b[6] >> 4);
-      
+
       i = (DBL_MANT_DIG-XLFD_NDIGITS_2) >> 3;
       j = 1 << ((DBL_MANT_DIG-XLFD_NDIGITS_2) & 0x07);
       for (; i<7; i++) {
@@ -245,26 +244,25 @@ xlfd_round_double(double x)
 	 d.b[7] = d_exp >> 4;
 	 d.b[6] = (d.b[6] & 0x0f) | (d_exp << 4);
       }
-      
+
       i = (DBL_MANT_DIG-XLFD_NDIGITS_2) >> 3;
-      j = 1 << ((DBL_MANT_DIG-XLFD_NDIGITS_2) & 0x07);      
+      j = 1 << ((DBL_MANT_DIG-XLFD_NDIGITS_2) & 0x07);
       d.b[i] &= ~(j-1);
       for (;--i>=0;) d.b[i] = 0;
 
       return d.d;
    }
-   else 
+   else
 #endif
 #endif /* i386 || __i386__ */
     {
 	/*
-	 * If not IEEE 754:  Let printf() do it for you.  
+	 * If not IEEE 754:  Let printf() do it for you.
 	 */
-	 
-	char formatbuf[40], buffer[40];
-	 
-	sprintf(formatbuf, "%%.%dlg", XLFD_NDIGITS);
-	sprintf(buffer, formatbuf, x);
+
+	char buffer[40];
+
+	sprintf(buffer, "%.*lg", XLFD_NDIGITS, x);
 	return atof(buffer);
     }
 }
@@ -347,7 +345,7 @@ GetMatrix(char *ptr, FontScalablePtr vals, int which)
 }
 
 
-static void 
+static void
 append_ranges(char *fname, int nranges, fsRange *ranges)
 {
     if (nranges)
@@ -361,9 +359,9 @@ append_ranges(char *fname, int nranges, fsRange *ranges)
 	    sprintf(fname + strlen(fname), "%d",
 		    minchar(ranges[i]));
 	    if (ranges[i].min_char_low ==
-	        ranges[i].max_char_low &&
-	        ranges[i].min_char_high ==
-	        ranges[i].max_char_high) continue;
+		ranges[i].max_char_low &&
+		ranges[i].min_char_high ==
+		ranges[i].max_char_high) continue;
 	    sprintf(fname + strlen(fname), "_%d",
 		    maxchar(ranges[i]));
         }

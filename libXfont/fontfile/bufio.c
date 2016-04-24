@@ -1,5 +1,3 @@
-/* $Xorg: bufio.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -16,7 +14,7 @@ in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
+IN NO EVENT SHALL THE OPEN GROUP BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
@@ -27,16 +25,18 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/bufio.c,v 3.9 2001/12/14 19:56:50 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xos.h>
-#include <fontmisc.h>
-#include <bufio.h>
+#include <X11/fonts/fontmisc.h>
+#include <X11/fonts/bufio.h>
 #include <errno.h>
 
 BufFilePtr
@@ -48,7 +48,7 @@ BufFileCreate (char *private,
 {
     BufFilePtr	f;
 
-    f = (BufFilePtr) xalloc (sizeof *f);
+    f = malloc (sizeof *f);
     if (!f)
 	return 0;
     f->private = private;
@@ -122,6 +122,10 @@ BufFileRawClose (BufFilePtr f, int doClose)
 BufFilePtr
 BufFileOpenRead (int fd)
 {
+#if defined (WIN32)
+    /* hv: I'd bet WIN32 has the same effect here */
+    setmode(fd,O_BINARY);
+#endif
     return BufFileCreate ((char *)(long) fd, BufFileRawFill, 0, BufFileRawSkip, BufFileRawClose);
 }
 
@@ -140,14 +144,28 @@ BufFileRawFlush (int c, BufFilePtr f)
     return c;
 }
 
+static int
+BufFileFlush (BufFilePtr f, int doClose)
+{
+    if (f->bufp != f->buffer)
+	return (*f->output) (BUFFILEEOF, f);
+    return 0;
+}
+
 BufFilePtr
 BufFileOpenWrite (int fd)
 {
     BufFilePtr	f;
 
+#if defined(WIN32)
+    /* hv: I'd bet WIN32 has the same effect here */
+    setmode(fd,O_BINARY);
+#endif
     f = BufFileCreate ((char *)(long) fd, 0, BufFileRawFlush, 0, BufFileFlush);
-    f->bufp = f->buffer;
-    f->left = BUFFILESIZE;
+    if (f != NULL) {
+	f->bufp = f->buffer;
+	f->left = BUFFILESIZE;
+    }
     return f;
 }
 
@@ -178,24 +196,10 @@ BufFileWrite (BufFilePtr f, char *b, int n)
 }
 
 int
-BufFileFlush (BufFilePtr f, int doClose)
-{
-    if (f->bufp != f->buffer)
-	return (*f->output) (BUFFILEEOF, f);
-    return 0;
-}
-
-int
 BufFileClose (BufFilePtr f, int doClose)
 {
     int ret;
     ret = (*f->close) (f, doClose);
-    xfree (f);
+    free (f);
     return ret;
-}
-
-void
-BufFileFree (BufFilePtr f)
-{
-    xfree (f);
 }

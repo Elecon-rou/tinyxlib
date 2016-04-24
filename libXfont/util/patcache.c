@@ -1,5 +1,3 @@
-/* $Xorg: patcache.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,13 +23,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/patcache.c,v 3.5 2001/12/14 19:56:57 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include    <fontmisc.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include    <X11/fonts/fontmisc.h>
 #include    <X11/fonts/fontstruct.h>
 
 /*
@@ -50,7 +50,7 @@ typedef unsigned char	EntryPtr;
 typedef struct _FontPatternCacheEntry {
     struct _FontPatternCacheEntry   *next, **prev;
     short			    patlen;
-    char			    *pattern;
+    const char			    *pattern;
     int				    hash;
     FontPtr			    pFont;	/* associated font */
 } FontPatternCacheEntryRec, *FontPatternCacheEntryPtr;
@@ -66,7 +66,7 @@ void
 EmptyFontPatternCache (FontPatternCachePtr cache)
 {
     int	    i;
-    
+
     for (i = 0; i < NBUCKETS; i++)
 	cache->buckets[i] = 0;
     for (i = 0; i < NENTRIES; i++)
@@ -74,7 +74,7 @@ EmptyFontPatternCache (FontPatternCachePtr cache)
 	cache->entries[i].next = &cache->entries[i+1];
 	cache->entries[i].prev = 0;
 	cache->entries[i].pFont = 0;
-	xfree (cache->entries[i].pattern);
+	free ((void *) cache->entries[i].pattern);
 	cache->entries[i].pattern = 0;
 	cache->entries[i].patlen = 0;
     }
@@ -88,7 +88,7 @@ MakeFontPatternCache (void)
 {
     FontPatternCachePtr	cache;
     int			i;
-    cache = (FontPatternCachePtr) xalloc (sizeof *cache);
+    cache = malloc (sizeof *cache);
     if (!cache)
 	return 0;
     for (i = 0; i < NENTRIES; i++) {
@@ -107,8 +107,8 @@ FreeFontPatternCache (FontPatternCachePtr cache)
     int	    i;
 
     for (i = 0; i < NENTRIES; i++)
-	xfree (cache->entries[i].pattern);
-    xfree (cache);
+	free ((void *) cache->entries[i].pattern);
+    free (cache);
 }
 
 /* compute id for string */
@@ -127,16 +127,16 @@ Hash (const char *string, int len)
 
 /* add entry */
 void
-CacheFontPattern (FontPatternCachePtr cache, 
-		  char *pattern, 
-		  int patlen, 
+CacheFontPattern (FontPatternCachePtr cache,
+		  const char *pattern,
+		  int patlen,
 		  FontPtr pFont)
 {
     FontPatternCacheEntryPtr	e;
     char			*newpat;
     int				i;
 
-    newpat = (char *) xalloc (patlen);
+    newpat = malloc (patlen);
     if (!newpat)
 	return;
     if (cache->free)
@@ -154,7 +154,7 @@ CacheFontPattern (FontPatternCachePtr cache,
 	if (e->next)
 	    e->next->prev = e->prev;
 	*e->prev = e->next;
-	xfree (e->pattern);
+	free ((void *) e->pattern);
     }
     /* set pattern */
     memcpy (newpat, pattern, patlen);
@@ -173,8 +173,8 @@ CacheFontPattern (FontPatternCachePtr cache,
 
 /* find matching entry */
 FontPtr
-FindCachedFontPattern (FontPatternCachePtr cache, 
-		       char *pattern, 
+FindCachedFontPattern (FontPatternCachePtr cache,
+		       const char *pattern,
 		       int patlen)
 {
     int				hash;
@@ -195,7 +195,7 @@ FindCachedFontPattern (FontPatternCachePtr cache,
 }
 
 void
-RemoveCachedFontPattern (FontPatternCachePtr cache, 
+RemoveCachedFontPattern (FontPatternCachePtr cache,
 			 FontPtr pFont)
 {
     FontPatternCacheEntryPtr	e;
@@ -211,7 +211,7 @@ RemoveCachedFontPattern (FontPatternCachePtr cache,
 	    *e->prev = e->next;
 	    e->next = cache->free;
 	    cache->free = e;
-	    xfree (e->pattern);
+	    free ((void *) e->pattern);
 	    e->pattern = 0;
 	}
     }

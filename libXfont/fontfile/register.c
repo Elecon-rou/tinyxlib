@@ -1,5 +1,3 @@
-/* $Xorg: register.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1994, 1998  The Open Group
@@ -25,61 +23,42 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/register.c,v 1.15 2001/12/14 19:56:52 dawes Exp $ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#else
+#define XFONT_BITMAP 1
+#endif
+
+#include <X11/fonts/fontmisc.h>
+#include <X11/fonts/fntfilst.h>
+#include <X11/fonts/bitmap.h>
 
 /*
- * This is in a separate source file so that small programs
- * such as mkfontdir that want to use the fontfile utilities don't
- * end up dragging in code from all the renderers, which is not small.
+ * Translate monolithic build symbols to modular build symbols.
+ * I chose to make the modular symbols 'canonical' because they
+ * are prefixed with XFONT_, neatly avoiding name collisions
+ * with other packages.
  */
 
-#include "fontmisc.h"
-#include "fntfilst.h"
-#include "bitmap.h"
-
-#ifdef LOADABLEFONTS
-#include "fontmod.h"
+#ifdef BUILD_FREETYPE
+# define XFONT_FREETYPE 1
 #endif
 
 void
 FontFileRegisterFpeFunctions(void)
 {
-#ifndef LOADABLEFONTS
+#ifdef XFONT_BITMAP
+    /* bitmap is always builtin to libXfont now */
     BitmapRegisterFontFileFunctions ();
-
-#ifndef LOWMEMFTPT
-
-#ifdef BUILD_SPEEDO
-    SpeedoRegisterFontFileFunctions ();
 #endif
-#ifdef BUILD_TYPE1
-    Type1RegisterFontFileFunctions();
-#endif
-#ifdef BUILD_CID
-    CIDRegisterFontFileFunctions();
-#endif
-#ifdef BUILD_FREETYPE
+#ifdef XFONT_FREETYPE
     FreeTypeRegisterFontFileFunctions();
-#endif
-#ifdef BUILD_XTRUETYPE
-    XTrueTypeRegisterFontFileFunctions();
-#endif
-
-#endif /* ifndef LOWMEMFTPT */
-
-#else
-    {
-	int i;
-
-	if (FontModuleList) {
-	    for (i = 0; FontModuleList[i].name; i++) {
-		if (FontModuleList[i].initFunc)
-		    FontModuleList[i].initFunc();
-	    }
-	}
-    }
 #endif
 
     FontFileRegisterLocalFpeFunctions ();
+#ifdef HAVE_READLINK
+    CatalogueRegisterLocalFpeFunctions ();
+#endif
 }
 

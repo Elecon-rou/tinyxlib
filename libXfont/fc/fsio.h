@@ -1,4 +1,3 @@
-/* $Xorg: fsio.h,v 1.3 2000/08/17 19:46:36 cpqbld Exp $ */
 /*
  * Copyright 1990 Network Computing Devices
  *
@@ -23,13 +22,13 @@
  *
  * Author:  	Dave Lemke, Network Computing Devices, Inc
  */
-/* $XFree86: xc/lib/font/fc/fsio.h,v 1.6 2001/01/17 19:43:29 dawes Exp $ */
 
 #ifndef	_FSIO_H_
 #define	_FSIO_H_
 
-#undef DEBUG
+#ifdef DEBUG
 #define	REQUEST_LOG_SIZE	100
+#endif
 
 typedef struct _fs_fpe_alternate {
     char       *name;
@@ -112,9 +111,9 @@ typedef struct _fs_fpe_data {
     CARD32	brokenWriteTime;	/* time to retry broken write */
     CARD32	blockedConnectTime;	/* time to abort blocked connect */
     CARD32	brokenConnectionTime;	/* time to retry broken connection */
-    
+
     FSBlockDataPtr  blockedRequests;
-    
+
     struct _XtransConnInfo *trans_conn; /* transport connection object */
 }           FSFpeRec;
 
@@ -131,20 +130,13 @@ typedef struct _fs_fpe_data {
 #define FSIO_ERROR  -1
 
 extern Bool _fs_reopen_server ( FSFpePtr conn );
-extern int _fs_write ( FSFpePtr conn, char *data, long size );
-extern int _fs_write_pad ( FSFpePtr conn, char *data, long len );
-extern int _fs_data_ready ( FSFpePtr conn );
+extern int _fs_write ( FSFpePtr conn, const char *data, long size );
+extern int _fs_write_pad ( FSFpePtr conn, const char *data, long len );
 extern int _fs_wait_for_readable ( FSFpePtr conn, int ms );
-extern int _fs_set_bit ( fd_set * mask, int fd );
-extern int _fs_is_bit_set ( fd_set * mask, int fd );
-extern void _fs_bit_clear ( fd_set * mask, int fd );
-extern int  _fs_any_bit_set ( fd_set * mask );
-extern void _fs_or_bits ( fd_set * dst, fd_set * m1, fd_set * m2 );
 extern long _fs_pad_length (long len);
 
 extern void _fs_connection_died ( FSFpePtr conn );
 
-extern int  _fs_fill (FSFpePtr conn);
 extern int  _fs_flush (FSFpePtr conn);
 extern void _fs_mark_block (FSFpePtr conn, CARD32 mask);
 extern void _fs_unmark_block (FSFpePtr conn, CARD32 mask);
@@ -159,6 +151,9 @@ extern XtransConnInfo	_fs_connect(char *servername, int *ret);
 /* check for both EAGAIN and EWOULDBLOCK, because some supposedly POSIX
  * systems are broken and return EWOULDBLOCK when they should return EAGAIN
  */
+#ifdef WIN32
+#define ETEST() (WSAGetLastError() == WSAEWOULDBLOCK)
+#else
 #if defined(EAGAIN) && defined(EWOULDBLOCK)
 #define ETEST() (errno == EAGAIN || errno == EWOULDBLOCK)
 #else
@@ -168,7 +163,17 @@ extern XtransConnInfo	_fs_connect(char *servername, int *ret);
 #define ETEST() (errno == EWOULDBLOCK)
 #endif
 #endif
+#endif
+#ifdef WIN32
+#define ECHECK(err) (WSAGetLastError() == err)
+#define ESET(val) WSASetLastError(val)
+#else
+#ifdef ISC
+#define ECHECK(err) ((errno == err) || ETEST())
+#else
 #define ECHECK(err) (errno == err)
+#endif
 #define ESET(val) errno = val
+#endif
 
 #endif				/* _FSIO_H_ */

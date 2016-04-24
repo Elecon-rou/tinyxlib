@@ -1,5 +1,3 @@
-/* $Xorg: fontscale.c,v 1.5 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,23 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/fontscale.c,v 3.10 2001/12/14 19:56:52 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include    "fntfilst.h"
-#ifdef _XOPEN_SOURCE
-#include <math.h>
-#else
-#define _XOPEN_SOURCE	/* to get prototype for hypot on some systems */
-#include <math.h>
-#undef _XOPEN_SOURCE
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+#include    <X11/fonts/fntfilst.h>
+#include <math.h>
 
 Bool
-FontFileAddScaledInstance (FontEntryPtr entry, FontScalablePtr vals, 
+FontFileAddScaledInstance (FontEntryPtr entry, FontScalablePtr vals,
 			   FontPtr pFont, char *bitmapName)
 {
     FontScalableEntryPtr    scalable;
@@ -54,8 +48,7 @@ FontFileAddScaledInstance (FontEntryPtr entry, FontScalablePtr vals,
     if (extra->numScaled == extra->sizeScaled)
     {
 	newsize = extra->sizeScaled + 4;
-	new = (FontScaledPtr) xrealloc (extra->scaled,
-			    newsize * sizeof (FontScaledRec));
+	new = realloc (extra->scaled, newsize * sizeof (FontScaledRec));
 	if (!new)
 	    return FALSE;
 	extra->sizeScaled = newsize;
@@ -82,7 +75,7 @@ FontFileSwitchStringsToBitmapPointers (FontDirectoryPtr dir)
     FontEntryPtr	    nonScalable;
     FontScaledPtr	    scaled;
     FontScalableExtraPtr    extra;
-    
+
     scalable = dir->scalable.entries;
     nonScalable = dir->nonScalable.entries;
     for (s = 0; s < dir->scalable.used; s++)
@@ -110,7 +103,7 @@ FontFileRemoveScaledInstance (FontEntryPtr entry, FontPtr pFont)
 	if (extra->scaled[i].pFont == pFont)
 	{
 	    if (extra->scaled[i].vals.ranges)
-		xfree (extra->scaled[i].vals.ranges);
+		free (extra->scaled[i].vals.ranges);
 	    extra->numScaled--;
 	    for (; i < extra->numScaled; i++)
 		extra->scaled[i] = extra->scaled[i+1];
@@ -380,12 +373,12 @@ MatchScalable (FontScalablePtr a, FontScalablePtr b)
 	    a->ranges[i].max_char_low != b->ranges[i].max_char_low ||
 	    a->ranges[i].max_char_high != b->ranges[i].max_char_high)
 		return FALSE;
- 
+
     return TRUE;
 }
 
 FontScaledPtr
-FontFileFindScaledInstance (FontEntryPtr entry, FontScalablePtr vals, 
+FontFileFindScaledInstance (FontEntryPtr entry, FontScalablePtr vals,
 			    int noSpecificSize)
 {
     FontScalableEntryPtr    scalable;

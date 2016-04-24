@@ -1,10 +1,14 @@
-/* $XFree86: xc/lib/font/stubs/errorf.c,v 1.1 1999/01/11 05:13:19 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-void
-ErrorF(char *f)
-{
-}
+#ifdef __SUNPRO_C
+#pragma weak ErrorF
+#endif
 
-/* end of file */
+weak void
+ErrorF(const char *f, ...)
+{
+    OVERRIDE_VA_SYMBOL(VErrorF, f);
+}

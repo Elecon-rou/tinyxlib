@@ -1,5 +1,3 @@
-/* $Xorg: miscutil.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1994, 1998  The Open Group
@@ -27,70 +25,45 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/miscutil.c,v 1.8 2001/12/14 19:56:57 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xosdefs.h>
 #include <stdlib.h>
-#include "fontmisc.h"
+#include <X11/fonts/fontmisc.h>
+#include "stubs.h"
 
 #define XK_LATIN1
-#include <X11/keysymdef.h>
-/* #include    <X11/Xmu/CharSet.h> */
+#include    <X11/keysymdef.h>
+
+
+#ifdef __SUNPRO_C
+#pragma weak serverGeneration
+#pragma weak register_fpe_functions
+#endif
+
+extern void BuiltinRegisterFpeFunctions(void);
 
 /* make sure everything initializes themselves at least once */
+weak unsigned long serverGeneration = 1;
 
-long serverGeneration = 1;
+unsigned long __GetServerGeneration (void);
 
-void *
-Xalloc (unsigned long m)
+unsigned long
+__GetServerGeneration (void)
 {
-    return malloc (m);
+  OVERRIDE_DATA(serverGeneration);
+  return serverGeneration;
 }
 
-void *
-Xrealloc (void *n, unsigned long m)
+weak void
+register_fpe_functions (void)
 {
-    if (!n)
-	return malloc (m);
-    else
-	return realloc (n, m);
-}
-
-void
-Xfree (void *n)
-{
-    if (n)
-	free (n);
-}
-
-void *
-Xcalloc (unsigned long n)
-{
-    return calloc (n, 1);
-}
-
-void
-CopyISOLatin1Lowered (char *dst, char *src, int len)
-{
-    register unsigned char *dest, *source;
-
-    for (dest = (unsigned char *)dst, source = (unsigned char *)src;
-	 *source && len > 0;
-	 source++, dest++, len--)
-    {
-	if ((*source >= XK_A) && (*source <= XK_Z))
-	    *dest = *source + (XK_a - XK_A);
-	else if ((*source >= XK_Agrave) && (*source <= XK_Odiaeresis))
-	    *dest = *source + (XK_agrave - XK_Agrave);
-	else if ((*source >= XK_Ooblique) && (*source <= XK_Thorn))
-	    *dest = *source + (XK_oslash - XK_Ooblique);
-	else
-	    *dest = *source;
-    }
-    *dest = '\0';
-}
-
-void
-register_fpe_functions ()
-{
+    OVERRIDE_SYMBOL(register_fpe_functions);
+    BuiltinRegisterFpeFunctions();
+    FontFileRegisterFpeFunctions();
+#ifdef XFONT_FC
+    fs_register_fpe_functions();
+#endif
 }

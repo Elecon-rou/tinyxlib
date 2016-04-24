@@ -1,5 +1,3 @@
-/* $Xorg: fileio.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,16 +23,21 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/fileio.c,v 3.9 2001/12/14 19:56:51 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include <fntfilio.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fntfilio.h>
 #include <X11/Xos.h>
 #ifndef O_BINARY
 #define O_BINARY O_RDONLY
+#endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
 #endif
 
 FontFilePtr
@@ -44,7 +47,7 @@ FontFileOpen (const char *name)
     int		len;
     BufFilePtr	raw, cooked;
 
-    fd = open (name, O_BINARY);
+    fd = open (name, O_BINARY|O_CLOEXEC);
     if (fd < 0)
 	return 0;
     raw = BufFileOpenRead (fd);
@@ -64,6 +67,15 @@ FontFileOpen (const char *name)
 #ifdef X_GZIP_FONT_COMPRESSION
     } else if (len > 3 && !strcmp (name + len - 3, ".gz")) {
 	cooked = BufFilePushZIP (raw);
+	if (!cooked) {
+	    BufFileClose (raw, TRUE);
+	    return 0;
+	}
+	raw = cooked;
+#endif
+#ifdef X_BZIP2_FONT_COMPRESSION
+    } else if (len > 4 && !strcmp (name + len - 4, ".bz2")) {
+	cooked = BufFilePushBZIP2 (raw);
 	if (!cooked) {
 	    BufFileClose (raw, TRUE);
 	    return 0;

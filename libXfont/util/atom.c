@@ -1,5 +1,3 @@
-/* $Xorg: atom.c,v 1.5 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1990, 1994, 1998  The Open Group
@@ -25,7 +23,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/atom.c,v 1.7 2001/12/14 19:56:55 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
@@ -33,7 +30,11 @@ in this Software without prior written authorization from The Open Group.
 
 /* lame atom replacement routines for font applications */
 
-#include "fontmisc.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fontmisc.h>
+#include "stubs.h"
 
 typedef struct _AtomList {
     char		*name;
@@ -53,7 +54,7 @@ static int	    reverseMapSize;
 static Atom	    lastAtom;
 
 static int
-Hash(char *string, int len)
+Hash(const char *string, int len)
 {
     int	h;
 
@@ -80,12 +81,13 @@ ResizeHashTable (void)
 	newHashSize = 1024;
     else
 	newHashSize = hashSize * 2;
-    newHashTable = (AtomListPtr *) xalloc (newHashSize * sizeof (AtomListPtr));
+    newHashTable = calloc (newHashSize, sizeof (AtomListPtr));
     if (!newHashTable) {
-      fprintf(stderr, "ResizeHashTable(): Error: Couldn't allocate newHashTable (%d)\n", newHashSize * sizeof (AtomListPtr));
+	fprintf(stderr, "ResizeHashTable(): Error: Couldn't allocate"
+		" newHashTable (%ld)\n",
+		newHashSize * (unsigned long)sizeof (AtomListPtr));
 	return FALSE;
     }
-    bzero ((char *) newHashTable, newHashSize * sizeof (AtomListPtr));
     newHashMask = newHashSize - 1;
     newRehash = (newHashMask - 2);
     for (i = 0; i < hashSize; i++)
@@ -105,7 +107,7 @@ ResizeHashTable (void)
 	    newHashTable[h] = hashTable[i];
 	}
     }
-    xfree (hashTable);
+    free (hashTable);
     hashTable = newHashTable;
     hashSize = newHashSize;
     hashMask = newHashMask;
@@ -116,17 +118,23 @@ ResizeHashTable (void)
 static int
 ResizeReverseMap (void)
 {
-    int ret = TRUE;
+    AtomListPtr *newMap;
+    int newMapSize;
+
     if (reverseMapSize == 0)
-	reverseMapSize = 1000;
+	newMapSize = 1000;
     else
-	reverseMapSize *= 2;
-    reverseMap = (AtomListPtr *) xrealloc (reverseMap, reverseMapSize * sizeof (AtomListPtr));
-    if (!reverseMap) {
-      fprintf(stderr, "ResizeReverseMap(): Error: Couldn't reallocate reverseMap (%d)\n", reverseMapSize * sizeof(AtomListPtr));
-	ret = FALSE;
+	newMapSize = reverseMapSize * 2;
+    newMap = realloc (reverseMap, newMapSize * sizeof (AtomListPtr));
+    if (newMap == NULL) {
+	fprintf(stderr, "ResizeReverseMap(): Error: Couldn't reallocate"
+		" reverseMap (%ld)\n",
+		newMapSize * (unsigned long)sizeof(AtomListPtr));
+	return FALSE;
     }
-    return ret;
+    reverseMap = newMap;
+    reverseMapSize = newMapSize;
+    return TRUE;
 }
 
 static int
@@ -138,13 +146,19 @@ NameEqual (const char *a, const char *b, int l)
     return TRUE;
 }
 
-Atom 
-MakeAtom(char *string, unsigned len, int makeit)
+#ifdef __SUNPRO_C
+#pragma weak MakeAtom
+#endif
+
+weak Atom
+MakeAtom(const char *string, unsigned len, int makeit)
 {
     AtomListPtr	a;
     int		hash;
     int		h = 0;
     int		r;
+
+    OVERRIDE_SYMBOL(MakeAtom, string, len, makeit);
 
     hash = Hash (string, len);
     if (hashTable)
@@ -175,10 +189,11 @@ MakeAtom(char *string, unsigned len, int makeit)
     }
     if (!makeit)
 	return None;
-    a = (AtomListPtr) xalloc (sizeof (AtomListRec) + len + 1);
+    a = malloc (sizeof (AtomListRec) + len + 1);
     if (a == NULL) {
-      fprintf(stderr, "MakeAtom(): Error: Couldn't allocate AtomListRec (%d)\n", sizeof (AtomListRec) + len + 1);
-      return None;
+	fprintf(stderr, "MakeAtom(): Error: Couldn't allocate AtomListRec"
+		" (%ld)\n", (unsigned long)sizeof (AtomListRec) + len + 1);
+	return None;
     }
     a->name = (char *) (a + 1);
     a->len = len;
@@ -210,15 +225,25 @@ MakeAtom(char *string, unsigned len, int makeit)
     return a->atom;
 }
 
-int 
+#ifdef __SUNPRO_C
+#pragma weak ValidAtom
+#endif
+
+weak int
 ValidAtom(Atom atom)
 {
+    OVERRIDE_SYMBOL(ValidAtom, atom);
     return (atom != None) && (atom <= lastAtom);
 }
 
-char *
+#ifdef __SUNPRO_C
+#pragma weak NameForAtom
+#endif
+
+weak char *
 NameForAtom(Atom atom)
 {
+    OVERRIDE_SYMBOL(NameForAtom, atom);
     if (atom != None && atom <= lastAtom)
 	return reverseMap[atom]->name;
     return NULL;

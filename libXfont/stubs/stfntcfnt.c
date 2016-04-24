@@ -1,11 +1,15 @@
-/* $XFree86: xc/lib/font/stubs/stfntcfnt.c,v 1.1 1999/01/11 05:13:21 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-int
+#ifdef __SUNPRO_C
+#pragma weak StoreFontClientFont
+#endif
+
+weak int
 StoreFontClientFont(FontPtr pfont, Font id)
 {
+    OVERRIDE_SYMBOL(StoreFontClientFont, pfont, id);
     return 0;
 }
-
-/* end of file */

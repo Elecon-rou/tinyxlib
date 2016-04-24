@@ -1,5 +1,3 @@
-/* $Xorg: bitmap.c,v 1.4 2001/02/09 02:04:02 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,18 +23,21 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/bitmap/bitmap.c,v 1.7 2001/12/14 19:56:45 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include "../include/fntfilst.h"
-#include "../include/bitmap.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <X11/fonts/fntfilst.h>
+#include <X11/fonts/bitmap.h>
 
 int
-bitmapGetGlyphs(FontPtr pFont, unsigned long count, unsigned char *chars, 
-		FontEncoding charEncoding, 
+bitmapGetGlyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
+		FontEncoding charEncoding,
 		unsigned long *glyphCount, 	/* RETURN */
 		CharInfoPtr *glyphs) 		/* RETURN */
 {
@@ -62,8 +63,12 @@ bitmapGetGlyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
 
     case Linear8Bit:
     case TwoD8Bit:
-	if (pFont->info.firstRow > 0)
+	if (pFont->info.firstRow > 0) {
+            if (pDefault)
+                while (count--)
+                    *glyphs++ = pDefault;
 	    break;
+        }
 	if (pFont->info.allExist && pDefault) {
 	    while (count--) {
 		c = (*chars++) - firstCol;
@@ -125,8 +130,8 @@ bitmapGetGlyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
 static CharInfoRec nonExistantChar;
 
 int
-bitmapGetMetrics(FontPtr pFont, unsigned long count, unsigned char *chars, 
-		 FontEncoding charEncoding, 
+bitmapGetMetrics(FontPtr pFont, unsigned long count, unsigned char *chars,
+		 FontEncoding charEncoding,
 		 unsigned long *glyphCount,	/* RETURN */
 		 xCharInfo **glyphs)		/* RETURN */
 {

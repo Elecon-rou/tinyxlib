@@ -1,13 +1,13 @@
-/* $Xorg: gunzip.c,v 1.3 2000/08/17 19:46:37 cpqbld Exp $ */
 /* lib/font/fontfile/gunzip.c
    written by Mark Eichin <eichin@kitten.gen.ma.us> September 1996.
    intended for inclusion in X11 public releases. */
-/* $XFree86: xc/lib/font/fontfile/gunzip.c,v 1.5 2001/01/17 19:43:30 dawes Exp $ */
 
-#include "fontmisc.h"
-#include <bufio.h>
-//#include <zlib.h>
-#include "zlib.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fontmisc.h>
+#include <X11/fonts/bufio.h>
+#include <zlib.h>
 
 typedef struct _xzip_buf {
   z_stream z;
@@ -27,7 +27,7 @@ BufFilePushZIP (BufFilePtr f)
 {
   xzip_buf *x;
 
-  x = (xzip_buf *) xalloc (sizeof (xzip_buf));
+  x = malloc (sizeof (xzip_buf));
   if (!x) return 0;
   /* these are just for raw calloc/free */
   x->z.zalloc = Z_NULL;
@@ -44,7 +44,7 @@ BufFilePushZIP (BufFilePtr f)
      zlib header checking [undocumented, for gzip compatibility only?] */
   x->zstat = inflateInit2(&(x->z), -MAX_WBITS);
   if (x->zstat != Z_OK) {
-    xfree(x);
+    free(x);
     return 0;
   }
 
@@ -55,7 +55,7 @@ BufFilePushZIP (BufFilePtr f)
   x->z.avail_in = 0;
 
   if (BufCheckZipHeader(x->f)) {
-    xfree(x);
+    free(x);
     return 0;
   }
 
@@ -66,26 +66,26 @@ BufFilePushZIP (BufFilePtr f)
 		       BufZipFileClose);
 }
 
-static int 
+static int
 BufZipFileClose(BufFilePtr f, int flag)
 {
   xzip_buf *x = (xzip_buf *)f->private;
   inflateEnd (&(x->z));
   BufFileClose (x->f, flag);
-  xfree (x);
+  free (x);
   return 1;
 }
 
-/* here's the real work. 
+/* here's the real work.
    -- we need to put stuff in f.buffer, update f.left and f.bufp,
       then return the first byte (or BUFFILEEOF).
-   -- to do this, we need to get stuff into avail_in, and next_in, 
+   -- to do this, we need to get stuff into avail_in, and next_in,
       and call inflate appropriately.
    -- we may also need to add CRC maintenance - if inflate tells us
       Z_STREAM_END, we then have 4bytes CRC and 4bytes length...
    gzio.c:gzread shows most of the mechanism.
    */
-static int 
+static int
 BufZipFileFill (BufFilePtr f)
 {
   xzip_buf *x = (xzip_buf *)f->private;
@@ -139,7 +139,7 @@ BufZipFileFill (BufFilePtr f)
     }
   }
   f->bufp = x->b;
-  f->left = BUFFILESIZE - x->z.avail_out;  
+  f->left = BUFFILESIZE - x->z.avail_out;
 
   if (f->left >= 0) {
     f->left--;
@@ -150,7 +150,7 @@ BufZipFileFill (BufFilePtr f)
 }
 
 /* there should be a BufCommonSkip... */
-static int 
+static int
 BufZipFileSkip (BufFilePtr f, int c)
 {
   /* BufFileRawSkip returns the count unchanged.
@@ -192,7 +192,7 @@ BufZipFileSkip (BufFilePtr f, int c)
 #define RESERVED     0xE0 /* bits 5..7: reserved */
 
 #define GET(f) do {c = BufFileGet(f); if (c == BUFFILEEOF) return c;} while(0)
-static int 
+static int
 BufCheckZipHeader(BufFilePtr f)
 {
   int c, flags;

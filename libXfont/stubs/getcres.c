@@ -1,11 +1,15 @@
-/* $XFree86: xc/lib/font/stubs/getcres.c,v 1.1 1999/01/11 05:13:20 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-FontResolutionPtr
+#ifdef __SUNPRO_C
+#pragma weak GetClientResolutions
+#endif
+
+weak FontResolutionPtr
 GetClientResolutions(int *num)
 {
+  OVERRIDE_SYMBOL(GetClientResolutions, num);
   return (FontResolutionPtr) 0;
 }
-
-/* end of file */

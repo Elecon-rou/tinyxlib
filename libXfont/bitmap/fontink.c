@@ -1,5 +1,3 @@
-/* $Xorg: fontink.c,v 1.4 2001/02/09 02:04:02 xorgcvs Exp $ */
-
 /*
 
 Copyright 1990, 1998  The Open Group
@@ -27,15 +25,18 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/bitmap/fontink.c,v 1.7 2001/12/14 19:56:46 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include "../include/fntfilst.h"
-#include "../include/bitmap.h"
-#include "bdfint.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <X11/fonts/fntfilst.h>
+#include <X11/fonts/bitmap.h>
+#include <X11/fonts/bdfint.h>
 
 static unsigned char ink_mask_msb[8] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01,
@@ -97,7 +98,7 @@ FontCharInkMetrics(FontPtr pFont, CharInfoPtr pCI, xCharInfo *pInk)
 found_ascent:
     pInk->ascent = vpos - descent + 1;
 
-    p = ((unsigned char *) pCI->bits) + bitmapByteWidthPadded * 
+    p = ((unsigned char *) pCI->bits) + bitmapByteWidthPadded *
 	(descent + ascent - 1) + bitmapByteWidth;
 
     for (vpos = descent + ascent; --vpos >= 0;) {

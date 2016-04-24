@@ -1,4 +1,3 @@
-/* $Xorg: fsconvert.c,v 1.3 2000/08/17 19:46:36 cpqbld Exp $ */
 /*
  * Copyright 1990 Network Computing Devices
  *
@@ -22,26 +21,26 @@
  *
  * Author:  	Dave Lemke, Network Computing Devices, Inc
  */
-/* $XFree86: xc/lib/font/fc/fsconvert.c,v 1.10 2001/01/17 19:43:28 dawes Exp $ */
 /*
  * FS data conversion
  */
 
-#include    <X11/X.h>
-#include 	<X11/Xtrans.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include        <X11/X.h>
+#include 	<X11/Xtrans/Xtrans.h>
 #include	<X11/Xpoll.h>
 #include	<X11/fonts/FS.h>
 #include	<X11/fonts/FSproto.h>
-#include	"fontmisc.h"
+#include	<X11/fonts/fontmisc.h>
 #include	<X11/fonts/fontstruct.h>
 #include	"fservestr.h"
-#include	"fontutil.h"
-#include	<limits.h>
+#include	<X11/fonts/fontutil.h>
+#include	"fslibos.h"
 
 extern char _fs_glyph_undefined;
 extern char _fs_glyph_requested;
-extern char _fs_glyph_zero_length;
-
 
 /*
  * converts data from font server form to X server form
@@ -87,7 +86,7 @@ _fs_init_fontinfo(FSFpePtr conn, FontInfoPtr pfi)
 }
 
 int
-_fs_convert_props(fsPropInfo *pi, fsPropOffset *po, pointer pd, 
+_fs_convert_props(fsPropInfo *pi, fsPropOffset *po, pointer pd,
 		  FontInfoPtr pfi)
 {
     FontPropPtr dprop;
@@ -103,17 +102,20 @@ _fs_convert_props(fsPropInfo *pi, fsPropOffset *po, pointer pd,
 
     nprops = pfi->nprops = pi->num_offsets;
 
-    dprop = (FontPropPtr) xalloc(sizeof(FontPropRec) * nprops +
-				 sizeof (char) * nprops);
+    if (nprops < 0
+	|| nprops > SIZE_MAX/(sizeof(FontPropRec) + sizeof(char)))
+	return -1;
+
+    dprop = malloc(sizeof(FontPropRec) * nprops + sizeof (char) * nprops);
     if (!dprop)
 	return -1;
-    
+
     is_str = (char *) (dprop + nprops);
     pfi->props = dprop;
     pfi->isStringProp = is_str;
 
     off_adr = (char *)po;
-    for (i = 0; i < nprops; i++, dprop++, is_str++) 
+    for (i = 0; i < nprops; i++, dprop++, is_str++)
     {
 	memcpy(&local_off, off_adr, SIZEOF(fsPropOffset));
 	if ((local_off.name.position >= pi->data_len) ||
@@ -127,16 +129,17 @@ _fs_convert_props(fsPropInfo *pi, fsPropOffset *po, pointer pd,
 	    dprop->value = local_off.value.position;
 	} else {
 	    *is_str = TRUE;
- 	    if ((local_off.value.position >= pi->data_len) ||
- 		(local_off.value.length >
- 		 (pi->data_len - local_off.value.position)))
- 		goto bail;
+	    if ((local_off.value.position >= pi->data_len) ||
+		(local_off.value.length >
+		 (pi->data_len - local_off.value.position)))
+		goto bail;
 	    dprop->value = (INT32) MakeAtom(&pdc[local_off.value.position],
 					    local_off.value.length, 1);
 	    if (dprop->value == BAD_RESOURCE)
 	    {
-	    bail:
-		xfree (pfi->props);
+	      bail:
+		free (pfi->props);
+		pfi->nprops = 0;
 		pfi->props = 0;
 		pfi->isStringProp = 0;
 		return -1;
@@ -153,14 +156,15 @@ _fs_free_props (FontInfoPtr pfi)
 {
     if (pfi->props)
     {
-	xfree (pfi->props);
+	free (pfi->props);
+	pfi->nprops = 0;
 	pfi->props = 0;
     }
 }
 
 int
-_fs_convert_lfwi_reply(FSFpePtr conn, FontInfoPtr pfi, 
-		       fsListFontsWithXInfoReply *fsrep, 
+_fs_convert_lfwi_reply(FSFpePtr conn, FontInfoPtr pfi,
+		       fsListFontsWithXInfoReply *fsrep,
 		       fsPropInfo *pi, fsPropOffset *po, pointer pd)
 {
     fsUnpack_XFontInfoHeader(fsrep, pfi);
@@ -193,8 +197,8 @@ _fs_convert_lfwi_reply(FSFpePtr conn, FontInfoPtr pfi,
  */
 /* ARGSUSED */
 int
-fs_build_range(FontPtr pfont, Bool range_flag, unsigned int count, 
-	       int item_size, unsigned char *data, int *nranges, 
+fs_build_range(FontPtr pfont, Bool range_flag, unsigned int count,
+	       int item_size, unsigned char *data, int *nranges,
 	       fsRange **ranges)
 {
     FSFontDataPtr fsd = (FSFontDataPtr) (pfont->fpePrivate);
@@ -355,15 +359,13 @@ fs_build_range(FontPtr pfont, Bool range_flag, unsigned int count,
    requests needs to be cancelled. */
 
 void
-_fs_clean_aborted_loadglyphs(FontPtr pfont, int num_expected_ranges, 
+_fs_clean_aborted_loadglyphs(FontPtr pfont, int num_expected_ranges,
 			     fsRange *expected_ranges)
 {
     register FSFontPtr fsfont;
-    register FSFontDataRec *fsd;
     register int i;
 
     fsfont = (FSFontPtr) pfont->fontPrivate;
-    fsd = (FSFontDataRec *) pfont->fpePrivate;
     if (fsfont->encoding)
     {
 	fsRange full_range[1];
@@ -402,43 +404,9 @@ _fs_clean_aborted_loadglyphs(FontPtr pfont, int num_expected_ranges,
     }
 }
 
-
-/*
- * figures out what extents to request
- * this is where lots of extra
- * smarts wants to live
- */
-/* ARGSUSED */
-int
-_fs_check_extents(FontPtr pfont, Mask flags, int nranges, fsRange *range, 
-		  FSBlockDataPtr blockrec)
-{
-/* XXX -- either fill in the requested info if we have it somewhere
- * and return AccessDone, or else return Successful
- */
-    return Successful;
-}
-
-/*
- * figures out what glyphs to request
- * this is where lots of extra
- * smarts wants to live
- */
-/* ARGSUSED */
-int
-_fs_check_bitmaps(FontPtr pfont, fsBitmapFormat format, 
-		  Mask flags, int nranges, fsRange *range, 
-		  FSBlockDataPtr blockrec)
-{
-/* XXX -- either fill in the requested info if we have it somewhere
- * and return AccessDone, or else return Successful
- */
-    return Successful;
-}
-
-int
-_fs_get_glyphs(FontPtr pFont, unsigned long count, unsigned char *chars, 
-	       FontEncoding charEncoding, 
+static int
+_fs_get_glyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
+	       FontEncoding charEncoding,
 	       unsigned long *glyphCount, /* RETURN */
 	       CharInfoPtr *glyphs) 	  /* RETURN  */
 {
@@ -454,7 +422,6 @@ _fs_get_glyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
     CharInfoPtr encoding;
     CharInfoPtr pDefault;
     FSFontDataPtr fsd = (FSFontDataPtr) pFont->fpePrivate;
-    int         itemSize;
     int         err = Successful;
 
     fsdata = (FSFontPtr) pFont->fontPrivate;
@@ -463,12 +430,6 @@ _fs_get_glyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
     firstCol = pFont->info.firstCol;
     numCols = pFont->info.lastCol - firstCol + 1;
     glyphsBase = glyphs;
-
-
-    if (charEncoding == Linear8Bit || charEncoding == TwoD8Bit)
-	itemSize = 1;
-    else
-	itemSize = 2;
 
     /* In this age of glyph caching, any glyphs gotten through this
        procedure should already be loaded.  If they are not, we are
@@ -556,8 +517,8 @@ _fs_get_glyphs(FontPtr pFont, unsigned long count, unsigned char *chars,
 
 
 static int
-_fs_get_metrics(FontPtr pFont, unsigned long count, unsigned char *chars, 
-		FontEncoding charEncoding, 
+_fs_get_metrics(FontPtr pFont, unsigned long count, unsigned char *chars,
+		FontEncoding charEncoding,
 		unsigned long *glyphCount, /* RETURN */
 		xCharInfo **glyphs) 	   /* RETURN */
 {
@@ -571,7 +532,6 @@ _fs_get_metrics(FontPtr pFont, unsigned long count, unsigned char *chars,
     unsigned int r;
     CharInfoPtr encoding;
     CharInfoPtr pDefault;
-    int         itemSize;
 
     fsdata = (FSFontPtr) pFont->fontPrivate;
     encoding = fsdata->inkMetrics;
@@ -586,11 +546,6 @@ _fs_get_metrics(FontPtr pFont, unsigned long count, unsigned char *chars,
 
     /* XXX - this should be much smarter */
     /* make sure the glyphs are there */
-    if (charEncoding == Linear8Bit || charEncoding == TwoD8Bit)
-	itemSize = 1;
-    else
-	itemSize = 2;
-
     switch (charEncoding) {
 
     case Linear8Bit:
@@ -655,7 +610,7 @@ _fs_get_metrics(FontPtr pFont, unsigned long count, unsigned char *chars,
 }
 
 
-void
+static void
 _fs_unload_font(FontPtr pfont)
 {
     FSFontPtr	    fsdata = (FSFontPtr) pfont->fontPrivate;
@@ -667,28 +622,28 @@ _fs_unload_font(FontPtr pfont)
      * fsdata points at FSFontRec, FSFontDataRec and name
      */
     if (encoding)
-	xfree(encoding);
+	free(encoding);
 
     while ((glyphs = fsdata->glyphs))
     {
 	fsdata->glyphs = glyphs->next;
-	xfree (glyphs);
+	free (glyphs);
     }
-    
+
     /* XXX we may get called after the resource DB has been cleaned out */
     if (find_old_font(fsd->fontid))
 	DeleteFontClientID (fsd->fontid);
-    
+
     _fs_free_props (&pfont->info);
-    
-    xfree(fsdata);
-	    
+
+    free(fsdata);
+
     DestroyFontRec(pfont);
 }
 
 FontPtr
 fs_create_font (FontPathElementPtr  fpe,
-		char		    *name,
+		const char	    *name,
 		int		    namelen,
 		fsBitmapFormat	    format,
 		fsBitmapFormatMask  fmask)
@@ -701,9 +656,7 @@ fs_create_font (FontPathElementPtr  fpe,
     pfont = CreateFontRec ();
     if (!pfont)
 	return 0;
-    fsfont = (FSFontPtr) xalloc (sizeof (FSFontRec) +
-				 sizeof (FSFontDataRec) +
-				 namelen + 1);
+    fsfont = malloc (sizeof (FSFontRec) + sizeof (FSFontDataRec) + namelen + 1);
     if (!fsfont)
     {
 	DestroyFontRec (pfont);
@@ -712,11 +665,11 @@ fs_create_font (FontPathElementPtr  fpe,
     fsd = (FSFontDataPtr) (fsfont + 1);
     bzero((char *) fsfont, sizeof(FSFontRec));
     bzero((char *) fsd, sizeof(FSFontDataRec));
-    
+
     pfont->fpe = fpe;
     pfont->fontPrivate = (pointer) fsfont;
     pfont->fpePrivate = (pointer) fsd;
-    
+
     /* These font components will be needed in packGlyphs */
     CheckFSFormat(format, BitmapFormatMaskBit |
 		  BitmapFormatMaskByte |
@@ -732,16 +685,17 @@ fs_create_font (FontPathElementPtr  fpe,
     pfont->byte = byte;
     pfont->scan = scan;
     pfont->glyph = glyph;
-    
+
+    pfont->info.nprops = 0;
     pfont->info.props = 0;
     pfont->info.isStringProp = 0;
-    
+
     /* set font function pointers */
     pfont->get_glyphs = _fs_get_glyphs;
     pfont->get_metrics = _fs_get_metrics;
     pfont->unload_font = _fs_unload_font;
     pfont->unload_glyphs = NULL;
-    
+
     /* set the FPE private information */
     fsd->format = format;
     fsd->fmask = fmask;
@@ -749,11 +703,11 @@ fs_create_font (FontPathElementPtr  fpe,
     memcpy (fsd->name, name, namelen);
     fsd->name[namelen] = '\0';
     fsd->fontid = GetNewFontClientID ();
-    
+
     /* save the ID */
-    if (!StoreFontClientFont(pfont, fsd->fontid)) 
+    if (!StoreFontClientFont(pfont, fsd->fontid))
     {
-	xfree (fsfont);
+	free (fsfont);
 	DestroyFontRec (pfont);
 	return 0;
     }
@@ -764,12 +718,14 @@ fs_create_font (FontPathElementPtr  fpe,
 pointer
 fs_alloc_glyphs (FontPtr pFont, int size)
 {
-    FSGlyphPtr	glyphs = NULL;
+    FSGlyphPtr	glyphs;
     FSFontPtr	fsfont = (FSFontPtr) pFont->fontPrivate;
 
-    if (size < (INT_MAX - sizeof(FSGlyphRec)))
-	 glyphs = xalloc (sizeof (FSGlyphRec) + size);
-    if (!glyphs)
+    if (size < (INT_MAX - sizeof (FSGlyphRec)))
+	glyphs = malloc (sizeof (FSGlyphRec) + size);
+    else
+	glyphs = NULL;
+    if (glyphs == NULL)
 	return NULL;
     glyphs->next = fsfont->glyphs;
     fsfont->glyphs = glyphs;

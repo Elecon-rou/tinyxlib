@@ -1,11 +1,15 @@
-/* $XFree86: xc/lib/font/stubs/cauthgen.c,v 1.1 1999/01/11 05:13:18 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-int
+#ifdef __SUNPRO_C
+#pragma weak client_auth_generation
+#endif
+
+weak int
 client_auth_generation(ClientPtr client)
 {
+    OVERRIDE_SYMBOL(client_auth_generation, client);
     return 0;
 }
-
-/* end of file */

@@ -1,5 +1,3 @@
-/* $Xorg: bitmapfunc.c,v 1.5 2001/02/09 02:04:02 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -26,27 +24,37 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
-/* $XFree86: xc/lib/font/bitmap/bitmapfunc.c,v 3.14 2001/12/14 19:56:46 dawes Exp $ */
-
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include "../include/fntfilst.h"
-#include "../include/bitmap.h"
-#include "../include/fontutil.h"
-#include "bdfint.h"
-#include "pcf.h"
-#include "snfstr.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
+#include <X11/fonts/fntfilst.h>
+#include <X11/fonts/bitmap.h>
+#include <X11/fonts/fontutil.h>
+#if XFONT_BDFFORMAT
+#include <X11/fonts/bdfint.h>
+#endif
+#if XFONT_PCFFORMAT
+#include <X11/fonts/pcf.h>
+#endif
+#if XFONT_SNFFORMAT
+#include "snfstr.h"
+#endif
+
+#if XFONT_PCFFORMAT || XFONT_SNFFORMAT || XFONT_BDFFORMAT
 typedef struct _BitmapFileFunctions {
-    int         (*ReadFont) (FontPtr /* pFont */, FontFilePtr /* file */,  
-			     int /* bit */, int /* byte */, 
+    int         (*ReadFont) (FontPtr /* pFont */, FontFilePtr /* file */,
+			     int /* bit */, int /* byte */,
 			     int /* glyph */, int /* scan */);
-    int         (*ReadInfo) (  FontInfoPtr /* pFontInfo */, 
+    int         (*ReadInfo) (  FontInfoPtr /* pFontInfo */,
 			       FontFilePtr /* file */ );
 }           BitmapFileFunctionsRec, *BitmapFileFunctionsPtr;
 
+static int BitmapGetRenderIndex(FontRendererPtr renderer);
 
 /*
  * the readers[] and renderers[] arrays must be in the same order,
@@ -54,86 +62,44 @@ typedef struct _BitmapFileFunctions {
  *
  */
 static BitmapFileFunctionsRec readers[] = {
-#ifdef PCFFORMAT
+#if XFONT_PCFFORMAT
     { pcfReadFont, pcfReadFontInfo} ,
     { pcfReadFont, pcfReadFontInfo} ,
-#ifdef X_GZIP_FONT_COMPRESSION
+# ifdef X_GZIP_FONT_COMPRESSION
     { pcfReadFont, pcfReadFontInfo} ,
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { pcfReadFont, pcfReadFontInfo} ,
+# endif
 #endif
-#endif
-#ifdef SNFFORMAT
+#if XFONT_SNFFORMAT
     { snfReadFont, snfReadFontInfo},
     { snfReadFont, snfReadFontInfo},
-#ifdef X_GZIP_FONT_COMPRESSION
+# ifdef X_GZIP_FONT_COMPRESSION
     { snfReadFont, snfReadFontInfo} ,
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { snfReadFont, snfReadFontInfo} ,
+# endif
 #endif
-#endif
-#ifdef BDFFORMAT
+#if XFONT_BDFFORMAT
     { bdfReadFont, bdfReadFontInfo} ,
     { bdfReadFont, bdfReadFontInfo} ,
-#ifdef X_GZIP_FONT_COMPRESSION
+# ifdef X_GZIP_FONT_COMPRESSION
     { bdfReadFont, bdfReadFontInfo} ,
-#endif
-#endif
-#ifdef PCFFORMAT
-    { pmfReadFont, pcfReadFontInfo} ,
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { bdfReadFont, bdfReadFontInfo} ,
+# endif
 #endif
 };
 
 
 #define CAPABILITIES (CAP_MATRIX | CAP_CHARSUBSETTING)
 
-static FontRendererRec	renderers[] = {
-#ifdef	PCFFORMAT
-    { ".pcf", 4, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-    { ".pcf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#ifdef X_GZIP_FONT_COMPRESSION
-    { ".pcf.gz", 7,
-    BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#endif
-#endif
-#ifdef	SNFFORMAT
-    { ".snf", 4, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-    { ".snf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#ifdef X_GZIP_FONT_COMPRESSION
-    { ".snf.gz", 7, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#endif
-#endif
-#ifdef	BDFFORMAT
-    { ".bdf", 4, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-    { ".bdf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#ifdef X_GZIP_FONT_COMPRESSION
-    { ".bdf.gz", 7, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES },
-#endif
-#endif
-#ifdef	PCFFORMAT
-    { ".pmf", 4, BitmapOpenBitmap, BitmapOpenScalable,
-	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
-	CAPABILITIES }
-#endif
-};
-
-int
-BitmapOpenBitmap (FontPathElementPtr fpe, FontPtr *ppFont, int flags, 
-		  FontEntryPtr entry, char *fileName, 
+static int
+BitmapOpenBitmap (FontPathElementPtr fpe, FontPtr *ppFont, int flags,
+		  FontEntryPtr entry, char *fileName,
 		  fsBitmapFormat format, fsBitmapFormatMask fmask,
 		  FontPtr non_cachable_font) /* We don't do licensing */
 {
@@ -152,7 +118,8 @@ BitmapOpenBitmap (FontPathElementPtr fpe, FontPtr *ppFont, int flags,
     if (!file)
 	return BadFontName;
     if (!(pFont = CreateFontRec())) {
-      fprintf(stderr, "Error: Couldn't allocate pFont (%d)\n", sizeof(FontRec));
+	fprintf(stderr, "Error: Couldn't allocate pFont (%ld)\n",
+		(unsigned long)sizeof(FontRec));
 	FontFileClose (file);
 	return AllocError;
     }
@@ -168,15 +135,15 @@ BitmapOpenBitmap (FontPathElementPtr fpe, FontPtr *ppFont, int flags,
 
     FontFileClose (file);
     if (ret != Successful) {
-	xfree(pFont);
+	free(pFont);
     } else {
 	*ppFont = pFont;
     }
     return ret;
 }
 
-int
-BitmapGetInfoBitmap (FontPathElementPtr fpe, FontInfoPtr pFontInfo, 
+static int
+BitmapGetInfoBitmap (FontPathElementPtr fpe, FontInfoPtr pFontInfo,
 		     FontEntryPtr entry, char *fileName)
 {
     FontFilePtr file;
@@ -196,6 +163,65 @@ BitmapGetInfoBitmap (FontPathElementPtr fpe, FontInfoPtr pFontInfo,
     return ret;
 }
 
+static FontRendererRec	renderers[] = {
+#if XFONT_PCFFORMAT
+    { ".pcf", 4, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+    { ".pcf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# ifdef X_GZIP_FONT_COMPRESSION
+    { ".pcf.gz", 7,
+	BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { ".pcf.bz2", 8,
+	BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+#endif
+#if XFONT_SNFFORMAT
+    { ".snf", 4, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+    { ".snf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# ifdef X_GZIP_FONT_COMPRESSION
+    { ".snf.gz", 7, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { ".snf.bz2", 8, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+#endif
+#if XFONT_BDFFORMAT
+    { ".bdf", 4, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+    { ".bdf.Z", 6, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# ifdef X_GZIP_FONT_COMPRESSION
+    { ".bdf.gz", 7, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+# ifdef X_BZIP2_FONT_COMPRESSION
+    { ".bdf.bz2", 8, BitmapOpenBitmap, BitmapOpenScalable,
+	BitmapGetInfoBitmap, BitmapGetInfoScalable, 0,
+	CAPABILITIES },
+# endif
+#endif
+};
+
 #define numRenderers	(sizeof renderers / sizeof renderers[0])
 
 void
@@ -212,8 +238,16 @@ BitmapRegisterFontFileFunctions (void)
  * the font info reader, and the bitmap scaling routine.  All users
  * of this routine must be kept in step with the renderer array.
  */
-int
+static int
 BitmapGetRenderIndex(FontRendererPtr renderer)
 {
     return renderer - renderers;
 }
+
+#else
+void
+BitmapRegisterFontFileFunctions (void)
+{
+    /* nothing to do */
+}
+#endif /* XFONT_PCFFORMAT || XFONT_SNFFORMAT || XFONT_BDFFORMAT */

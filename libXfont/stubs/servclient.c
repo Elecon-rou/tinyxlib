@@ -1,3 +1,19 @@
-/* $XFree86: xc/lib/font/stubs/servclient.c,v 1.1 1999/01/11 05:13:21 dawes Exp $ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "stubs.h"
 
-void *serverClient = 0;
+#ifdef __SUNPRO_C
+#pragma weak serverClient
+#endif
+
+weak void *serverClient = 0;
+
+void *__GetServerClient(void);
+
+void *
+__GetServerClient(void)
+{
+   OVERRIDE_DATA(serverClient);
+   return serverClient;
+}

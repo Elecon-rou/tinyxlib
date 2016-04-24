@@ -1,5 +1,3 @@
-/* $Xorg: fontutil.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -27,16 +25,18 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/fontutil.c,v 3.7 2001/12/14 19:56:56 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include    "fontmisc.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include    <X11/fonts/fontmisc.h>
 #include    <X11/fonts/fontstruct.h>
 #include    <X11/fonts/FSproto.h>
-#include    "fontutil.h"
+#include    <X11/fonts/fontutil.h>
 
 /* Define global here...  doesn't hurt the servers, and avoids
    unresolved references in font clients.  */
@@ -45,10 +45,10 @@ static int defaultGlyphCachingMode = DEFAULT_GLYPH_CACHING_MODE;
 int glyphCachingMode = DEFAULT_GLYPH_CACHING_MODE;
 
 void
-GetGlyphs(FontPtr font, 
-	  unsigned long count, 
-	  unsigned char *chars, 
-	  FontEncoding fontEncoding, 
+GetGlyphs(FontPtr font,
+	  unsigned long count,
+	  unsigned char *chars,
+	  FontEncoding fontEncoding,
 	  unsigned long *glyphcount,	/* RETURN */
 	  CharInfoPtr *glyphs)		/* RETURN */
 {
@@ -59,9 +59,9 @@ GetGlyphs(FontPtr font,
 #define MAX(a,b)    ((a)>(b)?(a):(b))
 
 void
-QueryGlyphExtents(FontPtr pFont, 
-		  CharInfoPtr *charinfo, 
-		  unsigned long count, 
+QueryGlyphExtents(FontPtr pFont,
+		  CharInfoPtr *charinfo,
+		  unsigned long count,
 		  ExtentInfoRec *info)
 {
     register unsigned long i;
@@ -131,9 +131,9 @@ QueryGlyphExtents(FontPtr pFont,
 }
 
 Bool
-QueryTextExtents(FontPtr pFont, 
-		 unsigned long count, 
-		 unsigned char *chars, 
+QueryTextExtents(FontPtr pFont,
+		 unsigned long count,
+		 unsigned char *chars,
 		 ExtentInfoRec *info)
 {
     xCharInfo     **charinfo;
@@ -146,7 +146,7 @@ QueryTextExtents(FontPtr pFont,
     unsigned char   defc[2];
     int             firstReal;
 
-    charinfo = (xCharInfo **) xalloc(count * sizeof(xCharInfo *));
+    charinfo = malloc(count * sizeof(xCharInfo *));
     if (!charinfo)
 	return FALSE;
     encoding = TwoD16Bit;
@@ -182,10 +182,10 @@ QueryTextExtents(FontPtr pFont,
     }
     cm = pFont->info.constantMetrics;
     pFont->info.constantMetrics = FALSE;
-    QueryGlyphExtents(pFont, (CharInfoPtr*) charinfo + firstReal, 
+    QueryGlyphExtents(pFont, (CharInfoPtr*) charinfo + firstReal,
 		      n - firstReal, info);
     pFont->info.constantMetrics = cm;
-    xfree(charinfo);
+    free(charinfo);
     return TRUE;
 }
 
@@ -227,9 +227,9 @@ SetGlyphCachingMode(int newmode)
 
 /* add_range(): Add range to a list of ranges, with coalescence */
 int
-add_range(fsRange *newrange, 
-	  int *nranges, 
-	  fsRange **range, 
+add_range(fsRange *newrange,
+	  int *nranges,
+	  fsRange **range,
 	  Bool charset_subset)
 {
     int first, last, middle;
@@ -312,15 +312,13 @@ add_range(fsRange *newrange,
 	/* Grow the list if necessary */
 	if (*nranges == 0 || *range == (fsRange *)0)
 	{
-	    *range = (fsRange *)xalloc(range_alloc_granularity *
-				       SIZEOF(fsRange));
+	    *range = malloc(range_alloc_granularity * SIZEOF(fsRange));
 	    *nranges = 0;
 	}
 	else if (!(*nranges % range_alloc_granularity))
 	{
-	    *range = (fsRange *)xrealloc((char *)*range,
-					  (*nranges + range_alloc_granularity) *
-					  SIZEOF(fsRange));
+	    *range = realloc(*range, (*nranges + range_alloc_granularity) *
+				      SIZEOF(fsRange));
 	}
 
 	/* If alloc failed, just return a null list */
@@ -410,31 +408,3 @@ add_range(fsRange *newrange,
 
     return Successful;
 }
-
-/* It is difficult to find a good place for this. */
-#ifdef NEED_STRCASECMP
-int
-f_strcasecmp(const char *s1, const char *s2)
-{
-  char c1, c2;
-
-  if (*s1 == 0)
-    if (*s2 == 0)
-      return 0;
-    else
-      return 1;
-
-  c1 = (isupper (*s1) ? tolower (*s1) : *s1);
-  c2 = (isupper (*s2) ? tolower (*s2) : *s2);
-  while (c1 == c2) {
-    if (c1 == '\0')
-      return 0;
-    s1++;
-    s2++;
-    c1 = (isupper (*s1) ? tolower (*s1) : *s1);
-    c2 = (isupper (*s2) ? tolower (*s2) : *s2);
-  }
-  return c1 - c2;
-}
-#endif
-

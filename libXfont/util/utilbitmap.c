@@ -1,5 +1,3 @@
-/* $Xorg: utilbitmap.c,v 1.4 2001/02/09 02:04:04 xorgcvs Exp $ */
-
 /*
 
 Copyright 1990, 1994, 1998  The Open Group
@@ -25,17 +23,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/util/utilbitmap.c,v 1.5 2001/12/14 19:56:57 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include "fontmisc.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fontmisc.h>
 
 /* Utility functions for reformating font bitmaps */
 
-static unsigned char _reverse_byte[0x100] = {
+static const unsigned char _reverse_byte[0x100] = {
 	0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
 	0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
 	0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8,
@@ -76,7 +76,7 @@ static unsigned char _reverse_byte[0x100] = {
 void
 BitOrderInvert(unsigned char *buf, int nbytes)
 {
-    unsigned char *rev = _reverse_byte;
+    const unsigned char *rev = _reverse_byte;
 
     for (; --nbytes >= 0; buf++)
 	*buf = rev[*buf];
@@ -106,7 +106,7 @@ FourByteSwap(unsigned char *buf, int nbytes)
 {
     unsigned char c;
 
-    for (; nbytes > 0; nbytes -= 4, buf += 4) 
+    for (; nbytes > 0; nbytes -= 4, buf += 4)
     {
 	c = buf[0];
 	buf[0] = buf[3];
@@ -122,8 +122,8 @@ FourByteSwap(unsigned char *buf, int nbytes)
  */
 
 int
-RepadBitmap (char *pSrc, char *pDst, 
-	     unsigned int srcPad, unsigned int dstPad, 
+RepadBitmap (char *pSrc, char *pDst,
+	     unsigned int srcPad, unsigned int dstPad,
 	     int width, int height)
 {
     int	    srcWidthBytes,dstWidthBytes;
@@ -131,33 +131,33 @@ RepadBitmap (char *pSrc, char *pDst,
     char    *pTmpSrc,*pTmpDst;
 
     switch (srcPad) {
-    case 1:	
+    case 1:
 	srcWidthBytes = (width+7)>>3;
 	break;
     case 2:
 	srcWidthBytes = ((width+15)>>4)<<1;
 	break;
-    case 4:	
+    case 4:
 	srcWidthBytes = ((width+31)>>5)<<2;
 	break;
-    case 8:	
-	srcWidthBytes = ((width+63)>>6)<<3; 
+    case 8:
+	srcWidthBytes = ((width+63)>>6)<<3;
 	break;
     default:
 	return 0;
     }
     switch (dstPad) {
-    case 1:	
+    case 1:
 	dstWidthBytes = (width+7)>>3;
 	break;
     case 2:
 	dstWidthBytes = ((width+15)>>4)<<1;
 	break;
-    case 4:	
+    case 4:
 	dstWidthBytes = ((width+31)>>5)<<2;
 	break;
-    case 8:	
-	dstWidthBytes = ((width+63)>>6)<<3; 
+    case 8:
+	dstWidthBytes = ((width+63)>>6)<<3;
 	break;
     default:
 	return 0;
@@ -181,3 +181,5 @@ RepadBitmap (char *pSrc, char *pDst,
     }
     return dstWidthBytes * height;
 }
+
+

@@ -1,5 +1,3 @@
-/* $Xorg: defaults.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1990, 1998  The Open Group
@@ -25,15 +23,16 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/defaults.c,v 1.8 2001/12/14 19:56:50 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include <X11/X.h>
-#include <X11/Xproto.h>
-#include <servermd.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include    <X11/X.h>
+#include    <X11/Xproto.h>
 
 #ifndef DEFAULT_BIT_ORDER
 #ifdef BITMAP_BIT_ORDER
@@ -63,7 +62,7 @@ in this Software without prior written authorization from The Open Group.
 #define DEFAULT_SCAN_UNIT 1
 #endif
 
-#include "fntfilst.h"
+#include <X11/fonts/fntfilst.h>
 
 void
 FontDefaultFormat (int *bit, int *byte, int *glyph, int *scan)

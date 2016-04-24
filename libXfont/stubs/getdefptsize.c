@@ -1,11 +1,15 @@
-/* $XFree86: xc/lib/font/stubs/getdefptsize.c,v 1.1 1999/01/11 05:13:20 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-int
+#ifdef __SUNPRO_C
+#pragma weak GetDefaultPointSize
+#endif
+
+weak int
 GetDefaultPointSize(void)
 {
+    OVERRIDE_SYMBOL(GetDefaultPointSize);
     return 0;
 }
-
-/* end of file */

@@ -1,4 +1,3 @@
-/* $Xorg: decompress.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
 /*
  * Copyright 1985, 1986 The Regents of the University of California.
  * All rights reserved.
@@ -45,13 +44,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/decompress.c,v 1.5 2001/12/14 19:56:50 dawes Exp $ */
-/* 
+/*
  * decompress - cat a compressed file
  */
 
-#include "fontmisc.h"
-#include <bufio.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fontmisc.h>
+#include <X11/fonts/bufio.h>
 
 #define BITS	16
 
@@ -92,7 +93,7 @@ static char_type magic_header[] = { "\037\235" };	/* 1F 9D */
 /*
  * the next two codes should not be changed lightly, as they must not
  * lie within the contiguous general code space.
- */ 
+ */
 #define FIRST	257	/* first free entry */
 #define	CLEAR	256	/* table clear output code */
 
@@ -123,14 +124,6 @@ typedef struct _compressedFILE {
 } CompressedFile;
 
 
-static int hsize_table[] = {
-    5003,	/* 12 bits - 80% occupancy */
-    9001,	/* 13 bits - 91% occupancy */
-    18013,	/* 14 bits - 91% occupancy */
-    35023,	/* 15 bits - 94% occupancy */
-    69001	/* 16 bits - 95% occupancy */
-};
-
 static int BufCompressedClose ( BufFilePtr f, int doClose );
 static int BufCompressedFill ( BufFilePtr f );
 static code_int getcode ( CompressedFile *file );
@@ -141,7 +134,6 @@ BufFilePushCompressed (BufFilePtr f)
 {
     int		    code;
     int		    maxbits;
-    int		    hsize;
     CompressedFile  *file;
     int		    extra;
 
@@ -152,14 +144,13 @@ BufFilePushCompressed (BufFilePtr f)
     }
     code = BufFileGet (f);
     if (code == BUFFILEEOF) return 0;
-    
+
     maxbits = code & BIT_MASK;
-    if (maxbits > BITS || maxbits < 12)
+    if (maxbits > BITS || maxbits <= INIT_BITS)
 	return 0;
-    hsize = hsize_table[maxbits - 12];
     extra = (1 << maxbits) * sizeof (char_type) +
-	    hsize * sizeof (unsigned short);
-    file = (CompressedFile *) xalloc (sizeof (CompressedFile) + extra);
+	    (1 << maxbits) * sizeof (unsigned short);
+    file = malloc (sizeof (CompressedFile) + extra);
     if (!file)
 	return 0;
     file->file = f;
@@ -198,7 +189,7 @@ BufCompressedClose (BufFilePtr f, int doClose)
 
     file = (CompressedFile *) f->private;
     raw = file->file;
-    xfree (file);
+    free (file);
     BufFileClose (raw, doClose);
     return 1;
 }
@@ -230,7 +221,7 @@ BufCompressedFill (BufFilePtr f)
 	code = getcode (file);
 	if (code == -1)
 	    break;
-    
+
     	if ( (code == CLEAR) && file->block_compress ) {
 	    for ( code = 255; code >= 0; code-- )
 	    	file->tab_prefix[code] = 0;
@@ -268,7 +259,7 @@ BufCompressedFill (BufFilePtr f)
     	}
 	finchar = file->tab_suffix[code];
 	*stackp++ = finchar;
-    
+
     	/*
      	 * Generate the new entry.
      	 */
@@ -276,7 +267,7 @@ BufCompressedFill (BufFilePtr f)
 	    file->tab_prefix[code] = (unsigned short)oldcode;
 	    file->tab_suffix[code] = finchar;
 	    file->free_ent = code+1;
-    	} 
+    	}
 	/*
 	 * Remember previous code.
 	 */
@@ -384,7 +375,7 @@ static int
 BufCompressedSkip (BufFilePtr f, int bytes)
 {
     int		    c;
-    while (bytes--) 
+    while (bytes--)
     {
 	c = BufFileGet(f);
 	if (c == BUFFILEEOF)
@@ -399,7 +390,7 @@ main (int argc, char *argv[])
 {
     BufFilePtr	    inputraw, input, output;
     int		    c;
-    
+
     inputraw = BufFileOpenRead (0);
     input = BufFilePushCompressed (inputraw);
     output = BufFileOpenWrite (1);

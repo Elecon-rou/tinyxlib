@@ -1,11 +1,15 @@
-/* $XFree86: xc/lib/font/stubs/gettime.c,v 1.1 1999/12/15 01:14:36 robin Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "stubs.h"
 
-unsigned long
+#ifdef __SUNPRO_C
+#pragma weak GetTimeInMillis
+#endif
+
+weak unsigned long
 GetTimeInMillis (void)
 {
+    OVERRIDE_SYMBOL(GetTimeInMillis);
     return 0;
 }
-
-/* end of file */

@@ -1,4 +1,3 @@
-/* $Xorg: pcfwrite.c,v 1.5 2001/02/09 02:04:02 xorgcvs Exp $ */
 /*
 
 Copyright 1990, 1994, 1998  The Open Group
@@ -26,22 +25,18 @@ other dealings in this Software without prior written authorization
 from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/bitmap/pcfwrite.c,v 1.8 2001/12/14 19:56:47 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#include "../include/fntfilst.h"
-#include "../include/bitmap.h"
-#include "pcf.h"
-
-extern void pcfError(
-              #if NeedVarargsPrototypes
-                  char* message, ...
-              #endif
-              );
+#include <X11/fonts/fntfilst.h>
+#include <X11/fonts/bitmap.h>
+#include <X11/fonts/pcf.h>
 
 /* Write PCF font files */
 
@@ -239,9 +234,10 @@ pcfWriteFont(FontPtr pFont, FontFilePtr file)
 	ink_minbounds = &pFont->info.ink_minbounds;
 	ink_maxbounds = &pFont->info.ink_maxbounds;
     }
-    offsetProps = (FontPropPtr) xalloc(pFont->info.nprops * sizeof(FontPropRec));
+    offsetProps = malloc(pFont->info.nprops * sizeof(FontPropRec));
     if (!offsetProps) {
-      pcfError("pcfWriteFont(): Couldn't allocate offsetProps (%d*%d)", pFont->info.nprops, sizeof(FontPropRec));
+	pcfError("pcfWriteFont(): Couldn't allocate offsetProps (%d*%d)",
+		 pFont->info.nprops, (int) sizeof(FontPropRec));
 	return AllocError;
     }
     prop_string_size = 0;
@@ -361,6 +357,7 @@ pcfWriteFont(FontPtr pFont, FontFilePtr file)
 	if (current_position > table->offset) {
 	    printf("can't go backwards... %d > %d\n",
 		   (int)current_position, (int)table->offset);
+	    free(offsetProps);
 	    return BadFontName;
 	}
 	while (current_position < table->offset)
@@ -434,8 +431,8 @@ pcfWriteFont(FontPtr pFont, FontFilePtr file)
 	    pcfPutINT16(file, format, pFont->info.defaultCh);
 	    for (i = 0; i < nencodings; i++) {
 		if (ACCESSENCODING(bitmapFont->encoding,i))
-		    pcfPutINT16(file, format, 
-                                ACCESSENCODING(bitmapFont->encoding, i) - 
+		    pcfPutINT16(file, format,
+                                ACCESSENCODING(bitmapFont->encoding, i) -
                                   bitmapFont->metrics);
 		else
 		    pcfPutINT16(file, format, 0xFFFF);
@@ -464,5 +461,7 @@ pcfWriteFont(FontPtr pFont, FontFilePtr file)
 	    break;
 	}
     }
+
+    free(offsetProps);
     return Successful;
 }

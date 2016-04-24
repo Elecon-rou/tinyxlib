@@ -19,7 +19,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-/* $XFree86: xc/lib/font/fontfile/fontencc.c,v 1.2 2001/08/16 14:33:46 dawes Exp $ */
 
 /* Binary compatibility code. */
 
@@ -28,8 +27,11 @@ THE SOFTWARE.
    *not* provide source compatibility, as many of the data structures
    now have different names. */
 
-#include "fontenc.h"
-#include "fontencc.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fontenc.h>
+#include <X11/fonts/fontencc.h>
 
 extern void ErrorF(const char *f, ...);
 
@@ -46,7 +48,7 @@ font_encoding_find(const char *encoding_name, const char *filename)
 }
 
 unsigned
-font_encoding_recode(unsigned code, 
+font_encoding_recode(unsigned code,
                      FontEncPtr encoding, FontMapPtr mapping)
 {
     if(encoding != mapping->encoding) {

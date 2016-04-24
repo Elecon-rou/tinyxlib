@@ -1,4 +1,3 @@
-/* $Xorg: fsio.c,v 1.3 2000/08/17 19:46:36 cpqbld Exp $ */
 /*
  * Copyright 1990 Network Computing Devices
  *
@@ -23,25 +22,45 @@
  *
  * Author:  	Dave Lemke, Network Computing Devices, Inc
  */
-/* $XFree86: xc/lib/font/fc/fsio.c,v 3.15 2001/07/25 15:04:56 dawes Exp $ */
 /*
  * font server i/o routines
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#include 	<X11/Xtrans.h>
-#include	<X11/Xpoll.h>
+#ifdef WIN32
+#define _WILLWINSOCK_
+#include	"X11/Xwindows.h"
+#endif
+
+#define FONT_t
+#define TRANS_CLIENT
+#include 	"X11/Xtrans/Xtrans.h"
+#include	"X11/Xpoll.h"
 #include	<X11/fonts/FS.h>
 #include	<X11/fonts/FSproto.h>
-#include	"fontmisc.h"
+#include	<X11/fonts/fontmisc.h>
 #include	<X11/fonts/fontstruct.h>
 #include	"fservestr.h"
 
 #include	<stdio.h>
 #include	<signal.h>
 #include	<sys/types.h>
+#if !defined(WIN32)
+#ifndef Lynx
 #include	<sys/socket.h>
+#else
+#include	<socket.h>
+#endif
+#endif
 #include	<errno.h>
+#ifdef WIN32
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#undef EINTR
+#define EINTR WSAEINTR
+#endif
 
 
 
@@ -53,7 +72,7 @@ _fs_resize (FSBufPtr buf, long size);
 
 static void
 _fs_downsize (FSBufPtr buf, long size);
-    
+
 int
 _fs_poll_connect (XtransConnInfo trans_conn, int timeout)
 {
@@ -101,8 +120,6 @@ _fs_connect(char *servername, int *err)
     _FontTransSetOption(trans_conn, TRANS_NONBLOCKING, 1);
 
     do {
-	if (i == TRANS_TRY_CONNECT_AGAIN)
-	    sleep(1);
 	i = _FontTransConnect(trans_conn,servername);
     } while ((i == TRANS_TRY_CONNECT_AGAIN) && (retries-- > 0));
 
@@ -126,21 +143,20 @@ _fs_connect(char *servername, int *err)
     return trans_conn;
 }
 
-int
+static int
 _fs_fill (FSFpePtr conn)
 {
-    long    avail, need;
+    long    avail;
     long    bytes_read;
     Bool    waited = FALSE;
-    
+
     if (_fs_flush (conn) < 0)
 	return FSIO_ERROR;
     /*
      * Don't go overboard here; stop reading when we've
      * got enough to satisfy the pending request
      */
-    while ((need = conn->inNeed - (conn->inBuf.insert - 
-				   conn->inBuf.remove)) > 0)
+    while ((conn->inNeed - (conn->inBuf.insert - conn->inBuf.remove)) > 0)
     {
 	avail = conn->inBuf.size - conn->inBuf.insert;
 	/*
@@ -168,8 +184,11 @@ _fs_fill (FSFpePtr conn)
 		    continue;
 		}
 	    }
-	    _fs_connection_died (conn);
-	    return FSIO_ERROR;
+	    if (!ECHECK(EINTR))
+	    {
+	        _fs_connection_died (conn);
+	        return FSIO_ERROR;
+	    }
 	}
     }
     return FSIO_READY;
@@ -183,7 +202,7 @@ int
 _fs_start_read (FSFpePtr conn, long size, char **buf)
 {
     int	    ret;
-    
+
     conn->inNeed = size;
     if (fs_inqueued(conn) < size)
     {
@@ -229,7 +248,7 @@ _fs_flush (FSFpePtr conn)
 {
     long    bytes_written;
     long    remain;
-    
+
     /* XXX - hack.  The right fix is to remember that the font server
        has gone away when we first discovered it. */
     if (conn->fs_fd < 0)
@@ -263,7 +282,7 @@ _fs_flush (FSFpePtr conn)
     {
 	_fs_unmark_block (conn, FS_BROKEN_WRITE|FS_PENDING_WRITE);
 	if (conn->outBuf.size > FS_BUF_INC)
-	    conn->outBuf.buf = xrealloc (conn->outBuf.buf, FS_BUF_INC);
+	    conn->outBuf.buf = realloc (conn->outBuf.buf, FS_BUF_INC);
 	conn->outBuf.remove = conn->outBuf.insert = 0;
     }
     return FSIO_READY;
@@ -279,7 +298,7 @@ _fs_resize (FSBufPtr buf, long size)
     {
 	if (buf->remove != buf->insert)
 	{
-	    memmove (buf->buf, 
+	    memmove (buf->buf,
 		     buf->buf + buf->remove,
 		     buf->insert - buf->remove);
 	}
@@ -289,7 +308,7 @@ _fs_resize (FSBufPtr buf, long size)
     if (buf->size - buf->remove < size)
     {
 	new_size = ((buf->remove + size + FS_BUF_INC) / FS_BUF_INC) * FS_BUF_INC;
-	new = xrealloc (buf->buf, new_size);
+	new = realloc (buf->buf, new_size);
 	if (!new)
 	    return FSIO_ERROR;
 	buf->buf = new;
@@ -306,7 +325,7 @@ _fs_downsize (FSBufPtr buf, long size)
 	buf->insert = buf->remove = 0;
 	if (buf->size > size)
 	{
-	    buf->buf = xrealloc (buf->buf, size);
+	    buf->buf = realloc (buf->buf, size);
 	    buf->size = size;
 	}
     }
@@ -325,21 +344,21 @@ Bool
 _fs_io_init (FSFpePtr conn)
 {
     conn->outBuf.insert = conn->outBuf.remove = 0;
-    conn->outBuf.buf = xalloc (FS_BUF_INC);
+    conn->outBuf.buf = malloc (FS_BUF_INC);
     if (!conn->outBuf.buf)
 	return FALSE;
     conn->outBuf.size = FS_BUF_INC;
-    
+
     conn->inBuf.insert = conn->inBuf.remove = 0;
-    conn->inBuf.buf = xalloc (FS_BUF_INC);
+    conn->inBuf.buf = malloc (FS_BUF_INC);
     if (!conn->inBuf.buf)
     {
-	xfree (conn->outBuf.buf);
+	free (conn->outBuf.buf);
 	conn->outBuf.buf = 0;
 	return FALSE;
     }
     conn->inBuf.size = FS_BUF_INC;
-    
+
     return TRUE;
 }
 
@@ -347,13 +366,13 @@ void
 _fs_io_fini (FSFpePtr conn)
 {
     if (conn->outBuf.buf)
-	xfree (conn->outBuf.buf);
+	free (conn->outBuf.buf);
     if (conn->inBuf.buf)
-	xfree (conn->inBuf.buf);
+	free (conn->inBuf.buf);
 }
 
 static int
-_fs_do_write(FSFpePtr conn, char *data, long len, long size)
+_fs_do_write(FSFpePtr conn, const char *data, long len, long size)
 {
     if (size == 0) {
 #ifdef DEBUG
@@ -364,8 +383,8 @@ _fs_do_write(FSFpePtr conn, char *data, long len, long size)
 
     if (conn->fs_fd == -1)
 	return FSIO_ERROR;
-    
-    while (conn->outBuf.insert + size > conn->outBuf.size) 
+
+    while (conn->outBuf.insert + size > conn->outBuf.size)
     {
 	if (_fs_flush (conn) < 0)
 	    return FSIO_ERROR;
@@ -376,6 +395,8 @@ _fs_do_write(FSFpePtr conn, char *data, long len, long size)
 	}
     }
     memcpy (conn->outBuf.buf + conn->outBuf.insert, data, len);
+    /* Clear pad data */
+    memset (conn->outBuf.buf + conn->outBuf.insert + len, 0, size - len);
     conn->outBuf.insert += size;
     _fs_mark_block (conn, FS_PENDING_WRITE);
     return FSIO_READY;
@@ -385,31 +406,18 @@ _fs_do_write(FSFpePtr conn, char *data, long len, long size)
  * Write the indicated bytes
  */
 int
-_fs_write (FSFpePtr conn, char *data, long len)
+_fs_write (FSFpePtr conn, const char *data, long len)
 {
     return _fs_do_write (conn, data, len, len);
 }
-    
+
 /*
  * Write the indicated bytes adding any appropriate pad
  */
 int
-_fs_write_pad(FSFpePtr conn, char *data, long len)
+_fs_write_pad(FSFpePtr conn, const char *data, long len)
 {
     return _fs_do_write (conn, data, len, len + padlength[len & 3]);
-}
-
-/*
- * returns the amount of data waiting to be read
- */
-int
-_fs_data_ready(FSFpePtr conn)
-{
-    BytesReadable_t readable;
-
-    if (_FontTransBytesReadable(conn->trans_conn, &readable) < 0)
-	return -1;
-    return readable;
 }
 
 int
@@ -443,35 +451,4 @@ _fs_wait_for_readable(FSFpePtr conn, int ms)
 	    return FSIO_READY;
 	return FSIO_ERROR;
     }
-}
-
-int
-_fs_set_bit(fd_set *mask, int fd)
-{
-    FD_SET(fd, mask);
-    return fd;
-}
-
-int
-_fs_is_bit_set(fd_set *mask, int fd)
-{
-    return FD_ISSET(fd, mask);
-}
-
-void
-_fs_bit_clear(fd_set *mask, int fd)
-{
-    FD_CLR(fd, mask);
-}
-
-int
-_fs_any_bit_set(fd_set *mask)
-{
-    return XFD_ANYSET(mask);
-}
-
-void
-_fs_or_bits(fd_set *dst, fd_set *m1, fd_set *m2)
-{
-    XFD_ORSET(dst, m1, m2);
 }

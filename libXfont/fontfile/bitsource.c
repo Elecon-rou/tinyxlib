@@ -1,5 +1,3 @@
-/* $Xorg: bitsource.c,v 1.4 2001/02/09 02:04:03 xorgcvs Exp $ */
-
 /*
 
 Copyright 1991, 1998  The Open Group
@@ -25,13 +23,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/font/fontfile/bitsource.c,v 1.4 2001/12/14 19:56:49 dawes Exp $ */
 
 /*
  * Author:  Keith Packard, MIT X Consortium
  */
 
-#include <fntfilst.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include <X11/fonts/fntfilst.h>
 
 BitmapSourcesRec	FontFileBitmapSources;
 
@@ -48,7 +48,7 @@ FontFileRegisterBitmapSource (FontPathElementPtr fpe)
     if (FontFileBitmapSources.count == FontFileBitmapSources.size)
     {
 	newsize = FontFileBitmapSources.size + 4;
-	new = (FontPathElementPtr *) xrealloc (FontFileBitmapSources.fpe, newsize * sizeof *new);
+	new = realloc (FontFileBitmapSources.fpe, newsize * sizeof *new);
 	if (!new)
 	    return FALSE;
 	FontFileBitmapSources.size = newsize;
@@ -70,7 +70,7 @@ FontFileUnregisterBitmapSource (FontPathElementPtr fpe)
 	    if (FontFileBitmapSources.count == 0)
 	    {
 		FontFileBitmapSources.size = 0;
-		xfree (FontFileBitmapSources.fpe);
+		free (FontFileBitmapSources.fpe);
 		FontFileBitmapSources.fpe = 0;
 	    }
 	    else
@@ -96,19 +96,19 @@ FontFileEmptyBitmapSource(void)
 
     FontFileBitmapSources.count = 0;
     FontFileBitmapSources.size = 0;
-    xfree (FontFileBitmapSources.fpe);
+    free (FontFileBitmapSources.fpe);
     FontFileBitmapSources.fpe = 0;
 }
 
 int
-FontFileMatchBitmapSource (FontPathElementPtr fpe, 
-			   FontPtr *pFont, 
-			   int flags, 
-			   FontEntryPtr entry, 
-			   FontNamePtr zeroPat, 
-			   FontScalablePtr vals, 
-			   fsBitmapFormat format, 
-			   fsBitmapFormatMask fmask, 
+FontFileMatchBitmapSource (FontPathElementPtr fpe,
+			   FontPtr *pFont,
+			   int flags,
+			   FontEntryPtr entry,
+			   FontNamePtr zeroPat,
+			   FontScalablePtr vals,
+			   fsBitmapFormat format,
+			   fsBitmapFormatMask fmask,
 			   Bool noSpecificSize)
 {
     int			source;
