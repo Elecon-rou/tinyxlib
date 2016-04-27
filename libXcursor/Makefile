@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xcursor.pc
 	@echo "Name: Xcursor" >> xcursor.pc
 	@echo "Description: X Cursor library" >> xcursor.pc
-	@echo "Version: .0" >> xcursor.pc
+	@echo "Version: 1.1.14" >> xcursor.pc
 	@echo "Requires:" >> xcursor.pc
 	@echo "Requires.private:" >> xcursor.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xcursor.pc

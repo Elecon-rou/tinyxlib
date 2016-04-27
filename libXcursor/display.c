@@ -1,7 +1,5 @@
 /*
- * $XFree86: xc/lib/Xcursor/display.c,v 1.6 2003/02/20 03:13:50 dawes Exp $
- *
- * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
+ * Copyright Â© 2002 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -28,6 +26,25 @@
 
 static XcursorDisplayInfo *_XcursorDisplayInfo;
 
+static void
+_XcursorFreeDisplayInfo (XcursorDisplayInfo *info)
+{
+    if (info->theme)
+	free (info->theme);
+
+    if (info->theme_from_config)
+	free (info->theme_from_config);
+
+    while (info->fonts)
+    {
+      XcursorFontInfo *fi = info->fonts;
+      info->fonts = fi->next;
+      free (fi);
+    }
+
+    free (info);
+}
+
 static int
 _XcursorCloseDisplay (Display *dpy, XExtCodes *codes)
 {
@@ -44,10 +61,9 @@ _XcursorCloseDisplay (Display *dpy, XExtCodes *codes)
 	    break;
 	}
     _XUnlockMutex (_Xglobal_lock);
-    
-    if (info->theme)
-	free (info->theme);
-    free (info);
+
+    if (info)
+	_XcursorFreeDisplayInfo (info);
     return 0;
 }
 
@@ -107,15 +123,15 @@ _XcursorGetDisplayInfo (Display *dpy)
         return info;
     info = (XcursorDisplayInfo *) malloc (sizeof (XcursorDisplayInfo));
     if (!info)
-	return 0;
-    info->next = 0;
+	return NULL;
+    info->next = NULL;
     info->display = dpy;
-    
+
     info->codes = XAddExtension (dpy);
     if (!info->codes)
     {
 	free (info);
-	return 0;
+	return NULL;
     }
     (void) XESetCloseDisplay (dpy, info->codes->extension, _XcursorCloseDisplay);
 
@@ -146,7 +162,7 @@ _XcursorGetDisplayInfo (Display *dpy)
 		info->has_anim_cursor = XcursorFalse;
 	}
     }
-    
+
     info->size = 0;
 
     /*
@@ -157,7 +173,7 @@ _XcursorGetDisplayInfo (Display *dpy)
 	v = XGetDefault (dpy, "Xcursor", "size");
     if (v)
 	info->size = atoi (v);
-    
+
     /*
      * Use the Xft size to guess a size; make cursors 16 "points" tall
      */
@@ -170,15 +186,15 @@ _XcursorGetDisplayInfo (Display *dpy)
 	if (dpi)
 	    info->size = dpi * 16 / 72;
     }
-    
+
     /*
      * Use display size to guess a size
      */
     if (info->size == 0)
     {
 	int dim;
-	    
-	if (DisplayHeight (dpy, DefaultScreen (dpy)) < 
+
+	if (DisplayHeight (dpy, DefaultScreen (dpy)) <
 	    DisplayWidth (dpy, DefaultScreen (dpy)))
 	    dim = DisplayHeight (dpy, DefaultScreen (dpy));
 	else
@@ -188,8 +204,9 @@ _XcursorGetDisplayInfo (Display *dpy)
 	 */
 	info->size = dim / 48;
     }
-    
-    info->theme = 0;
+
+    info->theme = NULL;
+    info->theme_from_config = NULL;
 
     /*
      * Get the desired theme
@@ -199,9 +216,17 @@ _XcursorGetDisplayInfo (Display *dpy)
 	v = XGetDefault (dpy, "Xcursor", "theme");
     if (v)
     {
-	info->theme = malloc (strlen (v) + 1);
+	int len;
+
+	len = strlen (v) + 1;
+
+	info->theme = malloc (len);
 	if (info->theme)
 	    strcpy (info->theme, v);
+
+	info->theme_from_config = malloc (len);
+	if (info->theme_from_config)
+	    strcpy (info->theme_from_config, v);
     }
 
     /*
@@ -238,7 +263,7 @@ _XcursorGetDisplayInfo (Display *dpy)
 	    info->theme_core = i;
     }
 
-    info->fonts = 0;
+    info->fonts = NULL;
     for (i = 0; i < NUM_BITMAPS; i++)
 	info->bitmaps[i].bitmap = None;
 
@@ -253,9 +278,7 @@ _XcursorGetDisplayInfo (Display *dpy)
 	    break;
     if (old)
     {
-	if (info->theme)
-	    free (info->theme);
-	free (info);
+	_XcursorFreeDisplayInfo (info);
 	info = old;
     }
     else
@@ -264,7 +287,7 @@ _XcursorGetDisplayInfo (Display *dpy)
 	_XcursorDisplayInfo = info;
     }
     _XUnlockMutex (_Xglobal_lock);
-    
+
     return info;
 }
 
@@ -313,6 +336,10 @@ XcursorSetTheme (Display *dpy, const char *theme)
 
     if (!info)
 	return XcursorFalse;
+
+    if (!theme)
+	theme = info->theme_from_config;
+
     if (theme)
     {
 	copy = malloc (strlen (theme) + 1);
@@ -321,7 +348,7 @@ XcursorSetTheme (Display *dpy, const char *theme)
 	strcpy (copy, theme);
     }
     else
-	copy = 0;
+	copy = NULL;
     if (info->theme)
 	free (info->theme);
     info->theme = copy;
@@ -334,7 +361,7 @@ XcursorGetTheme (Display *dpy)
     XcursorDisplayInfo	*info = _XcursorGetDisplayInfo (dpy);
 
     if (!info)
-	return 0;
+	return NULL;
     return info->theme;
 }
 
@@ -346,7 +373,7 @@ XcursorGetThemeCore (Display *dpy)
     if (!info)
 	return XcursorFalse;
     return info->theme_core;
-    
+
 }
 
 XcursorBool

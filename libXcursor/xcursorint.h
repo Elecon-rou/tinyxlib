@@ -1,7 +1,5 @@
 /*
- * $XFree86: xc/lib/Xcursor/xcursorint.h,v 1.4 2003/01/26 03:22:42 eich Exp $
- *
- * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
+ * Copyright Â© 2002 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -25,9 +23,18 @@
 #ifndef _XCURSORINT_H_
 #define _XCURSORINT_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
 #include <X11/extensions/Xrender.h>
+
+#ifdef HAVE_XFIXES
+#include <X11/extensions/Xfixes.h>
+#endif
+
 #include "Xcursor.h"
 
 typedef struct _XcursorFontInfo {
@@ -45,7 +52,7 @@ typedef struct _XcursorFontInfo {
  * Xcursor computes a hash value for the source image
  * and tries to load a library cursor of that name.
  */
- 
+
 /* large bitmaps are unlikely to be cursors */
 #define MAX_BITMAP_CURSOR_SIZE	64
 /* don't need to remember very many; in fact, 2 is likely sufficient */
@@ -76,6 +83,7 @@ typedef struct _XcursorDisplayInfo {
     int				size;
     XcursorFontInfo		*fonts;
     char			*theme;
+    char                        *theme_from_config;
     XcursorDither		dither;
     XcursorBitmapInfo		bitmaps[NUM_BITMAPS];
 } XcursorDisplayInfo;
@@ -94,5 +102,5 @@ _XcursorCreateGlyphCursor(Display	    *dpy,
 
 Cursor
 _XcursorCreateFontCursor (Display *dpy, unsigned int shape);
-    
+
 #endif /* _XCURSORINT_H_ */

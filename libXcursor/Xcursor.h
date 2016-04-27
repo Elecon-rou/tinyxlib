@@ -1,7 +1,6 @@
+/* include/X11/Xcursor/Xcursor.h.  Generated from Xcursor.h.in by configure.  */
 /*
- * $XFree86: xc/lib/Xcursor/Xcursor.h,v 1.4 2003/01/26 03:22:42 eich Exp $
- *
- * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
+ * Copyright Â© 2002 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -26,6 +25,7 @@
 #define _XCURSOR_H_
 #include <stdio.h>
 #include <X11/Xfuncproto.h>
+#include <X11/Xlib.h>
 
 typedef int		XcursorBool;
 typedef unsigned int	XcursorUInt;
@@ -69,9 +69,25 @@ typedef XcursorUInt	XcursorPixel;
 
 #define XCURSOR_MAGIC	0x72756358  /* "Xcur" LSBFirst */
 
-#define XCURSOR_MAJOR		1
-#define XCURSOR_MINOR		0
-#define XCURSOR_VERSION		((XCURSOR_MAJOR << 16) | (XCURSOR_MINOR))
+/*
+ * Current Xcursor version number.  Will be substituted by configure
+ * from the version in the libXcursor configure.ac file.
+ */
+
+#define XCURSOR_LIB_MAJOR 1
+#define XCURSOR_LIB_MINOR 1
+#define XCURSOR_LIB_REVISION 14
+#define XCURSOR_LIB_VERSION	((XCURSOR_LIB_MAJOR * 10000) + \
+				 (XCURSOR_LIB_MINOR * 100) + \
+				 (XCURSOR_LIB_REVISION))
+
+/*
+ * This version number is stored in cursor files; changes to the
+ * file format require updating this version number
+ */
+#define XCURSOR_FILE_MAJOR	1
+#define XCURSOR_FILE_MINOR	0
+#define XCURSOR_FILE_VERSION	((XCURSOR_FILE_MAJOR << 16) | (XCURSOR_FILE_MINOR))
 #define XCURSOR_FILE_HEADER_LEN	(4 * 4)
 #define XCURSOR_FILE_TOC_LEN	(3 * 4)
 
@@ -180,6 +196,7 @@ typedef struct _XcursorImage {
 typedef struct _XcursorImages {
     int		    nimage;	/* number of images */
     XcursorImage    **images;	/* array of XcursorImage pointers */
+    char	    *name;	/* name used to load images */
 } XcursorImages;
 
 typedef struct _XcursorCursors {
@@ -222,13 +239,16 @@ void
 XcursorImageDestroy (XcursorImage *image);
 
 /*
- * Manage Images objects 
+ * Manage Images objects
  */
 XcursorImages *
 XcursorImagesCreate (int size);
 
 void
 XcursorImagesDestroy (XcursorImages *images);
+
+void
+XcursorImagesSetName (XcursorImages *images, const char *name);
 
 /*
  * Manage Cursor objects
@@ -284,7 +304,7 @@ XcursorXcFileLoad (XcursorFile	    *file,
 		   XcursorImages    **imagesp);
 
 XcursorBool
-XcursorXcFileSave (XcursorFile		    *file, 
+XcursorXcFileSave (XcursorFile		    *file,
 		   const XcursorComments    *comments,
 		   const XcursorImages	    *images);
 
@@ -301,15 +321,15 @@ XcursorImages *
 XcursorFileLoadAllImages (FILE *file);
 
 XcursorBool
-XcursorFileLoad (FILE		    *file, 
-		 XcursorComments    **commentsp, 
+XcursorFileLoad (FILE		    *file,
+		 XcursorComments    **commentsp,
 		 XcursorImages	    **imagesp);
 
 XcursorBool
 XcursorFileSaveImages (FILE *file, const XcursorImages *images);
 
 XcursorBool
-XcursorFileSave (FILE *			file, 
+XcursorFileSave (FILE *			file,
 		 const XcursorComments	*comments,
 		 const XcursorImages	*images);
 
@@ -334,7 +354,7 @@ XcursorBool
 XcursorFilenameSaveImages (const char *filename, const XcursorImages *images);
 
 XcursorBool
-XcursorFilenameSave (const char		    *file, 
+XcursorFilenameSave (const char		    *file,
 		     const XcursorComments  *comments,
 		     const XcursorImages    *images);
 
@@ -350,9 +370,13 @@ XcursorLibraryLoadImages (const char *library, const char *theme, int size);
 /*
  * Library/shape API
  */
+
+const char *
+XcursorLibraryPath (void);
+
 int
 XcursorLibraryShape (const char *library);
-    
+
 /*
  * Image/Cursor APIs
  */
@@ -441,7 +465,7 @@ XcursorTryShapeBitmapCursor (Display		*dpy,
 #define XCURSOR_BITMAP_HASH_SIZE    16
 
 void
-XcursorImageHash (XImage	*image, 
+XcursorImageHash (XImage	*image,
 		  unsigned char	hash[XCURSOR_BITMAP_HASH_SIZE]);
 
 /*
