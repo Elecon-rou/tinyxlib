@@ -1,1 +1,0 @@
-../../../libXaw/AsciiTextP.h

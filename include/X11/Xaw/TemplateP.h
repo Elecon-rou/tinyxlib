@@ -1,1 +1,0 @@
-../../../libXaw/TemplateP.h

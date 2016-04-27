@@ -1,1 +1,0 @@
-../../../libXaw/LabelP.h

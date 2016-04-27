@@ -1,1 +1,0 @@
-../../../libXaw/PannerP.h

@@ -1,1 +1,0 @@
-../../../libXaw/Text.h

@@ -14,7 +14,6 @@ all:
 	cd libXfont; make
 	cd libXdmcp; make
 	cd libXi; make
-	cd libXaw; make
 	cd libXmuu; make
 	cd libXss; make
 	cd libXfixes; make
@@ -36,7 +35,6 @@ clean:
 	cd libXfont; make clean
 	cd libXdmcp; make clean
 	cd libXi; make clean
-	cd libXaw; make clean
 	cd libXmuu; make clean
 	cd libXss; make clean
 	cd libXfixes; make clean
@@ -57,7 +55,6 @@ install:
 	cd libXfont; make install
 	cd libXdmcp; make install
 	cd libXi; make install
-	cd libXaw; make install
 	cd libXmuu; make install
 	cd libXss; make install
 	cd libXfixes; make install
