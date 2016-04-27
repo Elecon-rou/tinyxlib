@@ -43,13 +43,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XFreeLst.c,v 1.4 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XFreeDeviceList - free the input device list.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdio.h>
 #include <X11/Xlib.h>
@@ -60,12 +63,10 @@ SOFTWARE.
  *
  */
 
-XFreeDeviceList (list)
-    XDeviceList *list;
-    {
-    if (list != NULL) 
-	{
-        XFree ((list->name) - sizeof(XDeviceList));
-        XFree ((XDeviceList *) list);
-        }
+XFreeDeviceList(XDeviceList *list)
+{
+    if (list != NULL) {
+	XFree((list->name) - sizeof(XDeviceList));
+	XFree((XDeviceList *) list);
     }
+}

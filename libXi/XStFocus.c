@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XStFocus.c,v 3.5 2006/01/09 14:59:14 dawes Exp $ */
 
 /***********************************************************************
  *
  * XSetDeviceFocus - Set the focus of an extension device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,19 +61,21 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XSetDeviceFocus(dpy, dev, focus, revert_to, time)
-    register 	Display *dpy;
-    XDevice 	*dev;
-    Window 	focus;
-    int 	revert_to;
-    Time	time;
-    {       
-    xSetDeviceFocusReq 	*req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XSetDeviceFocus(
+    register Display	*dpy,
+    XDevice		*dev,
+    Window		 focus,
+    int			 revert_to,
+    Time		 time)
+{
+    xSetDeviceFocusReq *req;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
+	return (NoSuchExtension);
 
-    GetReq(SetDeviceFocus,req);		
+    GetReq(SetDeviceFocus, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_SetDeviceFocus;
     req->device = dev->device_id;
@@ -82,4 +86,4 @@ XSetDeviceFocus(dpy, dev, focus, revert_to, time)
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
+}

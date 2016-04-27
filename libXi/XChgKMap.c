@@ -43,13 +43,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XChgKMap.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XChangeDeviceKeyMapping - change the keymap of an extension device.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,23 +62,23 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XChangeDeviceKeyMapping (dpy, dev, first, syms_per_code, keysyms, count)
-    register	Display 	*dpy;
-    XDevice			*dev;
-    int				first;
-    int				syms_per_code;
-    KeySym			*keysyms;
-    int				count;
-    {
+XChangeDeviceKeyMapping(
+    register Display	*dpy,
+    XDevice		*dev,
+    int			 first,
+    int			 syms_per_code,
+    KeySym		*keysyms,
+    int			 count)
+{
     register long nbytes;
     xChangeDeviceKeyMappingReq *req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(ChangeDeviceKeyMapping,req);
+    GetReq(ChangeDeviceKeyMapping, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_ChangeDeviceKeyMapping;
     req->deviceid = dev->device_id;
@@ -83,10 +86,10 @@ XChangeDeviceKeyMapping (dpy, dev, first, syms_per_code, keysyms, count)
     req->keyCodes = count;
     req->keySymsPerKeyCode = syms_per_code;
     req->length += count * syms_per_code;
-    nbytes = syms_per_code * count * sizeof (CARD32);
-    Data (dpy, (char *)keysyms, nbytes);
+    nbytes = syms_per_code * count * sizeof(CARD32);
+    Data(dpy, (char *)keysyms, nbytes);
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
+}

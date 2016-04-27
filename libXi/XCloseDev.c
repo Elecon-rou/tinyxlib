@@ -43,13 +43,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XCloseDev.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XCloseDevice - Request the server to close an extension device.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,25 +62,24 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XCloseDevice(dpy, dev)
-    register Display 	*dpy;
-    register XDevice	*dev;
-    {	
-    xCloseDeviceReq 	*req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XCloseDevice(
+    register Display	*dpy,
+    register XDevice	*dev)
+{
+    xCloseDeviceReq *req;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(CloseDevice,req);		
+    GetReq(CloseDevice, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_CloseDevice;
     req->deviceid = dev->device_id;
 
-    XFree ((char *)dev);
-    UnlockDisplay (dpy);
+    XFree((char *)dev);
+    UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
-
+}

@@ -43,13 +43,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XGetKMap.c,v 3.6 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XGetDeviceKeyMapping - get the keymap of an extension device.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,51 +62,47 @@ SOFTWARE.
 #include "XIint.h"
 
 KeySym *
-XGetDeviceKeyMapping (
-    register	Display 	*dpy,
-    XDevice			*dev,
+XGetDeviceKeyMapping(register Display * dpy, XDevice * dev,
 #if NeedWidePrototypes
-    unsigned int                first,
+		     unsigned int first,
 #else
-    KeyCode			first,
+		     KeyCode first,
 #endif
-    int				keycount,
-    int				*syms_per_code)
-    {
+		     int keycount, int *syms_per_code)
+{
     long nbytes;
     register KeySym *mapping = NULL;
     xGetDeviceKeyMappingReq *req;
     xGetDeviceKeyMappingReply rep;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return ((KeySym *) NoSuchExtension);
 
-    GetReq(GetDeviceKeyMapping,req);
+    GetReq(GetDeviceKeyMapping, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_GetDeviceKeyMapping;
     req->deviceid = dev->device_id;
     req->firstKeyCode = first;
     req->count = keycount;
 
-    if (! _XReply (dpy, (xReply *) &rep, 0, xFalse)) 
-	{
+    if (!_XReply(dpy, (xReply *) & rep, 0, xFalse)) {
 	UnlockDisplay(dpy);
 	SyncHandle();
 	return (KeySym *) NULL;
-	}
+    }
     if (rep.length > 0) {
-        *syms_per_code = rep.keySymsPerKeyCode;
+	*syms_per_code = rep.keySymsPerKeyCode;
 	nbytes = (long)rep.length << 2;
-	mapping = (KeySym *) Xmalloc((unsigned) nbytes);
+	mapping = (KeySym *) Xmalloc((unsigned)nbytes);
 	if (mapping)
-	    _XRead (dpy, (char *)mapping, nbytes);
+	    _XRead(dpy, (char *)mapping, nbytes);
 	else
-	    _XEatData (dpy, (unsigned long) nbytes);
-      }
+	    _XEatData(dpy, (unsigned long)nbytes);
+    }
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (mapping);
-    }
+}

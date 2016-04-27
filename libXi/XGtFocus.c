@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XGtFocus.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XGetDeviceFocus - Get the focus of an input device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,32 +61,31 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XGetDeviceFocus (dpy, dev, focus, revert_to, time)
-    register Display *dpy;
-    XDevice *dev;
-    Window *focus;
-    int *revert_to;
-    Time *time;
-    {       
-    xGetDeviceFocusReq 	*req;
-    xGetDeviceFocusReply 	rep;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XGetDeviceFocus(
+    register Display	*dpy,
+    XDevice		*dev,
+    Window		*focus,
+    int			*revert_to,
+    Time		*time)
+{
+    xGetDeviceFocusReq *req;
+    xGetDeviceFocusReply rep;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(GetDeviceFocus,req);		
+    GetReq(GetDeviceFocus, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_GetDeviceFocus;
     req->deviceid = dev->device_id;
 
-    (void) _XReply (dpy, (xReply *) &rep, 0, xTrue);
+    (void)_XReply(dpy, (xReply *) & rep, 0, xTrue);
     *focus = rep.focus;
     *revert_to = rep.revertTo;
     *time = rep.time;
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
-
+}

@@ -43,13 +43,16 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XDevBell.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XDeviceBell - Ring a bell on an extension device.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,20 +62,21 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XDeviceBell (dpy, dev, feedbackclass, feedbackid, percent)
-    register Display 	*dpy;
-    XDevice		*dev;
-    XID			feedbackclass, feedbackid;
-    int			percent;
-    {       
-    xDeviceBellReq 	*req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XDeviceBell(
+    register Display	*dpy,
+    XDevice		*dev,
+    XID			 feedbackclass,
+    XID			 feedbackid,
+    int			 percent)
+{
+    xDeviceBellReq *req;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Add_XDeviceBell) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Add_XDeviceBell, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(DeviceBell,req);		
+    GetReq(DeviceBell, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_DeviceBell;
     req->deviceid = dev->device_id;
@@ -83,5 +87,4 @@ XDeviceBell (dpy, dev, feedbackclass, feedbackid, percent)
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
-
+}

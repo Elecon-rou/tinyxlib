@@ -1,6 +1,6 @@
 /************************************************************
 
-Copyright 1989, 1998  The Open Group
+Copyright 2006 Peter Hutterer <peter@cs.unisa.edu.au>
 
 Permission to use, copy, modify, distribute, and sell this software and its
 documentation for any purpose is hereby granted without fee, provided that
@@ -22,65 +22,59 @@ Except as contained in this notice, the name of The Open Group shall not be
 used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
-Copyright 1989 by Hewlett-Packard Company, Palo Alto, California.
-
-			All Rights Reserved
-
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the name of Hewlett-Packard not be
-used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.
-
-HEWLETT-PACKARD DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
-ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
-HEWLETT-PACKARD BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
-WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
-ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
-SOFTWARE.
-
-********************************************************/
+*/
 
 /***********************************************************************
  *
- * XUngrabDevice - Ungrab an extension device.
+ * XIWarpPointer - Warp the pointer of an extension input device.
  *
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <X11/extensions/XI.h>
-#include <X11/extensions/XIproto.h>
+#include <stdint.h>
+#include <X11/extensions/XI2proto.h>
 #include <X11/Xlibint.h>
-#include <X11/extensions/XInput.h>
+#include <X11/extensions/XInput2.h>
 #include <X11/extensions/extutil.h>
 #include "XIint.h"
 
 int
-XUngrabDevice(
-    register Display	*dpy,
-    XDevice		*dev,
-    Time		 time)
+XIWarpPointer(Display      *dpy,
+              int          deviceid,
+              Window       src_win,
+              Window       dst_win,
+              double       src_x,
+              double       src_y,
+              unsigned int src_width,
+              unsigned int src_height,
+              double       dst_x,
+              double       dst_y)
 {
-    register xUngrabDeviceReq *req;
+    xXIWarpPointerReq *req;
+
     XExtDisplayInfo *info = XInput_find_display(dpy);
 
     LockDisplay(dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
+    if (_XiCheckExtInit(dpy, XInput_2_0, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(UngrabDevice, req);
+    GetReq(XIWarpPointer, req);
     req->reqType = info->codes->major_opcode;
-    req->ReqType = X_UngrabDevice;
+    req->ReqType = X_XIWarpPointer;
+    req->deviceid = deviceid;
+    req->src_win = src_win;
+    req->dst_win = dst_win;
+    req->src_x = (int)(src_x * 65536.0);
+    req->src_y = (int)(src_y * 65536.0);
+    req->src_width = src_width;
+    req->src_height = src_height;
+    req->dst_x = (int)(dst_x * 65536.0);
+    req->dst_y = (int)(dst_y * 65536.0);
 
-    req->deviceid = dev->device_id;
-    req->time = time;
 
     UnlockDisplay(dpy);
     SyncHandle();
-    return (Success);
+    return Success;
 }

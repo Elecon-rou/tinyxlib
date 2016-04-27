@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XUngrDvB.c,v 3.5 2006/01/09 14:59:14 dawes Exp $ */
 
 /***********************************************************************
  *
  * XUngrabDeviceButton - Ungrab a button on an extension device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,19 +61,19 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XUngrabDeviceButton(dpy, dev, button, modifiers, modifier_dev, grab_window)
-    register 	Display 	*dpy;
-    XDevice			*dev;
-    unsigned 	int 		button; /* CARD8 */
-    unsigned 	int 		modifiers; /* CARD16 */
-    XDevice			*modifier_dev;
-    Window 			grab_window;
-    {
-    register xUngrabDeviceButtonReq 	*req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XUngrabDeviceButton(
+    register Display	*dpy,
+    XDevice		*dev,
+    unsigned int	 button,	/* CARD8 */
+    unsigned int	 modifiers,	/* CARD16 */
+    XDevice		*modifier_dev,
+    Window		 grab_window)
+{
+    register xUngrabDeviceButtonReq *req;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
     LockDisplay(dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
     GetReq(UngrabDeviceButton, req);
 
@@ -88,4 +90,4 @@ XUngrabDeviceButton(dpy, dev, button, modifiers, modifier_dev, grab_window)
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
+}

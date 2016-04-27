@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XGetMMap.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XGetDeviceModifierMapping - get the modifier map of an extension device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -58,45 +60,43 @@ SOFTWARE.
 #include <X11/extensions/extutil.h>
 #include "XIint.h"
 
-XModifierKeymap 
-*XGetDeviceModifierMapping (dpy, dev)
-    register	Display 	*dpy;
-    XDevice			*dev;
-    {
+XModifierKeymap *
+XGetDeviceModifierMapping(
+    register Display	*dpy,
+    XDevice		*dev)
+{
     unsigned long nbytes;
     XModifierKeymap *res;
     xGetDeviceModifierMappingReq *req;
     xGetDeviceModifierMappingReply rep;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return ((XModifierKeymap *) NoSuchExtension);
 
-    GetReq(GetDeviceModifierMapping,req);
+    GetReq(GetDeviceModifierMapping, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_GetDeviceModifierMapping;
     req->deviceid = dev->device_id;
 
-    if (! _XReply (dpy, (xReply *) &rep, 0, xFalse)) 
-	{
+    if (!_XReply(dpy, (xReply *) & rep, 0, xFalse)) {
 	UnlockDisplay(dpy);
 	SyncHandle();
 	return (XModifierKeymap *) NULL;
-	}
+    }
     nbytes = (unsigned long)rep.length << 2;
-    res = (XModifierKeymap *) Xmalloc(sizeof (XModifierKeymap));
-    if (res)
-	{
-        res->modifiermap = (KeyCode *) Xmalloc (nbytes);
+    res = (XModifierKeymap *) Xmalloc(sizeof(XModifierKeymap));
+    if (res) {
+	res->modifiermap = (KeyCode *) Xmalloc(nbytes);
 	if (res->modifiermap)
-	    _XReadPad(dpy, (char *) res->modifiermap, nbytes);
+	    _XReadPad(dpy, (char *)res->modifiermap, nbytes);
 	else
-	    _XEatData (dpy, (unsigned long) nbytes);
+	    _XEatData(dpy, (unsigned long)nbytes);
 	res->max_keypermod = rep.numKeyPerModifier;
-	}
+    }
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (res);
-    }
+}

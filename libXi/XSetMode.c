@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XSetMode.c,v 3.5 2006/01/09 14:59:14 dawes Exp $ */
 
 /***********************************************************************
  *
  * XSetDeviceMode - Set the mode of an extension input device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,28 +61,27 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XSetDeviceMode (dpy, dev, mode)
-    register Display 	*dpy;
-    XDevice 		*dev;
-    int			mode;
-    {       
-    xSetDeviceModeReq 		*req;
-    xSetDeviceModeReply 	rep;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XSetDeviceMode(
+    register Display	*dpy,
+    XDevice		*dev,
+    int			 mode)
+{
+    xSetDeviceModeReq *req;
+    xSetDeviceModeReply rep;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(SetDeviceMode,req);		
+    GetReq(SetDeviceMode, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_SetDeviceMode;
     req->deviceid = dev->device_id;
     req->mode = mode;
 
-    (void) _XReply (dpy, (xReply *) &rep, 0, xTrue);
+    (void)_XReply(dpy, (xReply *) & rep, 0, xTrue);
     UnlockDisplay(dpy);
     SyncHandle();
     return (rep.status);
-    }
-
+}

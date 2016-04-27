@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XSndExEv.c,v 3.5 2005/01/27 02:28:59 dawes Exp $ */
 
 /***********************************************************************
  *
  * XSendExtensionEvent - send an extension event to a client.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -58,64 +60,65 @@ SOFTWARE.
 #include <X11/extensions/extutil.h>
 #include "XIint.h"
 
-typedef Status (*eventProcPtr)(Display *, XEvent *, xEvent **, int *);
+/* Xlib's wire_vec is defined for a single event only, libXi may return
+ * multiple events.
+ */
+typedef Status (*ext_event_to_wire)(Display*, XEvent*, xEvent**, int*);
 
 Status
-XSendExtensionEvent (dpy, dev, dest, prop, count, list, event)
-    register Display 	*dpy;
-    XDevice 		*dev;
-    Window 		dest;
-    Bool		prop;
-    int			count;
-    XEventClass		*list;
-    XEvent		*event;
-    {       
-    int				num_events;
-    int				ev_size;
-    xSendExtensionEventReq 	*req;
-    xEvent 			*ev;
-    eventProcPtr 		fp;
-    Status 			status;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XSendExtensionEvent(
+    register Display	*dpy,
+    XDevice		*dev,
+    Window		 dest,
+    Bool		 prop,
+    int			 count,
+    XEventClass		*list,
+    XEvent		*event)
+{
+    int num_events;
+    int ev_size;
+    xSendExtensionEventReq *req;
+    xEvent *ev;
+    ext_event_to_wire *fp;
+    Status status;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
     /* call through display to find proper conversion routine */
 
-    fp = (eventProcPtr)dpy->wire_vec[event->type & 0177];
-    if (fp == NULL) 
-	fp = _XiEventToWire;
-    status = (*fp)(dpy, event, &ev, &num_events);
+    fp = (ext_event_to_wire*)&dpy->wire_vec[event->type & 0177];
+    if (*fp == NULL)
+	*fp = _XiEventToWire;
+    status = (*fp) (dpy, event, &ev, &num_events);
 
-    if (status) 
-	{
-	GetReq(SendExtensionEvent,req);		
-        req->reqType = info->codes->major_opcode;
+    if (status) {
+	GetReq(SendExtensionEvent, req);
+	req->reqType = info->codes->major_opcode;
 	req->ReqType = X_SendExtensionEvent;
 	req->deviceid = dev->device_id;
 	req->destination = dest;
 	req->propagate = prop;
 	req->count = count;
 	req->num_events = num_events;
-	ev_size = num_events * sizeof (xEvent);
+	ev_size = num_events * sizeof(xEvent);
 	req->length += (count + (ev_size >> 2));
 
 	/* note: Data is a macro that uses its arguments multiple
-           times, so "count" is changed in a separate assignment
-           statement.  Any extra events must be sent before the event
-	   list, in order to ensure quad alignment. */
+	 * times, so "count" is changed in a separate assignment
+	 * statement.  Any extra events must be sent before the event
+	 * list, in order to ensure quad alignment. */
 
-	Data (dpy, (char *) ev, ev_size);
+	Data(dpy, (char *)ev, ev_size);
 
 	count <<= 2;
-	Data32 (dpy, (long *) list, count);
-	XFree ((char *)ev);
-	}
+	Data32(dpy, (long *)list, count);
+	XFree((char *)ev);
+    }
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (status);
-    }
-
+}

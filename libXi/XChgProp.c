@@ -43,7 +43,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XChgProp.c,v 3.5 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
@@ -51,6 +50,10 @@ SOFTWARE.
  * window.
  *
  */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -60,21 +63,21 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XChangeDeviceDontPropagateList (dpy, window, count, events, mode)
-    register Display 	*dpy;
-    Window 		window;
-    int 		count;
-    XEventClass		*events;
-    int 		mode;
-    {       
-    xChangeDeviceDontPropagateListReq 	*req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+XChangeDeviceDontPropagateList(
+    register Display	*dpy,
+    Window		 window,
+    int			 count,
+    XEventClass		*events,
+    int			 mode)
+{
+    xChangeDeviceDontPropagateListReq *req;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
-    GetReq(ChangeDeviceDontPropagateList,req);		
+    GetReq(ChangeDeviceDontPropagateList, req);
     req->reqType = info->codes->major_opcode;
     req->ReqType = X_ChangeDeviceDontPropagateList;
     req->window = window;
@@ -83,14 +86,13 @@ XChangeDeviceDontPropagateList (dpy, window, count, events, mode)
     req->length += count;
 
     /* note: Data is a macro that uses its arguments multiple
-       times, so "nvalues" is changed in a separate assignment
-       statement */
+     * times, so "nvalues" is changed in a separate assignment
+     * statement */
 
     count <<= 2;
-    Data32 (dpy, (long *) events, count);
+    Data32(dpy, (long *)events, count);
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
-
+}

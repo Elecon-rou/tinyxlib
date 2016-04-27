@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XGrDvBut.c,v 3.6 2006/01/09 14:59:13 dawes Exp $ */
 
 /***********************************************************************
  *
  * XGrabDeviceBut - Grab a button on an extension device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -59,26 +61,24 @@ SOFTWARE.
 #include "XIint.h"
 
 int
-XGrabDeviceButton (dpy, dev, button, modifiers, modifier_device, 
-	grab_window, owner_events, event_count, event_list, this_device_mode, 
-	other_devices_mode)
-    register 	Display 	*dpy;
-    XDevice			*dev;
-    unsigned 	int 		button; /* CARD8 */
-    unsigned 	int 		modifiers; /* CARD16 */
-    XDevice			*modifier_device;
-    Window 			grab_window;
-    Bool 			owner_events;
-    unsigned 	int 		event_count;
-    XEventClass 		*event_list;
-    int 			this_device_mode;
-    int 			other_devices_mode;
-    {
+XGrabDeviceButton(
+    register Display	*dpy,
+    XDevice		*dev,
+    unsigned int	 button,	/* CARD8 */
+    unsigned int	 modifiers,	/* CARD16 */
+    XDevice		*modifier_device,
+    Window		 grab_window,
+    Bool		 owner_events,
+    unsigned int	 event_count,
+    XEventClass		*event_list,
+    int			 this_device_mode,
+    int			 other_devices_mode)
+{
     register xGrabDeviceButtonReq *req;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
     GetReq(GrabDeviceButton, req);
@@ -100,13 +100,13 @@ XGrabDeviceButton (dpy, dev, button, modifiers, modifier_device,
     req->length += event_count;
 
     /* note: Data is a macro that uses its arguments multiple
-       times, so "nvalues" is changed in a separate assignment
-       statement */
+     * times, so "nvalues" is changed in a separate assignment
+     * statement */
 
     event_count <<= 2;
-    Data32 (dpy, (long *) event_list, event_count);
+    Data32(dpy, (long *)event_list, event_count);
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (Success);
-    }
+}

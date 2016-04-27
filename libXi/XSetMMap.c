@@ -43,13 +43,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ********************************************************/
-/* $XFree86: xc/lib/Xi/XSetMMap.c,v 3.5 2006/01/09 14:59:14 dawes Exp $ */
 
 /***********************************************************************
  *
  * XSetDeviceModifierMapping - set the modifier map of an extension device.
  *
  */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <X11/extensions/XI.h>
 #include <X11/extensions/XIproto.h>
@@ -58,19 +60,19 @@ SOFTWARE.
 #include <X11/extensions/extutil.h>
 #include "XIint.h"
 
-int 
-XSetDeviceModifierMapping (dpy, dev, modmap)
-    register		Display 	*dpy;
-    XDevice				*dev;
-    XModifierKeymap			*modmap;
-    {
-    int         mapSize = modmap->max_keypermod << 3;	/* 8 modifiers */
-    xSetDeviceModifierMappingReq 	*req;
-    xSetDeviceModifierMappingReply 	rep;
-    XExtDisplayInfo *info = XInput_find_display (dpy);
+int
+XSetDeviceModifierMapping(
+    register Display	*dpy,
+    XDevice		*dev,
+    XModifierKeymap	*modmap)
+{
+    int mapSize = modmap->max_keypermod << 3;	/* 8 modifiers */
+    xSetDeviceModifierMappingReq *req;
+    xSetDeviceModifierMappingReply rep;
+    XExtDisplayInfo *info = XInput_find_display(dpy);
 
-    LockDisplay (dpy);
-    if (_XiCheckExtInit(dpy, XInput_Initial_Release) == -1)
+    LockDisplay(dpy);
+    if (_XiCheckExtInit(dpy, XInput_Initial_Release, info) == -1)
 	return (NoSuchExtension);
 
     GetReqExtra(SetDeviceModifierMapping, mapSize, req);
@@ -80,10 +82,11 @@ XSetDeviceModifierMapping (dpy, dev, modmap)
     req->numKeyPerModifier = modmap->max_keypermod;
     memcpy((char *)&req[1], modmap->modifiermap, mapSize);
 
-    (void) _XReply(dpy, (xReply *) &rep,
-	(sizeof(xSetDeviceModifierMappingReply) - sizeof(xReply)) >> 2, xTrue);
+    (void)_XReply(dpy, (xReply *) & rep,
+		  (sizeof(xSetDeviceModifierMappingReply) -
+		   sizeof(xReply)) >> 2, xTrue);
 
     UnlockDisplay(dpy);
     SyncHandle();
     return (rep.success);
-    }
+}
