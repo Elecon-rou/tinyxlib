@@ -1,7 +1,4 @@
 /*
- * $Xorg: Unwrap.c,v 1.4 2001/02/09 02:03:48 xorgcvs Exp $
- *
- * 
 Copyright 1989, 1998  The Open Group
 
 Permission to use, copy, modify, distribute, and sell this software and its
@@ -27,12 +24,13 @@ in this Software without prior written authorization from The Open Group.
  * Author:  Keith Packard, MIT X Consortium
  */
 
-/* $XFree86: xc/lib/Xdmcp/Unwrap.c,v 1.4 2001/12/14 19:54:55 dawes Exp $ */
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <X11/Xos.h>
 #include <X11/X.h>
 #include <X11/Xmd.h>
-#include "Xdmcp.h"
+#include <X11/Xdmcp.h>
 
 #ifdef HASXDMAUTH
 

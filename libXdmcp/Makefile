@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xdmcp.pc
 	@echo "Name: Xdmcp" >> xdmcp.pc
 	@echo "Description: X Display Manager Control Protocol library" >> xdmcp.pc
-	@echo "Version: 1.0.2" >> xdmcp.pc
+	@echo "Version: 1.1.2" >> xdmcp.pc
 	@echo "Requires:" >> xdmcp.pc
 	@echo "Requires.private: " >> xdmcp.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xdmcp.pc
