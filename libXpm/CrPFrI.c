@@ -32,14 +32,17 @@
 *  Developed by Arnaud Le Hors                                                *
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 
 void
-xpmCreatePixmapFromImage(display, d, ximage, pixmap_return)
-    Display *display;
-    Drawable d;
-    XImage *ximage;
-    Pixmap *pixmap_return;
+xpmCreatePixmapFromImage(
+    Display	*display,
+    Drawable	 d,
+    XImage	*ximage,
+    Pixmap	*pixmap_return)
 {
     GC gc;
     XGCValues values;

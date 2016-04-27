@@ -42,19 +42,23 @@
  * W. Snitily but has been modified for my special need
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 #include <ctype.h>
 
+#ifndef FOR_MSW				/* normal part first, MSW part at
+					 * the end, (huge ifdef!) */
 /*
  * Read a rgb text file.  It stores the rgb values (0->65535)
  * and the rgb mnemonics (malloc'ed) into the "rgbn" array.  Returns the
  * number of entries stored.
  */
 int
-xpmReadRgbNames(rgb_fname, rgbn)
-    char *rgb_fname;
-    xpmRgbName rgbn[];
-
+xpmReadRgbNames(
+    char	*rgb_fname,
+    xpmRgbName	 rgbn[])
 {
     FILE *rgbf;
     int n, items, red, green, blue;
@@ -67,7 +71,7 @@ xpmReadRgbNames(rgb_fname, rgbn)
 
     /* Loop reading each line in the file. */
     n = 0;
-    rgb = rgbn; 
+    rgb = rgbn;
     /* Quit if rgb text file has too many entries. */
     while (fgets(line, sizeof(line), rgbf) && n < MAX_RGBNAMES) {
 
@@ -113,11 +117,12 @@ xpmReadRgbNames(rgb_fname, rgbn)
  * Return the color name corresponding to the given rgb values
  */
 char *
-xpmGetRgbName(rgbn, rgbn_max, red, green, blue)
-    xpmRgbName rgbn[];			/* rgb mnemonics from rgb text file */
-    int rgbn_max;			/* number of rgb mnemonics in table */
-    int red, green, blue;		/* rgb values */
-
+xpmGetRgbName(
+    xpmRgbName	rgbn[],		/* rgb mnemonics from rgb text file */
+    int		rgbn_max,	/* number of rgb mnemonics in table */
+    int		red,		/* rgb values */
+    int		green,
+    int		blue)
 {
     int i;
     xpmRgbName *rgb;
@@ -139,10 +144,9 @@ xpmGetRgbName(rgbn, rgbn_max, red, green, blue)
  * Free the strings which have been malloc'ed in xpmReadRgbNames
  */
 void
-xpmFreeRgbNames(rgbn, rgbn_max)
-    xpmRgbName rgbn[];
-    int rgbn_max;
-
+xpmFreeRgbNames(
+    xpmRgbName	rgbn[],
+    int		rgbn_max)
 {
     int i;
     xpmRgbName *rgb;
@@ -151,3 +155,133 @@ xpmFreeRgbNames(rgbn, rgbn_max)
 	XpmFree(rgb->name);
 }
 
+#else					/* here comes the MSW part, the
+					 * second part of the  huge ifdef */
+
+#include "rgbtab.h"			/* hard coded rgb.txt table */
+
+int
+xpmReadRgbNames(
+    char	*rgb_fname,
+    xpmRgbName	 rgbn[])
+{
+    /*
+     * check for consistency???
+     * table has to be sorted for calls on strcasecmp
+     */
+    return (numTheRGBRecords);
+}
+
+/*
+ * MSW rgb values are made from 3 BYTEs, this is different from X XColor.red,
+ * which has something like #0303 for one color
+ */
+char *
+xpmGetRgbName(
+    xpmRgbName rgbn[],		/* rgb mnemonics from rgb text file
+				 * not used */
+    int		rgbn_max,	/* not used */
+    int		red, 		/* rgb values */
+    int		green,
+    int		blue)
+
+{
+    int i;
+    unsigned long rgbVal;
+
+    i = 0;
+    while (i < numTheRGBRecords) {
+	rgbVal = theRGBRecords[i].rgb;
+	if (GetRValue(rgbVal) == red &&
+	    GetGValue(rgbVal) == green &&
+	    GetBValue(rgbVal) == blue)
+	    return (theRGBRecords[i].name);
+	i++;
+    }
+    return (NULL);
+}
+
+/* used in XParseColor in simx.c */
+int
+xpmGetRGBfromName(
+    char	*inname,
+    int		*r,
+    int		*g,
+    int		*b)
+{
+    int left, right, middle;
+    int cmp;
+    unsigned long rgbVal;
+    char *name;
+    char *grey, *p;
+
+    name = xpmstrdup(inname);
+
+    /*
+     * the table in rgbtab.c has no names with spaces, and no grey, but a
+     * lot of gray
+     */
+    /* so first extract ' ' */
+    while (p = strchr(name, ' ')) {
+	while (*(p)) {			/* till eof of string */
+	    *p = *(p + 1);		/* copy to the left */
+	    p++;
+	}
+    }
+    /* fold to lower case */
+    p = name;
+    while (*p) {
+	*p = tolower(*p);
+	p++;
+    }
+
+    /*
+     * substitute Grey with Gray, else rgbtab.h would have more than 100
+     * 'duplicate' entries
+     */
+    if (grey = strstr(name, "grey"))
+	grey[2] = 'a';
+
+    /* binary search */
+    left = 0;
+    right = numTheRGBRecords - 1;
+    do {
+	middle = (left + right) / 2;
+	cmp = xpmstrcasecmp(name, theRGBRecords[middle].name);
+	if (cmp == 0) {
+	    rgbVal = theRGBRecords[middle].rgb;
+	    *r = GetRValue(rgbVal);
+	    *g = GetGValue(rgbVal);
+	    *b = GetBValue(rgbVal);
+	    free(name);
+	    return (1);
+	} else if (cmp < 0) {
+	    right = middle - 1;
+	} else {			/* > 0 */
+	    left = middle + 1;
+	}
+    } while (left <= right);
+
+    /*
+     * I don't like to run in a ColorInvalid error and to see no pixmap at
+     * all, so simply return a red pixel. Should be wrapped in an #ifdef
+     * HeDu
+     */
+
+    *r = 255;
+    *g = 0;
+    *b = 0;				/* red error pixel */
+
+    free(name);
+    return (1);
+}
+
+void
+xpmFreeRgbNames(
+    xpmRgbName	rgbn[],
+    int		rgbn_max)
+{
+    /* nothing to do */
+}
+
+#endif					/* MSW part */

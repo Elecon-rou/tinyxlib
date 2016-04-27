@@ -32,17 +32,19 @@
 *  Developed by Arnaud Le Hors                                                *
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 
 int
-XpmReadFileToPixmap(display, d, filename, pixmap_return,
-		    shapemask_return, attributes)
-    Display *display;
-    Drawable d;
-    char *filename;
-    Pixmap *pixmap_return;
-    Pixmap *shapemask_return;
-    XpmAttributes *attributes;
+XpmReadFileToPixmap(
+    Display		*display,
+    Drawable		 d,
+    const char		*filename,
+    Pixmap		*pixmap_return,
+    Pixmap		*shapemask_return,
+    XpmAttributes	*attributes)
 {
     XImage *ximage, *shapeimage;
     int ErrorStatus;

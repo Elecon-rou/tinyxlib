@@ -32,12 +32,15 @@
 *  Developed by Dan Greening dgreen@cs.ucla.edu / dgreen@sti.com              *
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 
 int
-XpmReadFileToData(filename, data_return)
-    char *filename;
-    char ***data_return;
+XpmReadFileToData(
+    const char	  *filename,
+    char	***data_return)
 {
     XpmImage image;
     XpmInfo info;

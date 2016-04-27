@@ -1,4 +1,3 @@
-/* $XFree86: xc/extras/Xpm/lib/WrFFrBuf.c,v 1.3 2005/03/29 04:00:28 tsi Exp $ */
 /*
  * Copyright (C) 1989-95 GROUPE BULL
  *
@@ -35,12 +34,15 @@
 
 /* October 2004, source code review by Thomas Biege <thomas@suse.de> */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 
 int
-XpmWriteFileFromBuffer(filename, buffer)
-    char *filename;
-    char *buffer;
+XpmWriteFileFromBuffer(
+    const char	*filename,
+    char	*buffer)
 {
     int fcheck, len;
     FILE *fp = fopen(filename, "w");

@@ -22,7 +22,6 @@
  * used in advertising or otherwise to promote the sale, use or other dealings
  * in this Software without prior written authorization from GROUPE BULL.
  */
-/* $XFree86: xc/extras/Xpm/lib/parse.c,v 1.7 2006/01/09 14:56:41 dawes Exp $ */
 
 /*****************************************************************************\
 * parse.c:                                                                    *
@@ -41,12 +40,14 @@
 
 /* October 2004, source code review by Thomas Biege <thomas@suse.de> */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 #include <ctype.h>
-//#include "/usr/i386-linux-uclibc/usr/include/ctype.h"
 #include <string.h>
 
-#ifdef HAS_STRLCAT
+#if defined(HAS_STRLCAT) || defined(HAVE_STRLCAT)
 # define STRLCAT(dst, src, dstsize) do { \
   	if (strlcat(dst, src, dstsize) >= (dstsize)) \
 	    return (XpmFileInvalid); } while(0)
@@ -69,7 +70,7 @@ LFUNC(ParsePixels, int, (xpmData *data, unsigned int width,
 			 unsigned int cpp, XpmColor *colorTable,
 			 xpmHashTable *hashtable, unsigned int **pixels));
 
-char *xpmColorKeys[] = {
+const char *xpmColorKeys[] = {
     "s",				/* key #1: symbol */
     "m",				/* key #2: mono visual */
     "g4",				/* key #3: 4 grays visual */
@@ -78,12 +79,16 @@ char *xpmColorKeys[] = {
 };
 
 int
-xpmParseValues(data, width, height, ncolors, cpp,
-	    x_hotspot, y_hotspot, hotspot, extensions)
-    xpmData *data;
-    unsigned int *width, *height, *ncolors, *cpp;
-    unsigned int *x_hotspot, *y_hotspot, *hotspot;
-    unsigned int *extensions;
+xpmParseValues(
+    xpmData		*data,
+    unsigned int	*width,
+    unsigned int	*height,
+    unsigned int	*ncolors,
+    unsigned int	*cpp,
+    unsigned int	*x_hotspot,
+    unsigned int	*y_hotspot,
+    unsigned int	*hotspot,
+    unsigned int	*extensions)
 {
     unsigned int l;
     char buf[BUFSIZ + 1];
@@ -134,7 +139,7 @@ xpmParseValues(data, width, height, ncolors, cpp,
 	    ptr = buf;
 	    got_one = False;
 	    while (!got_one) {
-		ptr = index(ptr, '_');
+		ptr = strchr(ptr, '_');
 		if (!ptr)
 		    return (XpmFileInvalid);
 		switch (l - (ptr - buf)) {
@@ -188,19 +193,20 @@ xpmParseValues(data, width, height, ncolors, cpp,
 }
 
 int
-xpmParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
-    xpmData *data;
-    unsigned int ncolors;
-    unsigned int cpp;
-    XpmColor **colorTablePtr;
-    xpmHashTable *hashtable;
+xpmParseColors(
+    xpmData		 *data,
+    unsigned int	  ncolors,
+    unsigned int	  cpp,
+    XpmColor		**colorTablePtr,
+    xpmHashTable	 *hashtable)
 {
     unsigned int key = 0, l, a, b, len;
     unsigned int curkey;		/* current color key */
     unsigned int lastwaskey;		/* key read */
     char buf[BUFSIZ+1];
     char curbuf[BUFSIZ];		/* current buffer */
-    char **sptr, *s;
+    const char **sptr;
+    char *s;
     XpmColor *color;
     XpmColor *colorTable;
     char **defaults;
@@ -361,23 +367,33 @@ xpmParseColors(data, ncolors, cpp, colorTablePtr, hashtable)
 }
 
 static int
-ParsePixels(data, width, height, ncolors, cpp, colorTable, hashtable, pixels)
-    xpmData *data;
-    unsigned int width;
-    unsigned int height;
-    unsigned int ncolors;
-    unsigned int cpp;
-    XpmColor *colorTable;
-    xpmHashTable *hashtable;
-    unsigned int **pixels;
+ParsePixels(
+    xpmData		 *data,
+    unsigned int	  width,
+    unsigned int	  height,
+    unsigned int	  ncolors,
+    unsigned int	  cpp,
+    XpmColor		 *colorTable,
+    xpmHashTable	 *hashtable,
+    unsigned int	**pixels)
 {
     unsigned int *iptr, *iptr2 = NULL; /* found by Egbert Eich */
     unsigned int a, x, y;
 
     if ((height > 0 && width >= UINT_MAX / height) ||
-	width * height >= UINT_MAX / sizeof(unsigned int)) 
+	width * height >= UINT_MAX / sizeof(unsigned int))
 	return XpmNoMemory;
+#ifndef FOR_MSW
     iptr2 = (unsigned int *) XpmMalloc(sizeof(unsigned int) * width * height);
+#else
+
+    /*
+     * special treatment to trick DOS malloc(size_t) where size_t is 16 bit!!
+     * XpmMalloc is defined to longMalloc(long) and checks the 16 bit boundary
+     */
+    iptr2 = (unsigned int *)
+	XpmMalloc((long) sizeof(unsigned int) * (long) width * (long) height);
+#endif
     if (!iptr2)
 	return (XpmNoMemory);
 
@@ -524,10 +540,10 @@ do \
 }
 
 int
-xpmParseExtensions(data, extensions, nextensions)
-    xpmData *data;
-    XpmExtension **extensions;
-    unsigned int *nextensions;
+xpmParseExtensions(
+    xpmData		 *data,
+    XpmExtension	**extensions,
+    unsigned int	 *nextensions)
 {
     XpmExtension *exts = NULL, *ext;
     unsigned int num = 0;
@@ -645,10 +661,10 @@ do { \
  * in an an XpmImage structure which is returned.
  */
 int
-xpmParseData(data, image, info)
-    xpmData *data;
-    XpmImage *image;
-    XpmInfo *info;
+xpmParseData(
+    xpmData	*data,
+    XpmImage	*image,
+    XpmInfo	*info)
 {
     /* variables to return */
     unsigned int width, height, ncolors, cpp;
@@ -688,12 +704,12 @@ xpmParseData(data, image, info)
 	xpmGetCmt(data, &hints_cmt);
 
     /*
-     * init the hastable
+     * init the hashtable
      */
     if (USE_HASHTABLE) {
 	ErrorStatus = xpmHashTableInit(&hashtable);
 	if (ErrorStatus != XpmSuccess)
-	    return (ErrorStatus);
+	    RETURN(ErrorStatus);
     }
 
     /*

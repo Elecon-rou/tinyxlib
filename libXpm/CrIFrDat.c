@@ -32,18 +32,20 @@
 *  Developed by Arnaud Le Hors                                                *
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "XpmI.h"
 
 LFUNC(OpenArray, void, (char **data, xpmData *mdata));
 
 int
-XpmCreateImageFromData(display, data, image_return,
-		       shapeimage_return, attributes)
-    Display *display;
-    char **data;
-    XImage **image_return;
-    XImage **shapeimage_return;
-    XpmAttributes *attributes;
+XpmCreateImageFromData(
+    Display		 *display,
+    char		**data,
+    XImage		**image_return,
+    XImage		**shapeimage_return,
+    XpmAttributes	 *attributes)
 {
     XpmImage image;
     XpmInfo info;
@@ -80,10 +82,10 @@ XpmCreateImageFromData(display, data, image_return,
 }
 
 int
-XpmCreateXpmImageFromData(data, image, info)
-    char **data;
-    XpmImage *image;
-    XpmInfo *info;
+XpmCreateXpmImageFromData(
+    char	**data,
+    XpmImage	 *image,
+    XpmInfo	 *info)
 {
     xpmData mdata;
     int ErrorStatus;
@@ -105,9 +107,9 @@ XpmCreateXpmImageFromData(data, image, info)
  * open the given array to be read or written as an xpmData which is returned
  */
 static void
-OpenArray(data, mdata)
-    char **data;
-    xpmData *mdata;
+OpenArray(
+    char	**data,
+    xpmData	 *mdata)
 {
     mdata->type = XPMARRAY;
     mdata->stream.data = data;

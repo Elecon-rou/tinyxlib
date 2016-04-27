@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xpm.pc
 	@echo "Name: Xpm" >> xpm.pc
 	@echo "Description: X Pixmap Library" >> xpm.pc
-	@echo "Version: 3.5.7" >> xpm.pc
+	@echo "Version: 3.5.11" >> xpm.pc
 	@echo "Requires: x11" >> xpm.pc
 	@echo "Requires.private: x11" >> xpm.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xpm.pc

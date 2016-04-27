@@ -22,7 +22,6 @@
  * used in advertising or otherwise to promote the sale, use or other dealings
  * in this Software without prior written authorization from GROUPE BULL.
  */
-/* $XFree86: xc/extras/Xpm/lib/XpmI.h,v 1.12 2005/03/25 02:22:50 dawes Exp $ */
 
 /*****************************************************************************\
 * XpmI.h:                                                                     *
@@ -58,10 +57,18 @@
 extern FILE *popen();
 #endif
 
+#ifdef FOR_MSW
+#include "simx.h"
+#else
 #include <X11/Xos.h>
 #include <X11/Xfuncs.h>
 #include <X11/Xmd.h>
+#endif
 
+#ifdef VMS
+#include <unixio.h>
+#include <file.h>
+#endif
 
 /* The following should help people wanting to use their own memory allocation
  * functions. To avoid the overhead of a function call when the standard
@@ -72,15 +79,26 @@ extern FILE *popen();
  */
 #define XpmFree(ptr) free(ptr)
 
+#ifndef FOR_MSW
 #define XpmMalloc(size) malloc((size))
 #define XpmRealloc(ptr, size) realloc((ptr), (size))
 #define XpmCalloc(nelem, elsize) calloc((nelem), (elsize))
+#else
+/* checks for mallocs bigger than 64K */
+#define XpmMalloc(size) boundCheckingMalloc((long)(size))/* in simx.[ch] */
+#define XpmRealloc(ptr, size) boundCheckingRealloc((ptr),(long)(size))
+#define XpmCalloc(nelem, elsize) \
+		boundCheckingCalloc((long)(nelem),(long) (elsize))
+#endif
 
+#if defined(SCO) || defined(__USLC__)
+#include <stdint.h>	/* For SIZE_MAX */
+#endif
 #include <limits.h>
 #ifndef SIZE_MAX
 # ifdef ULONG_MAX
 #  define SIZE_MAX ULONG_MAX
-# else 
+# else
 #  define SIZE_MAX UINT_MAX
 # endif
 #endif
@@ -96,7 +114,8 @@ typedef struct {
     unsigned int line;
     int CommentLength;
     char Comment[XPMMAXCMTLEN];
-    char *Bcmt, *Ecmt, Bos, Eos;
+    const char *Bcmt, *Ecmt;
+    char Bos, Eos;
     int format;			/* 1 if XPM1, 0 otherwise */
 #ifdef CXPMPROG
     int lineNum;
@@ -114,15 +133,15 @@ typedef struct {
 #define SPC ' '
 
 typedef struct {
-    char *type;			/* key word */
-    char *Bcmt;			/* string beginning comments */
-    char *Ecmt;			/* string ending comments */
+    const char *type;		/* key word */
+    const char *Bcmt;		/* string beginning comments */
+    const char *Ecmt;		/* string ending comments */
     char Bos;			/* character beginning strings */
     char Eos;			/* character ending strings */
-    char *Strs;			/* strings separator */
-    char *Dec;			/* data declaration string */
-    char *Boa;			/* string beginning assignment */
-    char *Eoa;			/* string ending assignment */
+    const char *Strs;		/* strings separator */
+    const char *Dec;		/* data declaration string */
+    const char *Boa;		/* string beginning assignment */
+    const char *Eoa;		/* string ending assignment */
 }      xpmDataType;
 
 extern xpmDataType xpmDataTypes[];
@@ -139,7 +158,7 @@ typedef struct {
 /* Maximum number of rgb mnemonics allowed in rgb text file. */
 #define MAX_RGBNAMES 1024
 
-extern char *xpmColorKeys[];
+extern const char *xpmColorKeys[];
 
 #define TRANSPARENT_COLOR "None"	/* this must be a string! */
 
@@ -168,6 +187,7 @@ FUNC(xpmSetInfo, void, (XpmInfo *info, XpmAttributes *attributes));
 FUNC(xpmSetAttributes, void, (XpmAttributes *attributes, XpmImage *image,
 			      XpmInfo *info));
 
+#if !defined(FOR_MSW) && !defined(AMIGA)
 FUNC(xpmCreatePixmapFromImage, void, (Display *display, Drawable d,
 				      XImage *ximage, Pixmap *pixmap_return));
 
@@ -175,6 +195,7 @@ FUNC(xpmCreateImageFromPixmap, void, (Display *display, Pixmap pixmap,
 				      XImage **ximage_return,
 				      unsigned int *width,
 				      unsigned int *height));
+#endif
 
 /* structures and functions related to hastable code */
 
@@ -232,7 +253,11 @@ FUNC(xpmReadRgbNames, int, (char *rgb_fname, xpmRgbName *rgbn));
 FUNC(xpmGetRgbName, char *, (xpmRgbName *rgbn, int rgbn_max,
 			     int red, int green, int blue));
 FUNC(xpmFreeRgbNames, void, (xpmRgbName *rgbn, int rgbn_max));
+#ifdef FOR_MSW
+FUNC(xpmGetRGBfromName,int, (char *name, int *r, int *g, int *b));
+#endif
 
+#ifndef AMIGA
 FUNC(xpm_xynormalizeimagebits, void, (register unsigned char *bp,
 				      register XImage *img));
 FUNC(xpm_znormalizeimagebits, void, (register unsigned char *bp,
@@ -280,27 +305,25 @@ FUNC(xpm_znormalizeimagebits, void, (register unsigned char *bp,
 #define ZINDEX8(x, y, img) ((y) * img->bytes_per_line) + (x)
 
 #define ZINDEX1(x, y, img) ((y) * img->bytes_per_line) + ((x) >> 3)
-
-#define Const const
+#endif /* not AMIGA */
 
 #ifdef NEED_STRDUP
 FUNC(xpmstrdup, char *, (char *s1));
 #else
 #undef xpmstrdup
 #define xpmstrdup strdup
+#include <string.h>
 #endif
 
-#ifdef NEED_STRCASECMP                   
+#ifdef NEED_STRCASECMP
 FUNC(xpmstrcasecmp, int, (char *s1, char *s2));
 #else
 #undef xpmstrcasecmp
 #define xpmstrcasecmp strcasecmp
+#include <strings.h>
 #endif
 
 FUNC(xpmatoui, unsigned int,
      (char *p, unsigned int l, unsigned int *ui_return));
-
-//FUNC(s_popen, FILE *, (char *cmd, const char *type));
-
 
 #endif
