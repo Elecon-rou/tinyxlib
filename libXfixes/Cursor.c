@@ -1,26 +1,27 @@
 /*
- * $XFree86: xc/lib/Xfixes/Cursor.c,v 1.1 2002/11/30 06:21:44 keithp Exp $
+ * Copyright (c) 2006, Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011 Red Hat, Inc.
  *
- * Copyright © 2006 Sun Microsystems
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
  *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation, and that the name of Sun Microsystems not be used in
- * advertising or publicity pertaining to distribution of the software without
- * specific, written prior permission.  Sun Microsystems makes no
- * representations about the suitability of this software for any purpose.  It
- * is provided "as is" without express or implied warranty.
+ * The above copyright notice and this permission notice (including the next
+ * paragraph) shall be included in all copies or substantial portions of the
+ * Software.
  *
- * SUN MICROSYSTEMS DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
- * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
- * EVENT SHALL SUN MICROSYSTEMS BE LIABLE FOR ANY SPECIAL, INDIRECT OR
- * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,
- * DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+/*
  * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -46,6 +47,7 @@
 #include <config.h>
 #endif
 #include "Xfixesint.h"
+#include <limits.h>
 
 void
 XFixesSelectCursorInput (Display	*dpy,
@@ -73,13 +75,13 @@ XFixesGetCursorImage (Display *dpy)
     XFixesExtDisplayInfo		*info = XFixesFindDisplay (dpy);
     xXFixesGetCursorImageAndNameReq	*req;
     xXFixesGetCursorImageAndNameReply	rep;
-    int					npixels;
-    int					nbytes_name;
-    int					nbytes, nread, rlength;
+    size_t				npixels;
+    size_t				nbytes_name;
+    size_t				nbytes, nread, rlength;
     XFixesCursorImage			*image;
     char				*name;
 
-    XFixesCheckExtension (dpy, info, 0);
+    XFixesCheckExtension (dpy, info, NULL);
     LockDisplay (dpy);
     GetReq (XFixesGetCursorImageAndName, req);
     req->reqType = info->codes->major_opcode;
@@ -91,7 +93,7 @@ XFixesGetCursorImage (Display *dpy)
     {
 	UnlockDisplay (dpy);
 	SyncHandle ();
-	return 0;
+	return NULL;
     }
     if (info->major_version < 2)
     {
@@ -100,22 +102,27 @@ XFixesGetCursorImage (Display *dpy)
     }
     npixels = rep.width * rep.height;
     nbytes_name = rep.nbytes;
-    /* reply data length */
-    nbytes = (long) rep.length << 2;
-    /* bytes of actual data in the reply */
-    nread = (npixels << 2) + nbytes_name;
-    /* size of data returned to application */
-    rlength = (sizeof (XFixesCursorImage) + 
-	       npixels * sizeof (unsigned long) +
-	       nbytes_name + 1);
+    if ((rep.length < (INT_MAX >> 2)) &&
+	npixels < (((INT_MAX >> 3) - sizeof (XFixesCursorImage) - 1)
+		   - nbytes_name)) {
+	/* reply data length */
+	nbytes = (size_t) rep.length << 2;
+	/* bytes of actual data in the reply */
+	nread = (npixels << 2) + nbytes_name;
+	/* size of data returned to application */
+	rlength = (sizeof (XFixesCursorImage) +
+		   npixels * sizeof (unsigned long) +
+		   nbytes_name + 1);
 
-    image = (XFixesCursorImage *) Xmalloc (rlength);
+	image = Xmalloc (rlength);
+    } else
+	image = NULL;
     if (!image)
     {
-	_XEatData (dpy, nbytes);
+	_XEatDataWords(dpy, rep.length);
 	UnlockDisplay (dpy);
 	SyncHandle ();
-	return 0;
+	return NULL;
     }
     image->x = rep.x;
     image->y = rep.y;
@@ -128,7 +135,7 @@ XFixesGetCursorImage (Display *dpy)
     image->atom = rep.cursorName;
     name = (char *) (image->pixels + npixels);
     image->name = name;
-    _XRead32 (dpy, image->pixels, npixels << 2);
+    _XRead32 (dpy, (long *) image->pixels, npixels << 2);
     _XRead (dpy, name, nbytes_name);
     name[nbytes_name] = '\0';	/* null-terminate */
     /* skip any padding */
@@ -171,9 +178,9 @@ XFixesGetCursorName (Display *dpy, Cursor cursor, Atom *atom)
     xXFixesGetCursorNameReply	rep;
     char			*name;
 
-    XFixesCheckExtension (dpy, info, 0);
+    XFixesCheckExtension (dpy, info, NULL);
     if (info->major_version < 2)
-	return 0;
+	return NULL;
     LockDisplay (dpy);
     GetReq (XFixesGetCursorName, req);
     req->reqType = info->codes->major_opcode;
@@ -183,14 +190,14 @@ XFixesGetCursorName (Display *dpy, Cursor cursor, Atom *atom)
     {
 	UnlockDisplay (dpy);
 	SyncHandle ();
-	return 0;
+	return NULL;
     }
     *atom = rep.atom;
     if ((name = (char *) Xmalloc(rep.nbytes+1))) {
 	_XReadPad(dpy, name, (long)rep.nbytes);
 	name[rep.nbytes] = '\0';
     } else {
-	_XEatData(dpy, (unsigned long) (rep.nbytes + 3) & ~3);
+	_XEatDataWords(dpy, rep.length);
 	name = (char *) NULL;
     }
     UnlockDisplay(dpy);
@@ -273,4 +280,63 @@ XFixesShowCursor (Display *dpy, Window win)
     req->window = win;
     UnlockDisplay (dpy);
     SyncHandle ();
+}
+
+PointerBarrier
+XFixesCreatePointerBarrier(Display *dpy, Window w, int x1, int y1,
+			   int x2, int y2, int directions,
+			   int num_devices, int *devices)
+{
+    XFixesExtDisplayInfo *info = XFixesFindDisplay (dpy);
+    xXFixesCreatePointerBarrierReq *req;
+    PointerBarrier barrier;
+    int extra = 0;
+
+    XFixesCheckExtension (dpy, info, 0);
+    if (info->major_version < 5)
+	return 0;
+
+    if (num_devices)
+	extra = (((2 * num_devices) + 3) / 4) * 4;
+
+    LockDisplay (dpy);
+    GetReqExtra (XFixesCreatePointerBarrier, extra, req);
+    req->reqType = info->codes->major_opcode;
+    req->xfixesReqType = X_XFixesCreatePointerBarrier;
+    barrier = req->barrier = XAllocID (dpy);
+    req->window = w;
+    req->x1 = x1;
+    req->y1 = y1;
+    req->x2 = x2;
+    req->y2 = y2;
+    req->directions = directions;
+    if ((req->num_devices = num_devices)) {
+	int i;
+	CARD16 *devs = (CARD16 *)(req + 1);
+	for (i = 0; i < num_devices; i++)
+	    devs[i] = (CARD16)(devices[i]);
+    }
+
+    UnlockDisplay (dpy);
+    SyncHandle();
+    return barrier;
+}
+
+void
+XFixesDestroyPointerBarrier(Display *dpy, PointerBarrier b)
+{
+    XFixesExtDisplayInfo *info = XFixesFindDisplay (dpy);
+    xXFixesDestroyPointerBarrierReq *req;
+
+    XFixesSimpleCheckExtension (dpy, info);
+    if (info->major_version < 5)
+	return;
+
+    LockDisplay (dpy);
+    GetReq (XFixesDestroyPointerBarrier, req);
+    req->reqType = info->codes->major_opcode;
+    req->xfixesReqType = X_XFixesDestroyPointerBarrier;
+    req->barrier = b;
+    UnlockDisplay (dpy);
+    SyncHandle();
 }

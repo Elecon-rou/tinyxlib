@@ -1,5 +1,4 @@
 /*
- * $XFree86: xc/lib/Xfixes/Selection.c,v 1.1 2002/11/30 06:21:45 keithp Exp $
  *
  * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
  *
@@ -30,7 +29,7 @@
 void
 XFixesSelectSelectionInput (Display	    *dpy,
 			    Window	    win,
-			    Atom	    selection, 
+			    Atom	    selection,
 			    unsigned long   eventMask)
 {
     XFixesExtDisplayInfo	    *info = XFixesFindDisplay (dpy);

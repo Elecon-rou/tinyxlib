@@ -1,5 +1,4 @@
 /*
- * $XFree86: xc/lib/Xfixes/Xfixes.c,v 1.1 2002/11/30 06:21:45 keithp Exp $
  *
  * Copyright © 2002 Keith Packard, member of The XFree86 Project, Inc.
  *
@@ -32,7 +31,7 @@ char XFixesExtensionName[] = XFIXES_NAME;
 
 static int
 XFixesCloseDisplay (Display *dpy, XExtCodes *codes);
-    
+
 static Bool
 XFixesWireToEvent(Display *dpy, XEvent *event, xEvent *wire);
 
@@ -58,13 +57,13 @@ XFixesExtAddDisplay (XFixesExtInfo *extinfo,
     info->codes = XInitExtension (dpy, ext_name);
 
     /*
-     * if the server has the extension, then we can initialize the 
+     * if the server has the extension, then we can initialize the
      * appropriate function vectors
      */
     if (info->codes) {
 	xXFixesQueryVersionReply	rep;
 	xXFixesQueryVersionReq	*req;
-        XESetCloseDisplay (dpy, info->codes->extension, 
+        XESetCloseDisplay (dpy, info->codes->extension,
                            XFixesCloseDisplay);
 	for (ev = info->codes->first_event;
 	     ev < info->codes->first_event + XFixesNumberEvents;
@@ -82,16 +81,17 @@ XFixesExtAddDisplay (XFixesExtInfo *extinfo,
 	req->xfixesReqType = X_XFixesQueryVersion;
 	req->majorVersion = XFIXES_MAJOR;
 	req->minorVersion = XFIXES_MINOR;
-	if (!_XReply (dpy, (xReply *) &rep, 0, xTrue)) 
+	if (!_XReply (dpy, (xReply *) &rep, 0, xTrue))
 	{
 	    UnlockDisplay (dpy);
 	    SyncHandle ();
 	    Xfree(info);
-	    return 0;
+	    return NULL;
 	}
 	info->major_version = rep.majorVersion;
 	info->minor_version = rep.minorVersion;
 	UnlockDisplay (dpy);
+	SyncHandle ();
     } else {
 	/* The server doesn't have this extension.
 	 * Use a private Xlib-internal extension to hang the close_display
@@ -123,7 +123,7 @@ XFixesExtAddDisplay (XFixesExtInfo *extinfo,
  * XFixesExtRemoveDisplay - remove the indicated display from the
  * extension object. (Replaces XextRemoveDisplay.)
  */
-static int 
+static int
 XFixesExtRemoveDisplay (XFixesExtInfo *extinfo, Display *dpy)
 {
     XFixesExtDisplayInfo *info, *prev;
@@ -164,7 +164,7 @@ XFixesExtRemoveDisplay (XFixesExtInfo *extinfo, Display *dpy)
  * XextFindDisplay.)
  */
 static XFixesExtDisplayInfo *
-XFixesExtFindDisplay (XFixesExtInfo *extinfo, 
+XFixesExtFindDisplay (XFixesExtInfo *extinfo,
 		      Display	    *dpy)
 {
     XFixesExtDisplayInfo *info;
@@ -172,7 +172,7 @@ XFixesExtFindDisplay (XFixesExtInfo *extinfo,
     /*
      * see if this was the most recently accessed display
      */
-    if ((info = extinfo->cur) && info->display == dpy) 
+    if ((info = extinfo->cur) && info->display == dpy)
 	return info;
 
     /*
@@ -198,11 +198,11 @@ XFixesFindDisplay (Display *dpy)
 
     info = XFixesExtFindDisplay (&XFixesExtensionInfo, dpy);
     if (!info)
-	info = XFixesExtAddDisplay (&XFixesExtensionInfo, dpy, 
+	info = XFixesExtAddDisplay (&XFixesExtensionInfo, dpy,
 				    XFixesExtensionName);
     return info;
 }
-    
+
 static int
 XFixesCloseDisplay (Display *dpy, XExtCodes *codes)
 {
@@ -296,34 +296,34 @@ XFixesEventToWire(Display *dpy, XEvent *event, xEvent *wire)
     return False;
 }
 
-Bool 
-XFixesQueryExtension (Display *dpy, int *event_basep, int *error_basep)
+Bool
+XFixesQueryExtension (Display *dpy,
+			int *event_base_return,
+			int *error_base_return)
 {
     XFixesExtDisplayInfo *info = XFixesFindDisplay (dpy);
 
-    if (XFixesHasExtension(info)) 
+    if (XFixesHasExtension(info))
     {
-	*event_basep = info->codes->first_event;
-	*error_basep = info->codes->first_error;
+	*event_base_return = info->codes->first_event;
+	*error_base_return = info->codes->first_error;
 	return True;
-    } 
+    }
     else
 	return False;
 }
 
-Status 
+Status
 XFixesQueryVersion (Display *dpy,
-		    int	    *major_versionp,
-		    int	    *minor_versionp)
+		    int	    *major_version_return,
+		    int	    *minor_version_return)
 {
     XFixesExtDisplayInfo	*info = XFixesFindDisplay (dpy);
 
     XFixesCheckExtension (dpy, info, 0);
 
-    *major_versionp = info->major_version;
-    *minor_versionp = info->minor_version;
-    UnlockDisplay (dpy);
-    SyncHandle ();
+    *major_version_return = info->major_version;
+    *minor_version_return = info->minor_version;
     return 1;
 }
 

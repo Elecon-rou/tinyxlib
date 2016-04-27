@@ -1,6 +1,4 @@
 /*
- * $Id: Region.c,v 1.1 2004/07/31 05:50:39 anholt Exp $
- *
  * Copyright © 2003 Keith Packard
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -251,6 +249,10 @@ XFixesInvertRegion (Display *dpy, XserverRegion dst,
     GetReq (XFixesInvertRegion, req);
     req->reqType = info->codes->major_opcode;
     req->xfixesReqType = X_XFixesInvertRegion;
+    req->x = rect->x;
+    req->y = rect->y;
+    req->width = rect->width;
+    req->height = rect->height;
     req->source = src;
     req->destination = dst;
     UnlockDisplay (dpy);
@@ -301,8 +303,8 @@ XFixesFetchRegion (Display *dpy, XserverRegion region, int *nrectanglesRet)
 }
 
 XRectangle *
-XFixesFetchRegionAndBounds (Display	    *dpy, 
-			    XserverRegion   region, 
+XFixesFetchRegionAndBounds (Display	    *dpy,
+			    XserverRegion   region,
 			    int		    *nrectanglesRet,
 			    XRectangle	    *bounds)
 {
@@ -314,17 +316,18 @@ XFixesFetchRegionAndBounds (Display	    *dpy,
     long    			nbytes;
     long			nread;
 
-    XFixesCheckExtension (dpy, info, 0);
+    XFixesCheckExtension (dpy, info, NULL);
     LockDisplay (dpy);
     GetReq (XFixesFetchRegion, req);
     req->reqType = info->codes->major_opcode;
     req->xfixesReqType = X_XFixesFetchRegion;
     req->region = region;
+    *nrectanglesRet = 0;
     if (!_XReply (dpy, (xReply *) &rep, 0, xFalse))
     {
 	UnlockDisplay (dpy);
 	SyncHandle ();
-	return 0;
+	return NULL;
     }
     bounds->x = rep.x;
     bounds->y = rep.y;
@@ -332,16 +335,16 @@ XFixesFetchRegionAndBounds (Display	    *dpy,
     bounds->height = rep.height;
     nbytes = (long) rep.length << 2;
     nrects = rep.length >> 1;
-    nread = nrects << 3;
     rects = Xmalloc (nrects * sizeof (XRectangle));
     if (!rects)
     {
-	_XEatData (dpy, nbytes);
+	_XEatDataWords(dpy, rep.length);
 	UnlockDisplay (dpy);
 	SyncHandle ();
-	return 0;
+	return NULL;
     }
-    _XRead16 (dpy, (short *) rects, nrects << 3);
+    nread = nrects << 3;
+    _XRead16 (dpy, (short *) rects, nread);
     /* skip any padding */
     if(nbytes > nread)
     {
@@ -354,7 +357,7 @@ XFixesFetchRegionAndBounds (Display	    *dpy,
 }
 
 void
-XFixesSetGCClipRegion (Display *dpy, GC gc, 
+XFixesSetGCClipRegion (Display *dpy, GC gc,
 		       int clip_x_origin, int clip_y_origin,
 		       XserverRegion region)
 {

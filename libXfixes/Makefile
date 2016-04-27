@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xfixes.pc
 	@echo "Name: Xfixes" >> xfixes.pc
 	@echo "Description: X Fixes  Library" >> xfixes.pc
-	@echo "Version: 4.0.3" >> xfixes.pc
+	@echo "Version: 5.0.1" >> xfixes.pc
 	@echo "Requires: x11" >> xfixes.pc
 	@echo "Requires.private: x11" >> xfixes.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xfixes.pc

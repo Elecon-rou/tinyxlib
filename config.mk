@@ -3,7 +3,7 @@
 CC=gcc
 
 # flags
-CPPFLAGS=-Dlinux -D_XOPEN_SOURCE=600 -D_POSIX_SOURCE -D_DEFAULT_SOURCE -DUSECMS 
+CPPFLAGS=-Dlinux -D_XOPEN_SOURCE=600 -D_POSIX_SOURCE -D_DEFAULT_SOURCE -DUSECMS -DHAVE__XEATDATAWORDS
 CFLAGS=-pipe -Os -mtune=generic -Wall -fno-strength-reduce -nodefaultlibs -fno-strict-aliasing -ffunction-sections -fdata-sections $(INCS)
 LDFLAGS=-Wl,--gc-sections,--sort-common,-s $(LIBS)
 
