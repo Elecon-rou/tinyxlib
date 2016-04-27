@@ -48,20 +48,33 @@ from The Open Group.
 /*
  * By Stephen Gildea, X Consortium, and Martha Zimet, NCD.
  */
-/* $XFree86: xc/lib/Xtst/XRecord.c,v 1.9 2005/06/07 08:02:14 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <assert.h>
-#define NEED_EVENTS
-#define NEED_REPLIES
 #include <X11/Xlibint.h>
 #include <X11/extensions/Xext.h>
 #include <X11/extensions/extutil.h>
-#include <X11/extensions/recordstr.h>
+#include <X11/extensions/recordproto.h>
+#include <X11/extensions/record.h>
+#include <limits.h>
+
+#ifndef HAVE__XEATDATAWORDS
+static inline void _XEatDataWords(Display *dpy, unsigned long n)
+{
+# ifndef LONG64
+    if (n >= (ULONG_MAX >> 2))
+        _XIOError(dpy);
+# endif
+    _XEatData (dpy, n << 2);
+}
+#endif
 
 static XExtensionInfo _xrecord_info_data;
 static XExtensionInfo *xrecord_info = &_xrecord_info_data;
-static /* const */ char *xrecord_extension_name = RECORD_NAME;
+static const char *xrecord_extension_name = RECORD_NAME;
 
 #define XRecordCheckExtension(dpy,i,val) \
     XextCheckExtension(dpy, i, xrecord_extension_name, val)
@@ -72,7 +85,7 @@ static /* const */ char *xrecord_extension_name = RECORD_NAME;
  *                                                                        *
  **************************************************************************/
 
-static XEXT_FIND_DISPLAY_PROTO(find_display);
+static XExtDisplayInfo *find_display(Display *dpy);
 
 /*
  * A reply buffer holds a reply from RecordEnableContext.
@@ -116,8 +129,9 @@ struct mem_cache_str
     Bool display_closed;	/* so we know when to free ourself */
 };
 
-static int
-close_display(Display *dpy, XExtCodes *codes)
+static int close_display(
+    Display *dpy,
+    XExtCodes *codes)		/* not used */
 {
     XExtDisplayInfo *info = find_display (dpy);
 
@@ -158,11 +172,10 @@ close_display(Display *dpy, XExtCodes *codes)
     return XextRemoveDisplay(xrecord_info, dpy);
 }
 
-static XPointer
-alloc_mem_cache(void)
+static XPointer alloc_mem_cache(void)
 {
     struct mem_cache_str *cache;
-    
+
     /* note that an error will go unnoticed */
     cache = (struct mem_cache_str *) Xmalloc(sizeof(struct mem_cache_str));
     if (cache) {
@@ -174,7 +187,7 @@ alloc_mem_cache(void)
     return (XPointer) cache;
 }
 
-static char *xrecord_error_list[] = {
+static const char *xrecord_error_list[] = {
     "XRecordBadContext (Not a defined RECORD context)",
 };
 
@@ -206,7 +219,10 @@ static XEXT_GENERATE_FIND_DISPLAY (find_display, xrecord_info,
  **************************************************************************/
 
 static void
-SendRange(Display *dpy, XRecordRange **range_item, int nranges)
+SendRange(
+    Display 	*dpy,
+    XRecordRange **range_item,
+    int   	nranges)
 {
     int 		rlen = SIZEOF(xRecordRange);
     while(nranges--)
@@ -233,7 +249,7 @@ SendRange(Display *dpy, XRecordRange **range_item, int nranges)
        xrange.errorsLast = (*range_item)->errors.last;
        xrange.clientStarted = (*range_item)->client_started;
        xrange.clientDied = (*range_item)->client_died;
- 
+
        Data(dpy, (char *)&xrange, rlen);
        range_item++;
     }
@@ -280,8 +296,9 @@ XRecordQueryVersion(Display *dpy, int *cmajor_return, int *cminor_return)
 }
 
 XRecordContext
-XRecordCreateContext(Display *dpy, int datum_flags, XRecordClientSpec *clients,
-		     int nclients, XRecordRange **ranges, int nranges)
+XRecordCreateContext(Display *dpy, int datum_flags,
+		     XRecordClientSpec *clients, int nclients,
+		     XRecordRange **ranges, int nranges)
 {
     XExtDisplayInfo 	*info = find_display (dpy);
     register xRecordCreateContextReq 	*req;
@@ -309,7 +326,7 @@ XRecordCreateContext(Display *dpy, int datum_flags, XRecordClientSpec *clients,
 }
 
 XRecordRange *
-XRecordAllocRange()
+XRecordAllocRange(void)
 {
     return (XRecordRange*)Xcalloc(1, sizeof(XRecordRange));
 }
@@ -370,7 +387,9 @@ XRecordUnregisterClients(Display *dpy, XRecordContext context,
 }
 
 static void
-WireToLibRange(xRecordRange *wire_range, XRecordRange *lib_range)
+WireToLibRange(
+    xRecordRange *wire_range,
+    XRecordRange *lib_range)
 {
     lib_range->core_requests.first = wire_range->coreRequestsFirst;
     lib_range->core_requests.last = wire_range->coreRequestsLast;
@@ -401,11 +420,9 @@ XRecordGetContext(Display *dpy, XRecordContext context,
     XExtDisplayInfo 	*info = find_display (dpy);
     register 		xRecordGetContextReq   	*req;
     xRecordGetContextReply 	rep;
-    int			count, i, rn;
+    unsigned int	count, i, rn;
     xRecordRange   	xrange;
-    XRecordRange	*ranges;
     xRecordClientInfo   xclient_inf;
-    XRecordClientInfo	**client_inf, *client_inf_str;
     XRecordState	*ret;
 
     XRecordCheckExtension (dpy, info, 0);
@@ -423,7 +440,7 @@ XRecordGetContext(Display *dpy, XRecordContext context,
 
     ret = (XRecordState*)Xmalloc(sizeof(XRecordState));
     if (!ret) {
-	/* XXX - eat data */
+	_XEatDataWords (dpy, rep.length);
 	UnlockDisplay(dpy);
 	SyncHandle();
 	return 0;
@@ -435,16 +452,19 @@ XRecordGetContext(Display *dpy, XRecordContext context,
 
     if (count)
     {
-     	client_inf = (XRecordClientInfo **) Xcalloc(count, sizeof(XRecordClientInfo*));
+	XRecordClientInfo	**client_inf = NULL;
+	XRecordClientInfo	*client_inf_str = NULL;
+
+	if (count < (INT_MAX / sizeof(XRecordClientInfo))) {
+	    client_inf = Xcalloc(count, sizeof(XRecordClientInfo *));
+	    if (client_inf != NULL)
+		client_inf_str = Xmalloc(count * sizeof(XRecordClientInfo));
+	}
 	ret->client_info = client_inf;
-	client_inf_str = (XRecordClientInfo *) Xmalloc(count*sizeof(XRecordClientInfo));
         if (!client_inf || !client_inf_str)
         {
-           for(i = 0; i < count; i++)
-           {
-	        _XEatData (dpy, sizeof(xRecordClientInfo));
-                _XEatData (dpy, SIZEOF(xRecordRange)); /* XXX - don't know how many */
-           }
+	   free(client_inf);
+	   _XEatDataWords (dpy, rep.length);
 	   UnlockDisplay(dpy);
 	   XRecordFreeState(ret);
 	   SyncHandle();
@@ -459,8 +479,18 @@ XRecordGetContext(Display *dpy, XRecordContext context,
 
 	    if (xclient_inf.nRanges)
 	    {
-		client_inf_str[i].ranges = (XRecordRange**) Xcalloc(xclient_inf.nRanges, sizeof(XRecordRange*));
-		ranges = (XRecordRange*) Xmalloc(xclient_inf.nRanges * sizeof(XRecordRange));
+		XRecordRange	*ranges = NULL;
+
+		if (xclient_inf.nRanges < (INT_MAX / sizeof(XRecordRange))) {
+		    client_inf_str[i].ranges =
+			Xcalloc(xclient_inf.nRanges, sizeof(XRecordRange *));
+		    if (client_inf_str[i].ranges != NULL)
+			ranges =
+			    Xmalloc(xclient_inf.nRanges * sizeof(XRecordRange));
+		}
+		else
+		    client_inf_str[i].ranges = NULL;
+
 		if (!client_inf_str[i].ranges || !ranges) {
 		    /* XXX eat data */
 		    UnlockDisplay(dpy);
@@ -508,8 +538,9 @@ XRecordFreeState(XRecordState *state)
     Xfree(state);
 }
 
-static struct reply_buffer *
-alloc_reply_buffer(XExtDisplayInfo *info, int nbytes)
+static struct reply_buffer *alloc_reply_buffer(
+    XExtDisplayInfo *info,
+    int nbytes)
 {
     struct mem_cache_str *cache = (struct mem_cache_str *)info->data;
     struct reply_buffer *rbp;
@@ -555,8 +586,7 @@ alloc_reply_buffer(XExtDisplayInfo *info, int nbytes)
     return rbp;
 }
 
-static XRecordInterceptData *
-alloc_inter_data(XExtDisplayInfo *info)
+static XRecordInterceptData *alloc_inter_data(XExtDisplayInfo *info)
 {
     struct mem_cache_str *cache = (struct mem_cache_str *)info->data;
     struct intercept_queue *iq;
@@ -700,10 +730,13 @@ XRecordFreeData(XRecordInterceptData *data)
 enum parser_return { Continue, End, Error };
 
 static enum parser_return
-parse_reply_call_callback(Display *dpy, XExtDisplayInfo *info,
-			  xRecordEnableContextReply *rep,
-			  struct reply_buffer *reply,
-			  XRecordInterceptProc callback, XPointer closure)
+parse_reply_call_callback(
+    Display *dpy,
+    XExtDisplayInfo *info,
+    xRecordEnableContextReply *rep,
+    struct reply_buffer *reply,
+    XRecordInterceptProc callback,
+    XPointer		 closure)
 {
     int current_index;
     int datum_bytes = 0;
@@ -715,7 +748,7 @@ parse_reply_call_callback(Display *dpy, XExtDisplayInfo *info,
 	data = alloc_inter_data(info);
 	if (!data)
 	    return Error;
-	
+
 	data->id_base = rep->idBase;
 	data->category = rep->category;
 	data->client_swapped = rep->clientSwapped;
@@ -783,7 +816,7 @@ parse_reply_call_callback(Display *dpy, XExtDisplayInfo *info,
 	case XRecordEndOfData:
 	    datum_bytes = 0;
 	}
-	
+
 	if (datum_bytes > 0) {
 	    if (current_index + datum_bytes > rep->length << 2)
 		fprintf(stderr,
@@ -793,7 +826,7 @@ parse_reply_call_callback(Display *dpy, XExtDisplayInfo *info,
 	    /*
 	     * This assignment (and indeed the whole buffer sharing
 	     * scheme) assumes arbitrary 4-byte boundaries are
-	     * addressable. 
+	     * addressable.
 	     */
 	    data->data = reply->buf+current_index;
 	    reply->ref_count++;
@@ -801,9 +834,9 @@ parse_reply_call_callback(Display *dpy, XExtDisplayInfo *info,
 	    data->data = NULL;
 	}
 	data->data_len = datum_bytes >> 2;
-	
+
 	(*callback)(closure, data);
-	
+
 	current_index += datum_bytes;
     } while (current_index<rep->length<<2);
 
@@ -882,8 +915,12 @@ typedef struct _record_async_state
 } record_async_state;
 
 static Bool
-record_async_handler(Display *dpy, xReply *rep, char *buf, int len,
-		     XPointer adata)
+record_async_handler(
+    register Display *dpy,
+    register xReply *rep,
+    char *buf,
+    int len,
+    XPointer adata)
 {
     register record_async_state *state = (record_async_state *)adata;
     struct reply_buffer *reply;
@@ -915,7 +952,7 @@ record_async_handler(Display *dpy, xReply *rep, char *buf, int len,
 	    Xfree(state->async);
 	    return False;
 	}
-	
+
 	_XGetAsyncData(dpy, (char *)reply->buf, buf, len,
 		       SIZEOF(xRecordEnableContextReply),
 		       rep->generic.length << 2, 0);
@@ -923,8 +960,8 @@ record_async_handler(Display *dpy, xReply *rep, char *buf, int len,
 	reply = NULL;
     }
 
-    status = parse_reply_call_callback(dpy, state->info, 
-				       (xRecordEnableContextReply*) rep, 
+    status = parse_reply_call_callback(dpy, state->info,
+				       (xRecordEnableContextReply*) rep,
 				       reply, state->callback, state->closure);
 
     if (status != Continue)

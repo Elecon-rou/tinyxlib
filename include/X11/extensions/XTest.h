@@ -1,4 +1,3 @@
-/* $Xorg: XTest.h,v 1.5 2001/02/09 02:03:24 xorgcvs Exp $ */
 /*
 
 Copyright 1992, 1998  The Open Group
@@ -24,97 +23,65 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/include/extensions/XTest.h,v 3.3 2001/12/14 19:53:28 dawes Exp $ */
 
 #ifndef _XTEST_H_
 #define _XTEST_H_
 
-#include "../Xfuncproto.h"
-
-#define X_XTestGetVersion	0
-#define X_XTestCompareCursor	1
-#define X_XTestFakeInput	2
-#define X_XTestGrabControl	3
-
-#define XTestNumberEvents	0
-
-#define XTestNumberErrors	0
-
-#define XTestMajorVersion	2
-#define XTestMinorVersion	2
-
-#define XTestExtensionName	"XTEST"
-
-#ifndef _XTEST_SERVER_
-
-#include "XInput.h"
+#include <X11/Xfuncproto.h>
+#include <X11/extensions/xtestconst.h>
+#include <X11/extensions/XInput.h>
 
 _XFUNCPROTOBEGIN
 
 Bool XTestQueryExtension(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int*		/* event_basep */,
     int*		/* error_basep */,
     int*		/* majorp */,
     int*		/* minorp */
-#endif
 );
 
 Bool XTestCompareCursorWithWindow(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     Window		/* window */,
     Cursor		/* cursor */
-#endif
 );
 
 Bool XTestCompareCurrentCursorWithWindow(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     Window		/* window */
-#endif
 );
 
 extern int XTestFakeKeyEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     unsigned int	/* keycode */,
     Bool		/* is_press */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeButtonEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     unsigned int	/* button */,
     Bool		/* is_press */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeMotionEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int			/* screen */,
     int			/* x */,
     int			/* y */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeRelativeMotionEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     int			/* x */,
     int			/* y */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeDeviceKeyEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     XDevice*		/* dev */,
     unsigned int	/* keycode */,
@@ -122,11 +89,9 @@ extern int XTestFakeDeviceKeyEvent(
     int*		/* axes */,
     int			/* n_axes */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeDeviceButtonEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     XDevice*		/* dev */,
     unsigned int	/* button */,
@@ -134,22 +99,18 @@ extern int XTestFakeDeviceButtonEvent(
     int*		/* axes */,
     int			/* n_axes */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeProximityEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     XDevice*		/* dev */,
     Bool		/* in_prox */,
     int*		/* axes */,
     int			/* n_axes */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestFakeDeviceMotionEvent(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     XDevice*		/* dev */,
     Bool		/* is_relative */,
@@ -157,38 +118,27 @@ extern int XTestFakeDeviceMotionEvent(
     int*		/* axes */,
     int			/* n_axes */,
     unsigned long	/* delay */
-#endif
 );
 
 extern int XTestGrabControl(
-#if NeedFunctionPrototypes
     Display*		/* dpy */,
     Bool		/* impervious */
-#endif
 );
 
 void XTestSetGContextOfGC(
-#if NeedFunctionPrototypes
     GC			/* gc */,
     GContext		/* gid */
-#endif
 );
 
 void XTestSetVisualIDOfVisual(
-#if NeedFunctionPrototypes
     Visual*		/* visual */,
     VisualID		/* visualid */
-#endif
 );
 
 Status XTestDiscard(
-#if NeedFunctionPrototypes
     Display*		/* dpy */
-#endif
 );
 
 _XFUNCPROTOEND
-
-#endif /* _XTEST_SERVER_ */
 
 #endif

@@ -19,7 +19,7 @@ pkgconf:
 	@echo "" >> xtst.pc
 	@echo "Name: Xtst" >> xtst.pc
 	@echo "Description: The Xtst Library" >> xtst.pc
-	@echo "Version: 1.0.3" >> xtst.pc
+	@echo "Version: 1.2.2" >> xtst.pc
 	@echo "Requires: xx11 xext" >> xtst.pc
 	@echo "Requires.private: x11 xext" >> xtst.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xtst.pc
