@@ -2,8 +2,8 @@ include	../config.mk
 
 CPPFLAGS+=-D_POSIX_C_SOURCE=2  -DFUNCPROTO=15 -DNARROWPROTO -DMALLOC_0_RETURNS_NULL
 
-#OBJS=$(wildcard *.c)
-OBJS=Xrender.c Composite.c Glyph.c Picture.c FillRect.c FillRects.c
+OBJS=$(wildcard *.c)
+#OBJS=Xrender.c Composite.c Glyph.c Picture.c FillRect.c FillRects.c
 
 all:	$(OBJS:.c=.o) pkgconf
 	ar cr libXrender.a $(OBJS:.c=.o) 
@@ -20,7 +20,7 @@ pkgconf:
 	@echo "" >> xrender.pc
 	@echo "Name: Xrender" >> xrender.pc
 	@echo "Description: X Render Library" >> xrender.pc
-	@echo "Version: 1.0.3" >> xrender.pc
+	@echo "Version: 0.9.9" >> xrender.pc
 	@echo "Requires: x11 xau xdmcp" >> xrender.pc
 	@echo "Requires.private: x11 xau xdmcp" >> xrender.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xrender.pc

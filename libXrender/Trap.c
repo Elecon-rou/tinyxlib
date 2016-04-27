@@ -26,54 +26,49 @@
 #endif
 #include "Xrenderint.h"
 
-Cursor
-XRenderCreateCursor (Display	    *dpy,
-		     Picture	    source,
-		     unsigned int   x,
-		     unsigned int   y)
+void
+XRenderCompositeTrapezoids (Display		*dpy,
+			    int			op,
+			    Picture		src,
+			    Picture		dst,
+			    _Xconst XRenderPictFormat	*maskFormat,
+			    int			xSrc,
+			    int			ySrc,
+			    _Xconst XTrapezoid	*traps,
+			    int			ntrap)
 {
-    XRenderExtDisplayInfo		*info = XRenderFindDisplay (dpy);
-    Cursor			cid;
-    xRenderCreateCursorReq	*req;
+    XRenderExtDisplayInfo         *info = XRenderFindDisplay (dpy);
+    xRenderTrapezoidsReq    *req;
+    int			    n;
+    long    		    len;
+    unsigned long	    max_req = dpy->bigreq_size ? dpy->bigreq_size : dpy->max_request_size;
 
-    RenderCheckExtension (dpy, info, 0);
+    RenderSimpleCheckExtension (dpy, info);
     LockDisplay(dpy);
-    GetReq(RenderCreateCursor, req);
-    req->reqType = info->codes->major_opcode;
-    req->renderReqType = X_RenderCreateCursor;
-    req->cid = cid = XAllocID (dpy);
-    req->src = source;
-    req->x = x;
-    req->y = y;
-
+    while (ntrap)
+    {
+	GetReq(RenderTrapezoids, req);
+	req->reqType = info->codes->major_opcode;
+	req->renderReqType = X_RenderTrapezoids;
+	req->op = (CARD8) op;
+	req->src = src;
+	req->dst = dst;
+	req->maskFormat = maskFormat ? maskFormat->id : 0;
+	req->xSrc = xSrc;
+	req->ySrc = ySrc;
+	n = ntrap;
+	len = ((long) n) * (SIZEOF (xTrapezoid) >> 2);
+	if (len > (max_req - req->length)) {
+	    n = (max_req - req->length) / (SIZEOF (xTrapezoid) >> 2);
+	    len = ((long)n) * (SIZEOF (xTrapezoid) >> 2);
+	}
+	SetReqLen (req, len, len);
+	len <<= 2;
+	DataInt32 (dpy, (int *) traps, len);
+	ntrap -= n;
+	traps += n;
+    }
     UnlockDisplay(dpy);
     SyncHandle();
-    return cid;
 }
 
-Cursor
-XRenderCreateAnimCursor (Display	*dpy,
-			 int		ncursor,
-			 XAnimCursor	*cursors)
-{
-    XRenderExtDisplayInfo		*info = XRenderFindDisplay (dpy);
-    Cursor			cid;
-    xRenderCreateAnimCursorReq	*req;
-    long			len;
-
-    RenderCheckExtension (dpy, info, 0);
-    LockDisplay(dpy);
-    GetReq(RenderCreateAnimCursor, req);
-    req->reqType = info->codes->major_opcode;
-    req->renderReqType = X_RenderCreateAnimCursor;
-    req->cid = cid = XAllocID (dpy);
-
-    len = (long) ncursor * SIZEOF (xAnimCursorElt) >> 2;
-    SetReqLen (req, len, len);
-    len <<= 2;
-    Data32 (dpy, (long *) cursors, len);
-
-    UnlockDisplay(dpy);
-    SyncHandle();
-    return cid;
-}

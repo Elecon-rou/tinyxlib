@@ -1,7 +1,6 @@
 /*
- * $XFree86: xc/lib/Xrender/Xrender.h,v 1.10 2001/12/27 01:16:00 keithp Exp $
  *
- * Copyright © 2000 SuSE, Inc.
+ * Copyright Â© 2000 SuSE, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -17,7 +16,7 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL SuSE
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  * Author:  Keith Packard, SuSE, Inc.
@@ -26,11 +25,12 @@
 #ifndef _XRENDER_H_
 #define _XRENDER_H_
 
-#include <X11/extensions/render.h>
-
+#include <X11/Xlib.h>
 #include <X11/Xfuncproto.h>
 #include <X11/Xosdefs.h>
 #include <X11/Xutil.h>
+
+#include <X11/extensions/render.h>
 
 typedef struct {
     short   red;
@@ -64,36 +64,8 @@ typedef struct {
 #define PictFormatAlphaMask (1 << 10)
 #define PictFormatColormap  (1 << 11)
 
-typedef struct {
-    Visual		*visual;
-    XRenderPictFormat	*format;
-} XRenderVisual;
-
-typedef struct {
-    int			depth;
-    int			nvisuals;
-    XRenderVisual	*visuals;
-} XRenderDepth;
-
-typedef struct {
-    XRenderDepth	*depths;
-    int			ndepths;
-    XRenderPictFormat	*fallback;
-} XRenderScreen;
-
-typedef struct _XRenderInfo {
-    XRenderPictFormat	*format;
-    int			nformat;
-    XRenderScreen	*screen;
-    int			nscreen;
-    XRenderDepth	*depth;
-    int			ndepth;
-    XRenderVisual	*visual;
-    int			nvisual;
-} XRenderInfo;
-
 typedef struct _XRenderPictureAttributes {
-    Bool		repeat;
+    int 		repeat;
     Picture		alpha_map;
     int			alpha_x_origin;
     int			alpha_y_origin;
@@ -148,6 +120,84 @@ typedef struct _XGlyphElt32 {
     int			    yOff;
 } XGlyphElt32;
 
+typedef double	XDouble;
+
+typedef struct _XPointDouble {
+    XDouble  x, y;
+} XPointDouble;
+
+#define XDoubleToFixed(f)    ((XFixed) ((f) * 65536))
+#define XFixedToDouble(f)    (((XDouble) (f)) / 65536)
+
+typedef int XFixed;
+
+typedef struct _XPointFixed {
+    XFixed  x, y;
+} XPointFixed;
+
+typedef struct _XLineFixed {
+    XPointFixed	p1, p2;
+} XLineFixed;
+
+typedef struct _XTriangle {
+    XPointFixed	p1, p2, p3;
+} XTriangle;
+
+typedef struct _XCircle {
+    XFixed x;
+    XFixed y;
+    XFixed radius;
+} XCircle;
+
+typedef struct _XTrapezoid {
+    XFixed  top, bottom;
+    XLineFixed	left, right;
+} XTrapezoid;
+
+typedef struct _XTransform {
+    XFixed  matrix[3][3];
+} XTransform;
+
+typedef struct _XFilters {
+    int	    nfilter;
+    char    **filter;
+    int	    nalias;
+    short   *alias;
+} XFilters;
+
+typedef struct _XIndexValue {
+    unsigned long    pixel;
+    unsigned short   red, green, blue, alpha;
+} XIndexValue;
+
+typedef struct _XAnimCursor {
+    Cursor	    cursor;
+    unsigned long   delay;
+} XAnimCursor;
+
+typedef struct _XSpanFix {
+    XFixed	    left, right, y;
+} XSpanFix;
+
+typedef struct _XTrap {
+    XSpanFix	    top, bottom;
+} XTrap;
+
+typedef struct _XLinearGradient {
+    XPointFixed p1;
+    XPointFixed p2;
+} XLinearGradient;
+
+typedef struct _XRadialGradient {
+    XCircle inner;
+    XCircle outer;
+} XRadialGradient;
+
+typedef struct _XConicalGradient {
+    XPointFixed center;
+    XFixed angle; /* in degrees */
+} XConicalGradient;
+
 _XFUNCPROTOBEGIN
 
 Bool XRenderQueryExtension (Display *dpy, int *event_basep, int *error_basep);
@@ -157,6 +207,10 @@ Status XRenderQueryVersion (Display *dpy,
 			    int     *minor_versionp);
 
 Status XRenderQueryFormats (Display *dpy);
+
+int XRenderQuerySubpixelOrder (Display *dpy, int screen);
+
+Bool XRenderSetSubpixelOrder (Display *dpy, int screen, int subpixel);
 
 XRenderPictFormat *
 XRenderFindVisualFormat (Display *dpy, _Xconst Visual *visual);
@@ -177,7 +231,12 @@ XRenderFindFormat (Display			*dpy,
 XRenderPictFormat *
 XRenderFindStandardFormat (Display		*dpy,
 			   int			format);
-    
+
+XIndexValue *
+XRenderQueryPictIndexValues(Display			*dpy,
+			    _Xconst XRenderPictFormat	*format,
+			    int				*num);
+
 Picture
 XRenderCreatePicture (Display				*dpy,
 		      Drawable				drawable,
@@ -203,6 +262,11 @@ void
 XRenderSetPictureClipRegion (Display	    *dpy,
 			     Picture	    picture,
 			     Region	    r);
+
+void
+XRenderSetPictureTransform (Display	    *dpy,
+			    Picture	    picture,
+			    XTransform	    *transform);
 
 void
 XRenderFreePicture (Display                   *dpy,
@@ -345,6 +409,119 @@ XRenderFillRectangles (Display		    *dpy,
 		       _Xconst XRenderColor *color,
 		       _Xconst XRectangle   *rectangles,
 		       int		    n_rects);
+
+void
+XRenderCompositeTrapezoids (Display		*dpy,
+			    int			op,
+			    Picture		src,
+			    Picture		dst,
+			    _Xconst XRenderPictFormat	*maskFormat,
+			    int			xSrc,
+			    int			ySrc,
+			    _Xconst XTrapezoid	*traps,
+			    int			ntrap);
+
+void
+XRenderCompositeTriangles (Display		*dpy,
+			   int			op,
+			   Picture		src,
+			   Picture		dst,
+			    _Xconst XRenderPictFormat	*maskFormat,
+			   int			xSrc,
+			   int			ySrc,
+			   _Xconst XTriangle	*triangles,
+			   int			ntriangle);
+
+void
+XRenderCompositeTriStrip (Display		*dpy,
+			  int			op,
+			  Picture		src,
+			  Picture		dst,
+			    _Xconst XRenderPictFormat	*maskFormat,
+			  int			xSrc,
+			  int			ySrc,
+			  _Xconst XPointFixed	*points,
+			  int			npoint);
+
+void
+XRenderCompositeTriFan (Display			*dpy,
+			int			op,
+			Picture			src,
+			Picture			dst,
+			_Xconst XRenderPictFormat	*maskFormat,
+			int			xSrc,
+			int			ySrc,
+			_Xconst XPointFixed	*points,
+			int			npoint);
+
+void
+XRenderCompositeDoublePoly (Display		    *dpy,
+			    int			    op,
+			    Picture		    src,
+			    Picture		    dst,
+			    _Xconst XRenderPictFormat	*maskFormat,
+			    int			    xSrc,
+			    int			    ySrc,
+			    int			    xDst,
+			    int			    yDst,
+			    _Xconst XPointDouble    *fpoints,
+			    int			    npoints,
+			    int			    winding);
+Status
+XRenderParseColor(Display	*dpy,
+		  char		*spec,
+		  XRenderColor	*def);
+
+Cursor
+XRenderCreateCursor (Display	    *dpy,
+		     Picture	    source,
+		     unsigned int   x,
+		     unsigned int   y);
+
+XFilters *
+XRenderQueryFilters (Display *dpy, Drawable drawable);
+
+void
+XRenderSetPictureFilter (Display    *dpy,
+			 Picture    picture,
+			 const char *filter,
+			 XFixed	    *params,
+			 int	    nparams);
+
+Cursor
+XRenderCreateAnimCursor (Display	*dpy,
+			 int		ncursor,
+			 XAnimCursor	*cursors);
+
+
+void
+XRenderAddTraps (Display	    *dpy,
+		 Picture	    picture,
+		 int		    xOff,
+		 int		    yOff,
+		 _Xconst XTrap	    *traps,
+		 int		    ntrap);
+
+Picture XRenderCreateSolidFill (Display *dpy,
+                                const XRenderColor *color);
+
+Picture XRenderCreateLinearGradient (Display *dpy,
+                                     const XLinearGradient *gradient,
+                                     const XFixed *stops,
+                                     const XRenderColor *colors,
+                                     int nstops);
+
+Picture XRenderCreateRadialGradient (Display *dpy,
+                                     const XRadialGradient *gradient,
+                                     const XFixed *stops,
+                                     const XRenderColor *colors,
+                                     int nstops);
+
+Picture XRenderCreateConicalGradient (Display *dpy,
+                                      const XConicalGradient *gradient,
+                                      const XFixed *stops,
+                                      const XRenderColor *colors,
+                                      int nstops);
 
 _XFUNCPROTOEND
 

@@ -1,7 +1,6 @@
 /*
- * $XFree86: xc/lib/Xrender/Picture.c,v 1.8 2001/12/16 18:27:55 keithp Exp $
  *
- * Copyright © 2000 SuSE, Inc.
+ * Copyright Â© 2000 SuSE, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -17,14 +16,17 @@
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL SuSE
  * BE LIABLE FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
- * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN 
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  * Author:  Keith Packard, SuSE, Inc.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Xrenderint.h"
-#include <X11/region.h>
+#include <X11/Xregion.h>
 
 static void
 _XRenderProcessPictureAttributes (Display		    *dpy,
@@ -35,7 +37,7 @@ _XRenderProcessPictureAttributes (Display		    *dpy,
     unsigned long values[32];
     register unsigned long *value = values;
     unsigned int nvalues;
-    
+
     if (valuemask & CPRepeat)
 	*value++ = attributes->repeat;
     if (valuemask & CPAlphaMap)
@@ -76,7 +78,7 @@ XRenderCreatePicture (Display			*dpy,
 		      unsigned long		valuemask,
 		      _Xconst XRenderPictureAttributes	*attributes)
 {
-    XExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
     Picture		    pid;
     xRenderCreatePictureReq *req;
 
@@ -104,9 +106,9 @@ XRenderChangePicture (Display                   *dpy,
 		      unsigned long             valuemask,
 		      _Xconst XRenderPictureAttributes  *attributes)
 {
-    XExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
     xRenderChangePictureReq *req;
-    
+
     RenderSimpleCheckExtension (dpy, info);
     LockDisplay(dpy);
     GetReq(RenderChangePicture, req);
@@ -124,7 +126,7 @@ XRenderChangePicture (Display                   *dpy,
 
 static void
 _XRenderSetPictureClipRectangles (Display	    *dpy,
-				  XExtDisplayInfo   *info,
+				  XRenderExtDisplayInfo   *info,
 				  Picture	    picture,
 				  int		    xOrigin,
 				  int		    yOrigin,
@@ -154,11 +156,11 @@ XRenderSetPictureClipRectangles (Display	*dpy,
 				 _Xconst XRectangle	*rects,
 				 int		n)
 {
-    XExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
-    
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+
     RenderSimpleCheckExtension (dpy, info);
     LockDisplay(dpy);
-    _XRenderSetPictureClipRectangles (dpy, info, picture, 
+    _XRenderSetPictureClipRectangles (dpy, info, picture,
 				      xOrigin, yOrigin, rects, n);
     UnlockDisplay (dpy);
     SyncHandle ();
@@ -169,12 +171,12 @@ XRenderSetPictureClipRegion (Display	    *dpy,
 			     Picture	    picture,
 			     Region	    r)
 {
-    XExtDisplayInfo *info = XRenderFindDisplay (dpy);
+    XRenderExtDisplayInfo *info = XRenderFindDisplay (dpy);
     int		    i;
     XRectangle	    *xr, *pr;
     BOX		    *pb;
     unsigned long   total;
-    
+
     RenderSimpleCheckExtension (dpy, info);
     LockDisplay(dpy);
     total = r->numRects * sizeof (XRectangle);
@@ -187,19 +189,47 @@ XRenderSetPictureClipRegion (Display	    *dpy,
 	}
     }
     if (xr || !r->numRects)
-	_XRenderSetPictureClipRectangles (dpy, info, picture, 0, 0, 
+	_XRenderSetPictureClipRectangles (dpy, info, picture, 0, 0,
 					  xr, r->numRects);
     if (xr)
 	_XFreeTemp(dpy, (char *)xr, total);
     UnlockDisplay(dpy);
     SyncHandle();
-}    
+}
+
+void
+XRenderSetPictureTransform (Display	*dpy,
+			    Picture	picture,
+			    XTransform	*transform)
+{
+    XRenderExtDisplayInfo		    *info = XRenderFindDisplay (dpy);
+    xRenderSetPictureTransformReq   *req;
+
+    RenderSimpleCheckExtension (dpy, info);
+    LockDisplay (dpy);
+    GetReq(RenderSetPictureTransform, req);
+    req->reqType = info->codes->major_opcode;
+    req->renderReqType = X_RenderSetPictureTransform;
+    req->picture = picture;
+    req->transform.matrix11 = transform->matrix[0][0];
+    req->transform.matrix12 = transform->matrix[0][1];
+    req->transform.matrix13 = transform->matrix[0][2];
+    req->transform.matrix21 = transform->matrix[1][0];
+    req->transform.matrix22 = transform->matrix[1][1];
+    req->transform.matrix23 = transform->matrix[1][2];
+    req->transform.matrix31 = transform->matrix[2][0];
+    req->transform.matrix32 = transform->matrix[2][1];
+    req->transform.matrix33 = transform->matrix[2][2];
+    UnlockDisplay(dpy);
+    SyncHandle();
+
+}
 
 void
 XRenderFreePicture (Display                   *dpy,
 		    Picture                   picture)
 {
-    XExtDisplayInfo         *info = XRenderFindDisplay (dpy);
+    XRenderExtDisplayInfo         *info = XRenderFindDisplay (dpy);
     xRenderFreePictureReq   *req;
 
     RenderSimpleCheckExtension (dpy, info);
@@ -210,4 +240,133 @@ XRenderFreePicture (Display                   *dpy,
     req->picture = picture;
     UnlockDisplay(dpy);
     SyncHandle();
+}
+
+
+Picture XRenderCreateSolidFill(Display *dpy,
+                               const XRenderColor *color)
+{
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    Picture		    pid;
+    xRenderCreateSolidFillReq *req;
+
+    RenderCheckExtension (dpy, info, 0);
+    LockDisplay(dpy);
+    GetReq(RenderCreateSolidFill, req);
+    req->reqType = info->codes->major_opcode;
+    req->renderReqType = X_RenderCreateSolidFill;
+
+    req->pid = pid = XAllocID(dpy);
+    req->color.red = color->red;
+    req->color.green = color->green;
+    req->color.blue = color->blue;
+    req->color.alpha = color->alpha;
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return pid;
+}
+
+
+Picture XRenderCreateLinearGradient(Display *dpy,
+                                    const XLinearGradient *gradient,
+                                    const XFixed *stops,
+                                    const XRenderColor *colors,
+                                    int nStops)
+{
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    Picture		    pid;
+    xRenderCreateLinearGradientReq *req;
+    long			   len;
+
+    RenderCheckExtension (dpy, info, 0);
+    LockDisplay(dpy);
+    GetReq(RenderCreateLinearGradient, req);
+    req->reqType = info->codes->major_opcode;
+    req->renderReqType = X_RenderCreateLinearGradient;
+
+    req->pid = pid = XAllocID(dpy);
+    req->p1.x = gradient->p1.x;
+    req->p1.y = gradient->p1.y;
+    req->p2.x = gradient->p2.x;
+    req->p2.y = gradient->p2.y;
+
+    req->nStops = nStops;
+    len = (long) nStops * 3;
+    SetReqLen (req, len, 6);
+    DataInt32(dpy, stops, nStops * 4);
+    Data16(dpy, colors, nStops * 8);
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return pid;
+}
+
+Picture XRenderCreateRadialGradient(Display *dpy,
+                                    const XRadialGradient *gradient,
+                                    const XFixed *stops,
+                                    const XRenderColor *colors,
+                                    int nStops)
+{
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    Picture		    pid;
+    xRenderCreateRadialGradientReq *req;
+    long			   len;
+
+    RenderCheckExtension (dpy, info, 0);
+    LockDisplay(dpy);
+    GetReq(RenderCreateRadialGradient, req);
+    req->reqType = info->codes->major_opcode;
+    req->renderReqType = X_RenderCreateRadialGradient;
+
+    req->pid = pid = XAllocID(dpy);
+    req->inner.x = gradient->inner.x;
+    req->inner.y = gradient->inner.y;
+    req->outer.x = gradient->outer.x;
+    req->outer.y = gradient->outer.y;
+    req->inner_radius = gradient->inner.radius;
+    req->outer_radius = gradient->outer.radius;
+
+    req->nStops = nStops;
+    len = (long) nStops * 3;
+    SetReqLen (req, len, 6);
+    DataInt32(dpy, stops, nStops * 4);
+    Data16(dpy, colors, nStops * 8);
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return pid;
+}
+
+Picture XRenderCreateConicalGradient(Display *dpy,
+                                     const XConicalGradient *gradient,
+                                     const XFixed *stops,
+                                     const XRenderColor *colors,
+                                     int nStops)
+{
+    XRenderExtDisplayInfo	    *info = XRenderFindDisplay (dpy);
+    Picture		    pid;
+    xRenderCreateConicalGradientReq *req;
+    long			    len;
+
+    RenderCheckExtension (dpy, info, 0);
+    LockDisplay(dpy);
+    GetReq(RenderCreateConicalGradient, req);
+    req->reqType = info->codes->major_opcode;
+    req->renderReqType = X_RenderCreateConicalGradient;
+
+    req->pid = pid = XAllocID(dpy);
+    req->center.x = gradient->center.x;
+    req->center.y = gradient->center.y;
+    req->angle = gradient->angle;
+
+    req->nStops = nStops;
+    len = (long) nStops * 3;
+    SetReqLen (req, len, 6);
+    DataInt32(dpy, stops, nStops * 4);
+    Data16(dpy, colors, nStops * 8);
+
+    UnlockDisplay(dpy);
+    SyncHandle();
+    return pid;
 }
