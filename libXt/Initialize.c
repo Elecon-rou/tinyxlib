@@ -1,6 +1,26 @@
 /***********************************************************
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
@@ -8,7 +28,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Digital or Sun not be
+supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
@@ -20,17 +40,7 @@ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/Initialize.c,v 3.25 2006/06/19 13:43:24 tsi Exp $ */
 
 /*
 
@@ -60,6 +70,9 @@ in this Software without prior written authorization from The Open Group.
 
 /* Make sure all wm properties can make it out of the resource manager */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "StringDefs.h"
 #include "CoreP.h"
@@ -69,12 +82,24 @@ in this Software without prior written authorization from The Open Group.
 #ifdef XTHREADS
 #include <X11/Xthreads.h>
 #endif
+#ifndef WIN32
 #define X_INCLUDE_PWD_H
 #define XOS_USE_XT_LOCKING
 #include <X11/Xos_r.h>
+#endif
 
 #include <stdlib.h>
 
+#if (defined(SUNSHLIB) || defined(AIXSHLIB)) && defined(SHAREDCODE)
+/*
+ * If used as a shared library, generate code under a different name so that
+ * the stub routines in sharedlib.c get loaded into the application binary.
+ */
+#define XtToolkitInitialize _XtToolkitInitialize
+#define XtOpenApplication _XtOpenApplication
+#define XtAppInitialize _XtAppInitialize
+#define XtInitialize _XtInitialize
+#endif /* (SUNSHLIB || AIXSHLIB) && SHAREDCODE */
 
 /*
  * hpux
@@ -82,8 +107,13 @@ in this Software without prior written authorization from The Open Group.
  * -DUSE_UNAME in the appropriate config file to get long hostnames.
  */
 
+#ifdef USG
+#define USE_UNAME
+#endif
 
+#ifdef USE_UNAME
 #include <sys/utsname.h>
+#endif
 
 /* some unspecified magic number of expected search levels for Xrm */
 #define SEARCH_LIST_SIZE 1000
@@ -133,22 +163,105 @@ static void GetHostname (
     char *buf,
     int maxlen)
 {
+#ifdef USE_UNAME
     int len;
     struct utsname name;
 
-    if ((maxlen <= 0) || (buf == NULL) || (uname(&name) < 0))
+    if (maxlen <= 0 || buf == NULL)
 	return;
 
-    len = strlen(name.nodename);
-    if (len >= maxlen)
-	len = maxlen - 1;
-    (void) strncpy(buf, name.nodename, len);
-    buf[len] = '\0';
+    uname (&name);
+    len = strlen (name.nodename);
+    if (len >= maxlen) len = maxlen;
+    (void) strncpy (buf, name.nodename, len-1);
+    buf[len-1] = '\0';
+#else
+    if (maxlen <= 0 || buf == NULL)
+	return;
+
+    buf[0] = '\0';
+    (void) gethostname (buf, maxlen);
+    buf [maxlen - 1] = '\0';
+#endif
 }
 
 
+#ifdef SUNSHLIB
+void _XtInherit(void)
+{
+    extern void __XtInherit();
+    __XtInherit();
+}
+#define _XtInherit __XtInherit
+#endif
 
 
+#if defined (WIN32) || defined(__CYGWIN__)
+/*
+ * The Symbol _XtInherit is used in two different manners.
+ * First it could be used as a generic function and second
+ * as an absolute address reference, which will be used to
+ * check the initialisation process of several other libraries.
+ * Because of this the symbol must be accessable by all
+ * client dll's and applications.  In unix environments
+ * this is no problem, because the used shared libraries
+ * format (elf) supports this immediatly.  Under Windows
+ * this isn't true, because a functions address in a dll
+ * is different from the same function in another dll or
+ * applications, because the used Portable Executable
+ * File adds a code stub to each client to provide the
+ * exported symbol name.  This stub uses an indirect
+ * pointer to get the original symbol address, which is
+ * then jumped to, like in this example:
+ *
+ * --- client ---                                     --- dll ----
+ *  ...
+ *  call foo
+ *
+ * foo: jmp (*_imp_foo)               ---->           foo: ....
+ *      nop
+ *      nop
+ *
+ * _imp_foo: .long <index of foo in dll export table, is
+ *		    set to the real address by the runtime linker>
+ *
+ * Now it is clear why the clients symbol foo isn't the same
+ * as in the dll and we can think about how to deal which
+ * this two above mentioned requirements, to export this
+ * symbol to all clients and to allow calling this symbol
+ * as a function.  The solution I've used exports the
+ * symbol _XtInherit as data symbol, because global data
+ * symbols are exported to all clients.  But how to deal
+ * with the second requirement, that this symbol should
+ * be used as function.  The Trick is to build a little
+ * code stub in the data section in the exact manner as
+ * above explained.  This is done with the assembler code
+ * below.
+ *
+ * Ralf Habacker
+ *
+ * References:
+ * msdn          http://msdn.microsoft.com/msdnmag/issues/02/02/PE/PE.asp
+ * cygwin-xfree: http://www.cygwin.com/ml/cygwin-xfree/2003-10/msg00000.html
+ */
+
+#ifdef __x86_64__
+asm (".section .trampoline, \"dwx\" \n\
+ .globl _XtInherit        \n\
+ _XtInherit:              \n\
+    jmp *_y(%rip)         \n\
+_y: .quad __XtInherit     \n\
+    .text                 \n");
+#else
+asm (".data\n\
+ .globl __XtInherit        \n\
+ __XtInherit:      jmp *_y \n\
+  _y: .long ___XtInherit   \n\
+    .text                 \n");
+#endif
+
+#define _XtInherit __XtInherit
+#endif
 
 
 void _XtInherit(void)
@@ -191,6 +304,15 @@ String _XtGetUserName(
     String dest,
     int len)
 {
+#ifdef WIN32
+    String ptr = NULL;
+
+    if ((ptr = getenv("USERNAME"))) {
+	(void) strncpy (dest, ptr, len-1);
+	dest[len-1] = '\0';
+    } else
+	*dest = '\0';
+#else
 #ifdef X_NEEDS_PWPARAMS
     _Xgetpwparams pwparams;
 #endif
@@ -207,6 +329,7 @@ String _XtGetUserName(
 	} else
 	    *dest = '\0';
     }
+#endif
     return dest;
 }
 
@@ -215,6 +338,25 @@ static String GetRootDirName(
     String dest,
     int len)
 {
+#ifdef WIN32
+    register char *ptr1;
+    register char *ptr2 = NULL;
+    int len1 = 0, len2 = 0;
+
+    if (ptr1 = getenv("HOME")) {	/* old, deprecated */
+	len1 = strlen (ptr1);
+    } else if ((ptr1 = getenv("HOMEDRIVE")) && (ptr2 = getenv("HOMEDIR"))) {
+	len1 = strlen (ptr1);
+	len2 = strlen (ptr2);
+    } else if (ptr2 = getenv("USERNAME")) {
+	len1 = strlen (ptr1 = "/users/");
+	len2 = strlen (ptr2);
+    }
+    if ((len1 + len2 + 1) < len)
+	sprintf (dest, "%s%s", ptr1, (ptr2) ? ptr2 : "");
+    else
+	*dest = '\0';
+#else
 #ifdef X_NEEDS_PWPARAMS
     _Xgetpwparams pwparams;
 #endif
@@ -238,6 +380,7 @@ static String GetRootDirName(
 	} else
 	    *dest = '\0';
     }
+#endif
     return dest;
 }
 
@@ -246,30 +389,26 @@ static void CombineAppUserDefaults(
     XrmDatabase *pdb)
 {
     char* filename;
-    char* path;
+    char* path = NULL;
     Boolean deallocate = False;
 
     if (!(path = getenv("XUSERFILESEARCHPATH"))) {
+#if !defined(WIN32) || !defined(__MINGW32__)
 	char *old_path;
 	char homedir[PATH_MAX];
 	GetRootDirName(homedir, PATH_MAX);
 	if (!(old_path = getenv("XAPPLRESDIR"))) {
-	    char *path_default = "%s/%%L/%%N%%C:%s/%%l/%%N%%C:%s/%%N%%C:%s/%%L/%%N:%s/%%l/%%N:%s/%%N";
-	    if (!(path =
-		  ALLOCATE_LOCAL(6*strlen(homedir) + strlen(path_default))))
-		_XtAllocError(NULL);
-	    sprintf( path, path_default,
-		    homedir, homedir, homedir, homedir, homedir, homedir );
+	    XtAsprintf(&path,
+		       "%s/%%L/%%N%%C:%s/%%l/%%N%%C:%s/%%N%%C:%s/%%L/%%N:%s/%%l/%%N:%s/%%N",
+		       homedir, homedir, homedir, homedir, homedir, homedir);
 	} else {
-	    char *path_default = "%s/%%L/%%N%%C:%s/%%l/%%N%%C:%s/%%N%%C:%s/%%N%%C:%s/%%L/%%N:%s/%%l/%%N:%s/%%N:%s/%%N";
-	    if (!(path =
-		  ALLOCATE_LOCAL( 6*strlen(old_path) + 2*strlen(homedir)
-				 + strlen(path_default))))
-		_XtAllocError(NULL);
-	    sprintf(path, path_default, old_path, old_path, old_path, homedir,
-		    old_path, old_path, old_path, homedir );
+	    XtAsprintf(&path,
+		       "%s/%%L/%%N%%C:%s/%%l/%%N%%C:%s/%%N%%C:%s/%%N%%C:%s/%%L/%%N:%s/%%l/%%N:%s/%%N:%s/%%N",
+		       old_path, old_path, old_path, homedir,
+		       old_path, old_path, old_path, homedir);
 	}
 	deallocate = True;
+#endif
     }
 
     filename = XtResolvePathname(dpy, NULL, NULL, NULL, path, NULL, 0, NULL);
@@ -278,14 +417,19 @@ static void CombineAppUserDefaults(
 	XtFree(filename);
     }
 
-    if (deallocate) DEALLOCATE_LOCAL(path);
+    if (deallocate)
+	XtFree(path);
 }
 
 static void CombineUserDefaults(
     Display *dpy,
     XrmDatabase *pdb)
 {
-    char *slashDotXdefaults = "/.Xdefaults";
+#ifdef __MINGW32__
+    const char *slashDotXdefaults = "/Xdefaults";
+#else
+    const char *slashDotXdefaults = "/.Xdefaults";
+#endif
     char *dpy_defaults = XResourceManagerString(dpy);
 
     if (dpy_defaults) {
@@ -423,13 +567,17 @@ XrmDatabase XtScreenDatabase(
 
 	if (!(filename = getenv("XENVIRONMENT"))) {
 	    int len;
-	    char *slashDotXdefaultsDash = "/.Xdefaults-";
+#ifdef __MINGW32__
+	    const char *slashDotXdefaultsDash = "/Xdefaults-";
+#else
+	    const char *slashDotXdefaultsDash = "/.Xdefaults-";
+#endif
 
 	    (void) GetRootDirName(filename = filenamebuf,
 			PATH_MAX - strlen (slashDotXdefaultsDash) - 1);
 	    (void) strcat(filename, slashDotXdefaultsDash);
 	    len = strlen(filename);
-	    GetHostname (filename+len, PATH_MAX-1-len);
+	    GetHostname (filename+len, PATH_MAX-len);
 	}
 	(void)XrmCombineFileDatabase(filename, &db, False);
     }
@@ -612,7 +760,7 @@ XrmDatabase _XtPreparseCommandLine(
     String *displayName,
     String *language)
 {
-    XrmDatabase db = 0;
+    XrmDatabase db = NULL;
     XrmOptionDescRec *options;
     Cardinal num_options;
     XrmName name_list[3];

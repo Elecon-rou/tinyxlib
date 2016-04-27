@@ -1,5 +1,3 @@
-/* $XFree86: xc/lib/Xt/Pointer.c,v 1.4 2005/03/29 04:00:30 tsi Exp $ */
-
 /********************************************************
 
 Copyright 1988 by Hewlett-Packard Company
@@ -50,6 +48,9 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "PassivGraI.h"
 

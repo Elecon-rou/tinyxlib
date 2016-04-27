@@ -51,8 +51,10 @@ dealings in this Software without prior written authorization from the IBM
 Corporation.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/ResConfig.c,v 3.12 2006/12/10 15:58:24 tsi Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "Intrinsic.h"
 #include "IntrinsicI.h"
 #include "Core.h"
@@ -69,9 +71,6 @@ Corporation.
 static void _search_child(Widget, char *, char *, char *, char *, char, char *);
 static void _set_and_search(Widget, char *, char *, char *, char *, char , char *);
 static int _locate_children(Widget, Widget **);
-
-# define Strtoul(a,b,c) strtoul(a,b,c)
-
 
 /*
  * NAME: _set_resource_values
@@ -168,18 +167,13 @@ _set_resource_values (
 		 * create resource name string
 		 */
 		if (resource_name) {
-			temp = XtMalloc (sizeof(char) *
-				(2 + strlen(cur->core.name)
-			   	+ strlen(resource_name)));
-			sprintf (temp, ".%s%s", cur->core.name, resource_name);
+			XtAsprintf (&temp, ".%s%s", cur->core.name, resource_name);
 			XtFree (resource_name);
 		} else if (!XtIsWidget (cur) || !cur->core.name) {
 			cur = XtParent(cur);
 			continue;
 		} else {
-			temp = XtMalloc (sizeof(char) *
-				(2 + strlen(cur->core.name)));
-			sprintf (temp, ".%s", cur->core.name);
+			XtAsprintf (&temp, ".%s", cur->core.name);
 		}
 		resource_name = temp;
 
@@ -191,31 +185,19 @@ _set_resource_values (
 				(ApplicationShellWidget) (cur);
 
 			if (resource_class) {
-				temp = XtMalloc (sizeof(char) *
-					(2 + strlen(top->application.class)
-					+ strlen(resource_class)));
-				sprintf (temp, ".%s%s",
+				XtAsprintf (&temp, ".%s%s",
 					top->application.class, resource_class);
 			} else {
-				temp = XtMalloc (sizeof(char) *
-					(2 + strlen(top->application.class)));
-				sprintf (temp, ".%s",
+				XtAsprintf (&temp, ".%s",
 					top->application.class);
 			}
 		} else {
 			if (resource_class) {
-				temp = XtMalloc (sizeof(char) *
-					(2 + strlen(
-					cur->core.widget_class->core_class.class_name)
-					+ strlen(resource_class)));
-				sprintf (temp, ".%s%s",
+				XtAsprintf (&temp, ".%s%s",
 					cur->core.widget_class->core_class.class_name,
 					resource_class);
 			} else {
-				temp = XtMalloc (sizeof(char) *
-					(2 + strlen(
-					cur->core.widget_class->core_class.class_name)));
-				sprintf (temp, ".%s",
+				XtAsprintf (&temp, ".%s",
 					cur->core.widget_class->core_class.class_name);
 			}
 		}
@@ -229,9 +211,7 @@ _set_resource_values (
 	/*
 	 * add the resource name to the end of the resource name string
 	 */
-	temp = XtMalloc (2 + strlen(resource_name) +
-		strlen(resources_return[res_index].resource_name));
-	sprintf (temp, "%s.%s", resource_name,
+	XtAsprintf (&temp, "%s.%s", resource_name,
 		resources_return[res_index].resource_name);
 	if (resource_name != NULL)
 		XtFree (resource_name);
@@ -240,9 +220,7 @@ _set_resource_values (
 	/*
 	 * add the resource class to the end of the resource class string
 	 */
-	temp = XtMalloc (2 + strlen(resource_class) +
-		strlen(resources_return[res_index].resource_class));
-	sprintf (temp, "%s.%s", resource_class,
+	XtAsprintf (&temp, "%s.%s", resource_class,
 		resources_return[res_index].resource_class);
 	if (resource_class != NULL)
 		XtFree (resource_class);
@@ -653,8 +631,8 @@ _get_last_part (
 		*part = XtNewString (loose);
 		return ('*');
 	}
+	*part = NULL;
 
-	*part = 0;
 	return ('0');	/* error - return 0 */
 }
 
@@ -740,7 +718,7 @@ _search_widget_tree (
 	/*
 	 * this case covers resources of only one level (eg. *background)
 	 */
-	if (strcmp (remainder, "") == 0) {
+	if (remainder[0] == 0) {
 		_set_resource_values (w, resource, value, last_part);
 		if (last_token == '*')
 			_apply_values_to_children (parent, remainder, resource,
@@ -751,8 +729,7 @@ _search_widget_tree (
 	 */
 	} else {
 		if (remainder[0] != '*' && remainder[0] != '.') {
-			copy = XtMalloc (strlen(remainder) + 2);
-			sprintf (copy, ".%s", remainder);
+			XtAsprintf (&copy, ".%s", remainder);
 			XtFree (remainder);
 			remainder = copy;
 		}
@@ -915,7 +892,7 @@ _XtResourceConfigurationEH (
 	int		actual_format;
 	unsigned long	nitems;
 	unsigned long	leftover;
-	unsigned char	*data = NULL;
+	char		*data = NULL;
 	unsigned long	resource_len;
 	char		*data_ptr;
 	char		*resource;
@@ -926,12 +903,10 @@ _XtResourceConfigurationEH (
 	XtPerDisplay	pd;
 
 #ifdef DEBUG
-	fprintf (stderr, "in _XtResourceConfiguationEH atom = %ld\n",
-		 event->xproperty.atom);
-	fprintf (stderr, "    window = %lx\n", (unsigned long)XtWindow (w));
+	fprintf (stderr, "in _XtResourceConfiguationEH atom = %d\n",event->xproperty.atom);
+	fprintf (stderr, "    window = %x\n", XtWindow (w));
 	if (XtIsWidget (w))
-		fprintf (stderr, "    widget = %lx   name = %s\n",
-			 (unsigned long)w, w->core.name);
+		fprintf (stderr, "    widget = %x   name = %s\n", w, w->core.name);
 #endif
 
 	pd = _XtGetPerDisplay (XtDisplay (w));
@@ -977,7 +952,7 @@ _XtResourceConfigurationEH (
 		pd->rcm_data, 0L, 8192L,
 		TRUE, XA_STRING,
 		&actual_type, &actual_format, &nitems, &leftover,
-		&data ) == Success && actual_type == XA_STRING
+		(unsigned char **)&data ) == Success && actual_type == XA_STRING
 			   && actual_format == 8) {
 	/*
 	 *      data format is:
@@ -989,26 +964,37 @@ _XtResourceConfigurationEH (
 	 *      resource and value fields.
 	 */
 		if (data) {
-			resource_len = Strtoul ((void *)data, &data_ptr, 10);
-			data_ptr++;
+			char *data_end = data + nitems;
+			char *data_value;
 
-			data_ptr[resource_len] = '\0';
+			resource_len = strtoul (data, &data_ptr, 10);
 
-			resource = XtNewString (data_ptr);
-			value = XtNewString (&data_ptr[resource_len + 1]);
+			if (data_ptr != (char *) data) {
+				data_ptr++;
+				data_value = data_ptr + resource_len;
+			} else /* strtoul failed to convert a number */
+				data_ptr = data_value = NULL;
+
+			if (data_value > data_ptr && data_value < data_end) {
+				*data_value++ = '\0';
+
+				resource = XtNewString (data_ptr);
+				value = XtNewString (data_value);
 #ifdef DEBUG
-			fprintf (stderr, "resource_len=%ld\n",resource_len);
-			fprintf (stderr, "resource = %s\t value = %s\n",
-					resource, value);
+				fprintf (stderr, "resource_len=%d\n",
+					 resource_len);
+				fprintf (stderr, "resource = %s\t value = %s\n",
+					 resource, value);
 #endif
-			/*
-			 * descend the application widget tree and
-			 * apply the value to the appropriate widgets
-			 */
-			_search_widget_tree (w, resource, value);
+				/*
+				 * descend the application widget tree and
+				 * apply the value to the appropriate widgets
+				 */
+				_search_widget_tree (w, resource, value);
 
-			XtFree (resource);
-			XtFree (value);
+				XtFree (resource);
+				XtFree (value);
+			}
 		}
 	}
 

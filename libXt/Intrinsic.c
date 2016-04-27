@@ -1,6 +1,26 @@
 /***********************************************************
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts,
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
@@ -8,7 +28,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Digital or Sun not be
+supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
@@ -20,17 +40,7 @@ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/Intrinsic.c,v 3.27 2006/05/16 14:57:09 tsi Exp $ */
 
 /*
 
@@ -60,18 +70,22 @@ in this Software without prior written authorization from The Open Group.
 
 #define INTRINSIC_C
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "VarargsI.h"        /* for geoTattler */
 #ifndef NO_IDENTIFY_WINDOWS
 #include <X11/Xatom.h>
 #endif
+#ifndef VMS
 #include <sys/stat.h>
+#endif /* VMS */
+#ifdef WIN32
+#include <direct.h>            /* for _getdrives() */
+#endif
 
 #include <stdlib.h>
-
-#ifdef XT_GEO_TATTLER
-#include <stdio.h>
-#endif
 
 String XtCXtToolkitError = "XtToolkitError";
 
@@ -556,7 +570,7 @@ static Widget SearchChildren(
     NameMatchProc matchproc,
     int in_depth, int *out_depth, int *found_depth)
 {
-    Widget w1 = 0, w2;
+    Widget w1 = NULL, w2;
     int d1, d2;
 
     if (XtIsComposite(root)) {
@@ -834,16 +848,124 @@ Boolean XtIsObject(
     return True;
 }
 
+#if defined(WIN32)
+static int access_file (
+    char* path,
+    char* pathbuf,
+    int len_pathbuf,
+    char** pathret)
+{
+    if (access (path, F_OK) == 0) {
+	if (strlen (path) < len_pathbuf)
+	    *pathret = pathbuf;
+	else
+	    *pathret = XtMalloc (strlen (path));
+	if (*pathret) {
+	    strcpy (*pathret, path);
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+static int AccessFile (
+    char* path,
+    char* pathbuf,
+    int len_pathbuf,
+    char** pathret)
+{
+    unsigned long drives;
+    int i, len;
+    char* drive;
+    char buf[MAX_PATH];
+    char* bufp;
+
+    /* just try the "raw" name first and see if it works */
+    if (access_file (path, pathbuf, len_pathbuf, pathret))
+	return 1;
+
+#if defined(WIN32) && defined(__MINGW32__)
+    /* don't try others */
+    return 0;
+#endif
+
+    /* try the places set in the environment */
+    drive = getenv ("_XBASEDRIVE");
+    if (!drive)
+	drive = "C:";
+    len = strlen (drive) + strlen (path);
+    bufp = XtStackAlloc (len + 1, buf);
+    strcpy (bufp, drive);
+    strcat (bufp, path);
+    if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+	XtStackFree (bufp, buf);
+	return 1;
+    }
+
+    /* one last place to look */
+    drive = getenv ("HOMEDRIVE");
+    if (drive) {
+	len = strlen (drive) + strlen (path);
+	bufp = XtStackAlloc (len + 1, buf);
+	strcpy (bufp, drive);
+	strcat (bufp, path);
+	if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+	    XtStackFree (bufp, buf);
+	    return 1;
+	}
+    }
+
+    /* does OS/2 (with or with gcc-emx) have getdrives()? */
+    /* tried everywhere else, go fishing */
+    drives = _getdrives ();
+#define C_DRIVE ('C' - 'A')
+#define Z_DRIVE ('Z' - 'A')
+    for (i = C_DRIVE; i <= Z_DRIVE; i++) { /* don't check on A: or B: */
+	if ((1 << i) & drives) {
+	    len = 2 + strlen (path);
+	    bufp = XtStackAlloc (len + 1, buf);
+	    *bufp = 'A' + i;
+	    *(bufp + 1) = ':';
+	    *(bufp + 2) = '\0';
+	    strcat (bufp, path);
+	    if (access_file (bufp, pathbuf, len_pathbuf, pathret)) {
+		XtStackFree (bufp, buf);
+		return 1;
+	    }
+	}
+    }
+    return 0;
+}
+#endif
 
 static Boolean TestFile(
     String path)
 {
+#ifndef VMS
     int ret = 0;
     struct stat status;
+#if defined(WIN32)
+    char buf[MAX_PATH];
+    char* bufp;
+    int len;
+    UINT olderror = SetErrorMode (SEM_FAILCRITICALERRORS);
+
+    if (AccessFile (path, buf, MAX_PATH, &bufp))
+	path = bufp;
+
+    (void) SetErrorMode (olderror);
+#endif
     ret = (access(path, R_OK) == 0 &&		/* exists and is readable */
 	    stat(path, &status) == 0 &&		/* get the status */
+#ifndef X_NOT_POSIX
 	    S_ISDIR(status.st_mode) == 0);	/* not a directory */
+#else
+	    (status.st_mode & S_IFMT) != S_IFDIR);	/* not a directory */
+#endif /* X_NOT_POSIX else */
     return ret;
+#else /* VMS */
+    return TRUE;	/* Who knows what to do here? */
+#endif /* VMS */
 }
 
 /* return of TRUE = resolved string fit, FALSE = didn't fit.  Not
@@ -1015,13 +1137,51 @@ static char *ExtractLocaleName(
     String	lang)
 {
 
-#if defined(linux)
-# define STARTSTR "LC_CTYPE="
-# define ENDCHAR ';'
-#else
-#  define STARTCHAR '/'
-#  define ENDCHAR '/'
-#endif
+#if defined(hpux) || defined(CSRG_BASED) || defined(sun) || defined(SVR4) || defined(sgi) || defined(__osf__) || defined(AIXV3) || defined(ultrix) || defined(WIN32) || defined (linux)
+# ifdef hpux
+/*
+ * We need to discriminated between HPUX 9 and HPUX 10. The equivalent
+ * code in Xlib in SetLocale.c does include locale.h via X11/Xlocale.h.
+ */
+#  include <locale.h>
+#  ifndef _LastCategory
+   /* HPUX 9 and earlier */
+#   define SKIPCOUNT 2
+#   define STARTCHAR ':'
+#   define ENDCHAR ';'
+#  else
+    /* HPUX 10 */
+#   define ENDCHAR ' '
+#  endif
+# else
+#  ifdef ultrix
+#   define SKIPCOUNT 2
+#   define STARTCHAR '\001'
+#   define ENDCHAR '\001'
+#  else
+#   ifdef WIN32
+#    define SKIPCOUNT 1
+#    define STARTCHAR '='
+#    define ENDCHAR ';'
+#    define WHITEFILL
+#   else
+#    if defined(__osf__) || (defined(AIXV3) && !defined(AIXV4))
+#     define STARTCHAR ' '
+#     define ENDCHAR ' '
+#    else
+#     if defined(linux)
+#      define STARTSTR "LC_CTYPE="
+#      define ENDCHAR ';'
+#     else
+#      if !defined(sun) || defined(SVR4)
+#       define STARTCHAR '/'
+#       define ENDCHAR '/'
+#      endif
+#     endif
+#    endif
+#   endif
+#  endif
+# endif
 
     char           *start;
     char           *end;
@@ -1081,6 +1241,7 @@ static char *ExtractLocaleName(
 # undef STARTCHAR
 # undef ENDCHAR
 # undef WHITEFILL
+#endif
 
     return lang;
 }
@@ -1148,9 +1309,15 @@ static void FillInLangSubs(
  * The exact value should be documented in the implementation
  * notes for any Xt implementation.
  */
-static char *implementation_default_path(void)
+static const char *implementation_default_path(void)
 {
+#if defined(WIN32)
+    static char xfilesearchpath[] = "";
+
+    return xfilesearchpath;
+#else
     return XFILESEARCHPATHDEFAULT;
+#endif
 }
 
 
@@ -1177,8 +1344,8 @@ String XtResolvePathname(
     XtFilePredicate predicate)
 {
     XtPerDisplay pd;
-    static char *defaultPath = NULL;
-    char *impl_default = implementation_default_path();
+    static const char *defaultPath = NULL;
+    const char *impl_default = implementation_default_path();
     int idef_len = strlen(impl_default);
     char *massagedPath;
     int bytesAllocd, bytesLeft;
@@ -1193,13 +1360,18 @@ String XtResolvePathname(
     LOCK_PROCESS;
     pd = _XtGetPerDisplay(dpy);
     if (path == NULL) {
+#ifndef VMS
 	if (defaultPath == NULL) {
 	    defaultPath = getenv("XFILESEARCHPATH");
 	    if (defaultPath == NULL)
 		defaultPath = impl_default;
 	}
 	path = defaultPath;
+#endif /* VMS */
     }
+
+    if (path == NULL)
+	path = "";	/* NULL would kill us later */
 
     if (filename == NULL) {
 	filename = XrmClassToString(pd->class);

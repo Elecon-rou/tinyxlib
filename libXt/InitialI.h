@@ -27,13 +27,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -44,7 +44,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/InitialI.h,v 3.12 2006/01/09 14:59:21 dawes Exp $ */
 
 #ifndef _XtinitialI_h
 #define _XtinitialI_h
@@ -55,9 +54,21 @@ SOFTWARE.
  *
  ****************************************************************/
 
+#ifndef X_NOT_POSIX
+#ifdef _POSIX_SOURCE
 #include <limits.h>
+#else
+#define _POSIX_SOURCE
+#include <limits.h>
+#undef _POSIX_SOURCE
+#endif
+#endif
 #ifndef PATH_MAX
+#ifdef WIN32
+#define PATH_MAX 512
+#else
 #include <sys/param.h>
+#endif
 #ifndef PATH_MAX
 #ifdef MAXPATHLEN
 #define PATH_MAX MAXPATHLEN
@@ -69,6 +80,8 @@ SOFTWARE.
 
 #include <X11/Xos.h>
 #include <X11/Xpoll.h>
+
+_XFUNCPROTOBEGIN
 
 typedef struct _TimerEventRec {
         struct timeval        te_timer_value;
@@ -104,7 +117,7 @@ typedef struct _WorkProcRec {
 } WorkProcRec;
 
 
-typedef struct 
+typedef struct
 {
 #ifndef USE_POLL
   	fd_set rmask;
@@ -411,5 +424,7 @@ extern XrmDatabase _XtPreparseCommandLine(XrmOptionDescRec *urlist,
 			Cardinal num_urs, int argc, String *argv,
 			String *applName, String *displayName,
 			String *language);
+
+_XFUNCPROTOEND
 
 #endif /* _XtinitialI_h */

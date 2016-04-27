@@ -51,7 +51,6 @@ dealings in this Software without prior written authorization from the IBM
 Corporation.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/ResConfigP.h,v 3.9 2006/01/09 14:59:22 dawes Exp $ */
 
 #ifndef _RESCONFIGP_H
 #define _RESCONFIGP_H
@@ -67,8 +66,8 @@ _XFUNCPROTOBEGIN
 #define RCM_INIT "Custom Init"
 
 extern void _XtResourceConfigurationEH(
-	Widget 		/* w */, 
-	XtPointer 	/* client_data */, 
+	Widget 		/* w */,
+	XtPointer 	/* client_data */,
 	XEvent * 	/* event */
 );
 

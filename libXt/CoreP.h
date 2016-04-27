@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/Xt/CoreP.h,v 1.3 2006/01/09 14:59:20 dawes Exp $ */
 /***********************************************************
 
 Copyright 1987, 1988, 1998  The Open Group
@@ -28,13 +27,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -49,7 +48,9 @@ SOFTWARE.
 #ifndef XtCoreP_h
 #define XtCoreP_h
 
-#include "Core.h"
+#include <X11/Core.h>
+
+_XFUNCPROTOBEGIN
 
 externalref int _XtInheritTranslations;
 
@@ -162,6 +163,8 @@ typedef struct _WidgetClassRec {
 
 externalref WidgetClassRec widgetClassRec;
 #define coreClassRec widgetClassRec
+
+_XFUNCPROTOEND
 
 #endif /* _XtCoreP_h */
 /* DON'T ADD STUFF AFTER THIS #endif */

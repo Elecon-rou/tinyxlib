@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/Xt/ShellP.h,v 1.3 2006/01/09 14:59:22 dawes Exp $ */
 /***********************************************************
 
 Copyright 1987, 1988, 1994, 1998  The Open Group
@@ -28,13 +27,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -46,9 +45,9 @@ SOFTWARE.
 
 ******************************************************************/
 
-/* 
+/*
  * ShellP.h - Private definitions for Shell widget
- * 
+ *
  * Author:	Paul Asente
  * 		Digital Equipment Corporation
  * 		Western Software Laboratory
@@ -65,6 +64,8 @@ SOFTWARE.
  * ***** part of this header file
  * *****
  */
+
+_XFUNCPROTOBEGIN
 
 /***********************************************************************
  *
@@ -213,7 +214,11 @@ typedef  struct {
 	WMShellPart	wm;
 } WMShellRec, *WMShellWidget;
 
-#include "VendorP.h"
+_XFUNCPROTOEND
+
+#include <X11/VendorP.h>
+
+_XFUNCPROTOBEGIN
 
 /***********************************************************************
  *
@@ -250,7 +255,7 @@ typedef  struct {
 	ShellPart 	shell;
 	WMShellPart	wm;
 	VendorShellPart	vendor;
-	TransientShellPart transient;	
+	TransientShellPart transient;
 } TransientShellRec, *TransientShellWidget;
 
 /***********************************************************************
@@ -423,5 +428,7 @@ typedef  struct {
 	ApplicationShellPart application;
 	SessionShellPart session;
 } SessionShellRec, *SessionShellWidget;
+
+_XFUNCPROTOEND
 
 #endif /* _XtShellPrivate_h */

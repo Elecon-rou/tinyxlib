@@ -46,7 +46,6 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/Intrinsic.h,v 3.13 2006/02/07 22:02:26 dawes Exp $ */
 
 #ifndef _XtIntrinsic_h
 #define _XtIntrinsic_h
@@ -90,8 +89,13 @@ typedef char *String;
 
 #include <stddef.h>
 
+#ifdef VMS
+#define externalref globalref
+#define externaldef(psect) globaldef {"psect"} noshare
+#else
 #define externalref extern
 #define externaldef(psect)
+#endif /* VMS */
 
 #ifndef FALSE
 #define FALSE 0
@@ -1165,7 +1169,7 @@ extern ArgList XtMergeArgLists(
 
 extern XtVarArgsList XtVaCreateArgsList(
     XtPointer		/*unused*/, ...
-);
+) _X_SENTINEL(0);
 
 /*************************************************************
  *
@@ -1309,7 +1313,7 @@ extern Widget XtVaCreatePopupShell(
     WidgetClass		/* widgetClass */,
     Widget		/* parent */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtPopup(
     Widget 		/* popup_shell */,
@@ -1376,14 +1380,14 @@ extern Widget XtVaCreateWidget(
     WidgetClass		/* widget */,
     Widget		/* parent */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern Widget XtVaCreateManagedWidget(
     _Xconst _XtString	/* name */,
     WidgetClass		/* widget_class */,
     Widget		/* parent */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern Widget XtCreateApplicationShell( /* obsolete */
     _Xconst _XtString 	/* name */,
@@ -1407,7 +1411,7 @@ extern Widget XtVaAppCreateShell(
     WidgetClass		/* widget_class */,
     Display*		/* display */,
     ...
-);
+) _X_SENTINEL(0);
 
 /****************************************************************
  *
@@ -1459,7 +1463,7 @@ extern Widget XtVaOpenApplication(
     String*		/* fallback_resources */,
     WidgetClass		/* widget_class */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern Widget XtAppInitialize( /* obsolete */
     XtAppContext*	/* app_context_return */,
@@ -1482,7 +1486,7 @@ extern Widget XtVaAppInitialize( /* obsolete */
     String*		/* argv_in_out */,
     String*		/* fallback_resources */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern Widget XtInitialize( /* obsolete */
     _Xconst _XtString 	/* shell_name */,
@@ -1556,7 +1560,7 @@ extern void XtVaGetApplicationResources(
     XtResourceList	/* resources */,
     Cardinal		/* num_resources */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtGetSubresources(
     Widget 		/* widget */,
@@ -1577,7 +1581,7 @@ extern void XtVaGetSubresources(
     XtResourceList	/* resources */,
     Cardinal		/* num_resources */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtSetValues(
     Widget 		/* widget */,
@@ -1588,7 +1592,7 @@ extern void XtSetValues(
 extern void XtVaSetValues(
     Widget		/* widget */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtGetValues(
     Widget 		/* widget */,
@@ -1599,7 +1603,7 @@ extern void XtGetValues(
 extern void XtVaGetValues(
     Widget		/* widget */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtSetSubvalues(
     XtPointer 		/* base */,
@@ -1614,7 +1618,7 @@ extern void XtVaSetSubvalues(
     XtResourceList	/* resources */,
     Cardinal		/* num_resources */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtGetSubvalues(
     XtPointer 		/* base */,
@@ -1629,7 +1633,7 @@ extern void XtVaGetSubvalues(
     XtResourceList	/* resources */,
     Cardinal		/* num_resources */,
     ...
-);
+) _X_SENTINEL(0);
 
 extern void XtGetResourceList(
     WidgetClass 	/* widget_class */,
@@ -1841,6 +1845,15 @@ extern void XtFree(
     char*		/* ptr */
 );
 
+#ifndef _X_RESTRICT_KYWD
+# define _X_RESTRICT_KYWD
+#endif
+extern Cardinal XtAsprintf(
+    String *new_string,
+    _Xconst char * _X_RESTRICT_KYWD format,
+    ...
+) _X_ATTRIBUTE_PRINTF(2,3);
+
 #ifdef XTTRACEMEMORY
 
 extern char *_XtMalloc( /* implementation-private */
@@ -1880,45 +1893,6 @@ extern void _XtFree( /* implementation-private */
 extern String XtNewString(String /* str */);
 #define XtNewString(str) \
     ((str) != NULL ? (strcpy(XtMalloc((unsigned)strlen(str) + 1), str)) : NULL)
-
-
-/*
- * String manipulation functions
- */
-
-#define XtTextEncoding8bit	0
-#define XtTextEncodingChar2b	1
-#define XtTextEncodingMixed	3	/* char */
-
-/*
- * Some widgets use Char2b strings, so these are strung manipulation
- * functions for those widgets.
- */
-extern char* XtNewStringEx(int encoding, char* string);
-extern char* XtCharIndexEx(int encoding, char* string, char c);
-extern size_t XtStringLengthEx(int encoding, char* string);
-
-#define IS_CHAR(p, c)         ((p)->byte1 == 0 && (p)->byte2 == c)
-#define IS_NOT_CHAR(p, c)     !IS_CHAR(p, c)
-#define IS_NUL(p)             IS_CHAR(p, 0)
-#define IS_NOT_NUL(p)         !IS_NUL(p)
-
-#define AT_EOL(encoding, label)				\
-    ((encoding == XtTextEncodingChar2b &&		\
-         IS_NUL((XChar2b*) label)) ||			\
-     (encoding != XtTextEncodingChar2b &&		\
-         (*label) == '\0'))
-
-#define NOT_AT_EOL(encoding, label)        !AT_EOL(encoding, label)
-
-#define MOVE_FORWARD(encoding, label, nl)		\
-    do {						\
-	if (encoding == XtTextEncodingChar2b)		\
-	    label = (char*) (((XChar2b*) nl) + 1);	\
-	else						\
-	    label = nl + 1;				\
-    } while (0);
-
 
 /*************************************************************
  *

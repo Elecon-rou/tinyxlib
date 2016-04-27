@@ -44,7 +44,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/Xtos.h,v 3.14 2005/06/29 01:14:09 dawes Exp $ */
 
 #ifndef _Xtos_h
 #define _Xtos_h
@@ -60,7 +59,8 @@ SOFTWARE.
     defined(__sparc64__) || \
     defined(__s390x__) || \
     (defined(__hppa__) && defined(__LP64__)) || \
-    defined(__amd64__) || defined(__x86_64__) || \
+    defined(__amd64__) || defined(amd64) || \
+    defined(__powerpc64__) || \
     (defined(sgi) && (_MIPS_SZLONG == 64))
 #define LONG64
 #endif

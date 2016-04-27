@@ -1,5 +1,3 @@
-/* $XFree86: xc/lib/Xt/ArgList.c,v 1.7 2005/03/29 04:00:30 tsi Exp $ */
-
 /***********************************************************
 
 Copyright 1987, 1988, 1998  The Open Group
@@ -47,6 +45,9 @@ SOFTWARE.
 
 ******************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include	"IntrinsicI.h"
 #include	<stdio.h>
 

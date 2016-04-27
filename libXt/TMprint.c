@@ -1,6 +1,26 @@
 /***********************************************************
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
@@ -8,7 +28,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Digital or Sun not be
+supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
@@ -19,15 +39,6 @@ ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
 WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
-
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
@@ -56,9 +67,11 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/TMprint.c,v 1.9 2006/01/09 14:59:23 dawes Exp $ */
 
 /*LINTLIBRARY*/
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include <stdio.h>
 
@@ -724,8 +737,10 @@ void _XtDisplayTranslations(
 				widget->core.tm.translations,
 				NULL,
 				True);
-    printf("%s\n",xString);
-    XtFree(xString);
+    if (xString) {
+	printf("%s\n",xString);
+	XtFree(xString);
+    }
 }
 
 /*ARGSUSED*/
@@ -742,8 +757,10 @@ void _XtDisplayAccelerators(
 				widget->core.accelerators,
 				NULL,
 				True);
-    printf("%s\n",xString);
-    XtFree(xString);
+    if (xString) {
+	printf("%s\n",xString);
+	XtFree(xString);
+    }
 }
 
 /*ARGSUSED*/
@@ -762,12 +779,16 @@ void _XtDisplayInstalledAccelerators(
     PrintRec		stackPrints[STACKPRINTSIZE];
     PrintRec		*prints;
     TMShortCard		numPrints, maxPrints;
-    TMBindData	bindData = (TMBindData) eventWidget->core.tm.proc_table;
+    TMBindData	bindData ;
     TMComplexBindProcs	complexBindProcs;
 
     if ((eventWidget == NULL) ||
-	((xlations = eventWidget->core.tm.translations) == NULL) ||
-	(bindData->simple.isComplex == False))
+	(eventWidget->core.tm.translations == NULL) )
+      return;
+
+    xlations = eventWidget->core.tm.translations;
+    bindData = (TMBindData) eventWidget->core.tm.proc_table;
+    if (bindData->simple.isComplex == False)
       return;
 
     sb->current = sb->start = __XtMalloc((Cardinal)1000);

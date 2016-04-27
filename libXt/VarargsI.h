@@ -23,14 +23,15 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/VarargsI.h,v 3.8 2006/01/09 14:59:23 dawes Exp $ */
 
-#ifndef _VarargsI_h_ 
-#define _VarargsI_h_ 
+#ifndef _VarargsI_h_
+#define _VarargsI_h_
 
 #include <stdarg.h>
- 
+
 /* private routines */
+
+_XFUNCPROTOBEGIN
 
 extern void _XtCountVaList(
     va_list /*var*/, int* /*total_count*/, int* /*typed_count*/
@@ -59,5 +60,7 @@ extern void _XtGetApplicationResources(
 extern void _XtGetSubresources(
     Widget /*w*/, XtPointer /*base*/, const char* /*name*/, const char* /*class*/, XtResourceList /*resources*/, Cardinal /*num_resources*/, ArgList /*args*/, Cardinal /*num_args*/, XtTypedArgList /*typed_args*/, Cardinal /*num_typed_args*/
 );
+
+_XFUNCPROTOEND
 
 #endif /* _VarargsI_h_ */

@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/Xt/Core.h,v 1.3 2006/01/09 14:59:20 dawes Exp $ */
 /***********************************************************
 
 Copyright 1987, 1988, 1998  The Open Group
@@ -28,13 +27,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -49,14 +48,18 @@ SOFTWARE.
 #ifndef _XtCore_h
 #define _XtCore_h
 
+_XFUNCPROTOBEGIN
+
 typedef struct _WidgetClassRec *CoreWidgetClass;
 typedef struct _WidgetRec *CoreWidget;
 externalref WidgetClass coreWidgetClass;
 
-#ifndef _XT_CORE_C
+#ifndef VMS
 externalref WidgetClass widgetClass;
 
 #endif
+
+_XFUNCPROTOEND
 
 #endif /* _XtCore_h */
 /* DON'T ADD STUFF AFTER THIS #endif */

@@ -1,6 +1,26 @@
 /***********************************************************
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts,
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
@@ -8,7 +28,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Digital or Sun not be
+supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
@@ -19,15 +39,6 @@ ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
 WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
-
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ******************************************************************/
 
@@ -56,8 +67,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/Selection.c,v 3.12 2006/01/09 14:59:22 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "StringDefs.h"
 #include "SelectionI.h"
@@ -213,7 +226,7 @@ static Atom GetSelectionProperty(
  propCount = sarray->propCount++;
  sarray->list = (SelectionProp) XtRealloc((XtPointer)sarray->list,
   		(unsigned)(sarray->propCount*sizeof(SelectionPropRec)));
- (void) sprintf(propname, "%s%d", "_XT_SELECTION_", propCount);
+ (void) snprintf(propname, sizeof(propname), "_XT_SELECTION_%d", propCount);
  sarray->list[propCount].prop = XInternAtom(dpy, propname, FALSE);
  sarray->list[propCount].avail = FALSE;
  return(sarray->list[propCount].prop);
@@ -224,6 +237,7 @@ static void FreeSelectionProperty(
     Atom prop)
 {
  SelectionProp p;
+ int propCount;
  PropList sarray;
  if (prop == None) return;
  LOCK_PROCESS;
@@ -234,7 +248,9 @@ static void FreeSelectionProperty(
 		"internal error: no selection property context for display",
 		 (String *)NULL,  (Cardinal *)NULL );
  UNLOCK_PROCESS;
- for (p = sarray->list; p; p++)
+ for (p = sarray->list, propCount=sarray->propCount;
+	propCount;
+	p++, propCount--)
    if (p->prop == prop) {
       p->avail = TRUE;
       return;
@@ -815,21 +831,24 @@ static void HandleSelectionEvents(
 	   event->xselectionrequest.property = event->xselectionrequest.target;
 	if (ctx->widget != widget || ctx->was_disowned
 	   || ((event->xselectionrequest.time != CurrentTime)
-	        && (event->xselectionrequest.time < ctx->time)))
+	        && (event->xselectionrequest.time < ctx->time))) {
 	    ev.property = None;
-         else {
+	    StartProtectedSection(ev.display, ev.requestor);
+	} else {
 	   if (ev.target == ctx->prop_list->indirect_atom) {
 	      IndirectPair *p;
 	      int format;
 	      unsigned long bytesafter, length;
-	      unsigned char *value;
+	      unsigned char *value = NULL;
 	      ev.property = event->xselectionrequest.property;
 	      StartProtectedSection(ev.display, ev.requestor);
-	      (void) XGetWindowProperty(ev.display, ev.requestor,
+	      if (XGetWindowProperty(ev.display, ev.requestor,
 			event->xselectionrequest.property, 0L, 1000000,
 			False,(Atom)AnyPropertyType, &target, &format, &length,
-			&bytesafter, &value);
-	      count = BYTELENGTH(length, format) / sizeof(IndirectPair);
+			&bytesafter, &value) == Success)
+		  count = BYTELENGTH(length, format) / sizeof(IndirectPair);
+	      else
+		  count = 0;
 	      for (p = (IndirectPair *)value; count; p++, count--) {
 		  EndProtectedSection(ctx->dpy);
 		  if (!GetConversion(ctx, (XSelectionRequestEvent*)event,
@@ -1006,10 +1025,10 @@ Boolean XtOwnSelectionIncremental(
 }
 
 
-void XtDisownSelection(widget, selection, time)
-    Widget widget;
-    Atom selection;
-    Time time;
+void XtDisownSelection(
+    Widget widget,
+    Atom selection,
+    Time time)
 {
     Select ctx;
     WIDGET_TO_APPCON(widget);
@@ -1036,9 +1055,10 @@ static Boolean IsINCRtype(
 
     if (prop == None) return False;
 
-    (void)XGetWindowProperty(XtDisplay(info->widget), window, prop, 0L, 0L,
-			     False, info->ctx->prop_list->incr_atom,
-			     &type, &format, &length, &bytesafter, &value);
+    if (XGetWindowProperty(XtDisplay(info->widget), window, prop, 0L, 0L,
+			   False, info->ctx->prop_list->incr_atom, &type,
+			   &format, &length, &bytesafter, &value) != Success)
+	return False;
 
     return (type == info->ctx->prop_list->incr_atom);
 }
@@ -1052,7 +1072,6 @@ static void ReqCleanup(
 {
     CallBackInfo info = (CallBackInfo)closure;
     unsigned long bytesafter, length;
-    char *value;
     int format;
     Atom target;
 
@@ -1076,17 +1095,19 @@ static void ReqCleanup(
 		(ev->xproperty.state == PropertyNewValue) &&
 	        (ev->xproperty.atom == info->property)) {
 	XPropertyEvent *event = (XPropertyEvent *) ev;
-        (void) XGetWindowProperty(event->display, XtWindow(widget),
-			   event->atom, 0L, 1000000, True, AnyPropertyType,
-			   &target, &format, &length, &bytesafter,
-			   (unsigned char **) &value);
-	XFree(value);
-	if (length == 0) {
-           XtRemoveEventHandler(widget, (EventMask) PropertyChangeMask, FALSE,
-			   ReqCleanup, (XtPointer) info );
-           FreeSelectionProperty(XtDisplay(widget), info->property);
-	   XtFree(info->value);	/* requestor never got this, so free now */
-	   FreeInfo(info);
+	char *value = NULL;
+	if (XGetWindowProperty(event->display, XtWindow(widget),
+			       event->atom, 0L, 1000000, True, AnyPropertyType,
+			       &target, &format, &length, &bytesafter,
+			       (unsigned char **) &value) == Success) {
+	    XFree(value);
+	    if (length == 0) {
+		XtRemoveEventHandler(widget, (EventMask) PropertyChangeMask,
+				     FALSE, ReqCleanup, (XtPointer) info );
+		FreeSelectionProperty(XtDisplay(widget), info->property);
+		XtFree(info->value); /* requestor never got this, so free now */
+		FreeInfo(info);
+	    }
 	}
     }
 }
@@ -1104,20 +1125,23 @@ static void ReqTimedOut(
     unsigned long bytesafter;
     unsigned long proplength;
     Atom type;
-    IndirectPair *pairs;
     XtPointer *c;
     int i;
 
     if (*info->target == info->ctx->prop_list->indirect_atom) {
-        (void) XGetWindowProperty(XtDisplay(info->widget),
-			   XtWindow(info->widget), info->property, 0L,
-			   10000000, True, AnyPropertyType, &type, &format,
-			   &proplength, &bytesafter, (unsigned char **) &pairs);
-       XFree((char*)pairs);
-       for (proplength = proplength / IndirectPairWordSize, i = 0, c = info->req_closure;
-	           proplength; proplength--, c++, i++)
-	    (*info->callbacks[i])(info->widget, *c,
-   	          &info->ctx->selection, &resulttype, value, &length, &format);
+	IndirectPair *pairs = NULL;
+	if (XGetWindowProperty(XtDisplay(info->widget), XtWindow(info->widget),
+			       info->property, 0L, 10000000, True,
+			       AnyPropertyType, &type, &format, &proplength,
+			       &bytesafter, (unsigned char **) &pairs)
+	    == Success) {
+	    XFree(pairs);
+	    for (proplength = proplength / IndirectPairWordSize, i = 0,
+		     c = info->req_closure;
+		 proplength; proplength--, c++, i++)
+		(*info->callbacks[i])(info->widget, *c, &info->ctx->selection,
+				      &resulttype, value, &length, &format);
+	}
     } else {
 	(*info->callbacks[0])(info->widget, *info->req_closure,
 	    &info->ctx->selection, &resulttype, value, &length, &format);
@@ -1263,12 +1287,13 @@ Boolean HandleNormal(
     unsigned long length;
     int format;
     Atom type;
-    unsigned char *value;
+    unsigned char *value = NULL;
     int number = info->current;
 
-    (void) XGetWindowProperty(dpy, XtWindow(widget), property, 0L,
-			      10000000, False, AnyPropertyType,
-			      &type, &format, &length, &bytesafter, &value);
+    if (XGetWindowProperty(dpy, XtWindow(widget), property, 0L, 10000000,
+			   False, AnyPropertyType, &type, &format, &length,
+			   &bytesafter, &value) != Success)
+	return FALSE;
 
     if (type == info->ctx->prop_list->incr_atom) {
 	unsigned long size = IncrPropSize(widget, value, format, length);
@@ -1353,7 +1378,6 @@ static void HandleSelectionReplies(
     Display *dpy = event->display;
     CallBackInfo info = (CallBackInfo) closure;
     Select ctx = info->ctx;
-    IndirectPair *pairs, *p;
     unsigned long bytesafter;
     unsigned long length;
     int format;
@@ -1368,9 +1392,12 @@ static void HandleSelectionReplies(
     XtRemoveEventHandler(widget, (EventMask)0, TRUE,
 		HandleSelectionReplies, (XtPointer) info );
     if (event->target == ctx->prop_list->indirect_atom) {
-        (void) XGetWindowProperty(dpy, XtWindow(widget), info->property, 0L,
-			   10000000, True, AnyPropertyType, &type, &format,
-			   &length, &bytesafter, (unsigned char **) &pairs);
+       IndirectPair *pairs = NULL, *p;
+       if (XGetWindowProperty(dpy, XtWindow(widget), info->property, 0L,
+			      10000000, True, AnyPropertyType, &type, &format,
+			      &length, &bytesafter, (unsigned char **) &pairs)
+	   != Success)
+	   length = 0;
        for (length = length / IndirectPairWordSize, p = pairs,
 	    c = info->req_closure;
 	    length; length--, p++, c++, info->current++) {
@@ -1967,7 +1994,7 @@ static void CleanupRequest(
   }
 }
 
-extern void XtCreateSelectionRequest(
+void XtCreateSelectionRequest(
     Widget widget,
     Atom selection)
 {
@@ -1983,7 +2010,7 @@ extern void XtCreateSelectionRequest(
   (void) XFindContext(dpy, window, multipleContext, (XPointer*) &queueInfo);
 
   /* If there is one,  then cancel it */
-  if (queueInfo != 0)
+  if (queueInfo != NULL)
     CleanupRequest(dpy, queueInfo, selection);
   else {
     /* Create it */
@@ -2008,7 +2035,7 @@ extern void XtCreateSelectionRequest(
   UNLOCK_PROCESS;
 }
 
-extern void XtSendSelectionRequest(
+void XtSendSelectionRequest(
     Widget widget,
     Atom selection,
     Time time)
@@ -2093,7 +2120,7 @@ extern void XtSendSelectionRequest(
   UNLOCK_PROCESS;
 }
 
-extern void XtCancelSelectionRequest(
+void XtCancelSelectionRequest(
     Widget widget,
     Atom selection)
 {
@@ -2107,7 +2134,7 @@ extern void XtCancelSelectionRequest(
   queueInfo = NULL;
   (void) XFindContext(dpy, window, multipleContext, (XPointer*) &queueInfo);
   /* If there is one,  then cancel it */
-  if (queueInfo != 0)
+  if (queueInfo != NULL)
     CleanupRequest(dpy, queueInfo, selection);
   UNLOCK_PROCESS;
 }

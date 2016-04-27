@@ -22,7 +22,7 @@ pkgconf:
 	@echo "" >> xt.pc
 	@echo "Name: Xt" >> xt.pc
 	@echo "Description: X Toolkit Library" >> xt.pc
-	@echo "Version: 1.0.5" >> xt.pc
+	@echo "Version: 1.1.5" >> xt.pc
 	@echo "Requires: sm ice x11 xau xdmcp" >> xt.pc
 	@echo "Requires.private: sm ice x11 xau xdmcp" >> xt.pc
 	@echo "Cflags: -I$(PREFIX)/include" >> xt.pc

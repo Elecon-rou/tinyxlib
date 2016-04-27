@@ -1,4 +1,3 @@
-/* $XFree86: xc/lib/Xt/VendorP.h,v 1.3 2006/01/09 14:59:23 dawes Exp $ */
 /***********************************************************
 
 Copyright 1987, 1988, 1998  The Open Group
@@ -28,13 +27,13 @@ Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
-Permission to use, copy, modify, and distribute this software and its 
-documentation for any purpose and without fee is hereby granted, 
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in 
+both that copyright notice and this permission notice appear in
 supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.  
+software without specific, written prior permission.
 
 DIGITAL DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE, INCLUDING
 ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO EVENT SHALL
@@ -46,9 +45,9 @@ SOFTWARE.
 
 ******************************************************************/
 
-/* 
+/*
  * VendorP.h - Private definitions for VendorShell widget
- * 
+ *
  * Author:	Paul Asente
  * 		Digital Equipment Corporation
  * 		Western Software Laboratory
@@ -64,9 +63,11 @@ SOFTWARE.
 #ifndef  _XtVendorPrivate_h
 #define _XtVendorPrivate_h
 
-#include "Vendor.h"
+#include <X11/Vendor.h>
 
 /* New fields for the VendorShell widget class record */
+
+_XFUNCPROTOBEGIN
 
 typedef struct {
     XtPointer       extension;          /* pointer to extension record      */
@@ -95,5 +96,7 @@ typedef  struct {
 	WMShellPart	wm;
 	VendorShellPart	vendor;
 } VendorShellRec, *VendorShellWidget;
+
+_XFUNCPROTOEND
 
 #endif  /* _XtVendorPrivate_h */

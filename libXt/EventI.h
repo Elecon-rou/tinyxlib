@@ -44,7 +44,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/EventI.h,v 1.6 2006/01/09 14:59:21 dawes Exp $ */
 
 /*
  * Event.h - exported types and functions for toolkit event handler
@@ -61,6 +60,8 @@ SOFTWARE.
 typedef struct _XtGrabRec  *XtGrabList;
 
 #include "PassivGraI.h"
+
+_XFUNCPROTOBEGIN
 
 extern void _XtEventInitialize(
     void
@@ -127,5 +128,7 @@ extern void _XtFillAncestorList(Widget **listPtr, int *maxElemsPtr,
 
 /* NextEvent.c */
 extern Boolean XtAppPeekEvent_SkipTimer;
+
+_XFUNCPROTOEND
 
 #endif /* _Event_h_ */

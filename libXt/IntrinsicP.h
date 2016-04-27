@@ -44,12 +44,11 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/IntrinsicP.h,v 1.6 2006/01/09 14:59:21 dawes Exp $ */
 
 #ifndef _XtintrinsicP_h
 #define _XtintrinsicP_h
 
-#include "Intrinsic.h"
+#include <X11/Intrinsic.h>
 
 /*
  * Field sizes and offsets of XrmResource must match those of XtResource.
@@ -194,11 +193,11 @@ typedef struct _XtTMRec {
     unsigned long   lastEventTime;
 } XtTMRec, *XtTM;
 
-#include "CoreP.h"
-#include "CompositeP.h"
-#include "ConstrainP.h"
-#include "ObjectP.h"
-#include "RectObjP.h"
+#include <X11/CoreP.h>
+#include <X11/CompositeP.h>
+#include <X11/ConstrainP.h>
+#include <X11/ObjectP.h>
+#include <X11/RectObjP.h>
 
 #define XtDisplay(widget)	DisplayOfScreen((widget)->core.screen)
 #define XtScreen(widget)	((widget)->core.screen)
@@ -267,7 +266,12 @@ extern Widget _XtWindowedAncestor( /* internal; implementation-dependent */
     Widget 		/* object */
 );
 
-extern void _XtInherit(
+#if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(LIBXT_COMPILATION)
+__declspec(dllimport)
+#else
+extern
+#endif
+void _XtInherit(
     void
 );
 

@@ -44,7 +44,6 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/ResourceI.h,v 1.8 2006/01/09 14:59:22 dawes Exp $ */
 
 /****************************************************************
  *
@@ -58,6 +57,8 @@ SOFTWARE.
 #define StringToQuark(string) XrmStringToQuark(string)
 #define StringToName(string) XrmStringToName(string)
 #define StringToClass(string) XrmStringToClass(string)
+
+_XFUNCPROTOBEGIN
 
 extern void _XtDependencies(
     XtResourceList  * /* class_resp */,
@@ -94,5 +95,6 @@ extern XrmResourceList* _XtCreateIndirectionTable(XtResourceList resources,
 						  Cardinal num_resources);
 extern void _XtResourceListInitialize(void);
 
+_XFUNCPROTOEND
 
 #endif /* _XtresourceI_h */

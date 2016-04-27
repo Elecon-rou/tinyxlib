@@ -1,25 +1,25 @@
-/* $XFree86: xc/lib/Xt/Functions.c,v 1.8 2006/01/25 04:32:09 dawes Exp $ */
-
 /*
 
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
 
-Permission to use, copy, modify, and distribute this software and its
-documentation for any purpose and without fee is hereby granted,
-provided that the above copyright notice appear in all copies and that
-both that copyright notice and this permission notice appear in
-supporting documentation, and that the name Sun not be
-used in advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
 
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 */
 
@@ -49,6 +49,9 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include <X11/Shell.h>
 #include <X11/Vendor.h>
@@ -210,86 +213,4 @@ String XtNewString(String str)
 	return NULL;
     else
 	return strcpy(__XtMalloc((unsigned)strlen(str) + 1), str);
-}
-
-
-/*
- * String manipulation functions
- */
-
-/* Allocates a new string. */
-char* XtNewStringEx(int encoding, char* string)
-{
-    size_t n;
-    char *p;
-
-    if (string == NULL)
-	return NULL;
-
-    if (encoding == XtTextEncodingChar2b) {
-	XChar2b *ptr;
-
-	n = XtStringLengthEx(encoding, string) + sizeof(XChar2b);
-	ptr = (XChar2b*) XtMalloc(n);
-	if (ptr == NULL)
-	    return NULL;
-
-	p = (char*) memmove(ptr, string, n);
-    } else
-	p = XtNewString(string);
-
-    return p;
-}
-
-#define IS_CHAR(p, c)         ((p)->byte1 == 0 && (p)->byte2 == c)
-#define IS_NOT_CHAR(p, c)     !IS_CHAR(p, c)
-#define IS_NUL(p)             IS_CHAR(p, 0)
-#define IS_NOT_NUL(p)         !IS_NUL(p)
-
-/* Returns an index of the character in the string, or NULL if not
- * found. */
-char* XtCharIndexEx(int encoding, char* string, char c)
-{
-    char *p;
-
-    if (string == NULL)
-	return NULL;
-
-    if (encoding == XtTextEncodingChar2b) {
-	XChar2b *ptr = (XChar2b*) string;
-
-	while (ptr != NULL && IS_NOT_NUL(ptr) &&
-	       IS_NOT_CHAR(ptr, c)) {
-	    ptr++;
-	}
-
-	if (ptr == NULL || IS_NUL(ptr))
-	    return NULL;
-
-	p = (char*) ptr;
-    } else
-	p = index(string, c);
-
-    return p;
-}
-
-/* Returns a number of bytes in a string. */
-size_t XtStringLengthEx(int encoding, char* string)
-{
-    size_t n = 0;
-
-    if (string == NULL)
-	return 0;
-
-    if (encoding == XtTextEncodingChar2b) {
-	XChar2b *ptr = (XChar2b*) string;
-
-	while (ptr != NULL && IS_NOT_NUL(ptr)) {
-	    ptr++;
-	    n += sizeof(XChar2b);
-	}
-    } else
-	n = strlen(string);
-
-    return n;
 }

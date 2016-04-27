@@ -1,6 +1,26 @@
 /***********************************************************
-Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts,
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+Copyright 1987, 1988 by Digital Equipment Corporation, Maynard, Massachusetts.
 
                         All Rights Reserved
 
@@ -8,7 +28,7 @@ Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
-supporting documentation, and that the names of Digital or Sun not be
+supporting documentation, and that the name of Digital not be
 used in advertising or publicity pertaining to distribution of the
 software without specific, written prior permission.
 
@@ -20,17 +40,7 @@ WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/TMparse.c,v 3.14 2006/01/09 14:59:23 dawes Exp $ */
 
 /*
 
@@ -58,6 +68,9 @@ in this Software without prior written authorization from The Open Group.
 
 */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "StringDefs.h"
 #include <ctype.h>
@@ -100,14 +113,14 @@ typedef TMShortCard	Value;
 typedef void (*ModifierProc)(Value, LateBindingsPtr*, Boolean, Value*);
 
 typedef struct _ModifierRec {
-    char*      name;
+    const char *name;
     XrmQuark   signature;
     ModifierProc modifierParseProc;
     Value      value;
 } ModifierRec, *ModifierKeys;
 
 typedef struct _EventKey {
-    char    	*event;
+    const char  *event;
     XrmQuark	signature;
     EventType	eventType;
     ParseProc	parseDetail;
@@ -115,7 +128,7 @@ typedef struct _EventKey {
 }EventKey, *EventKeys;
 
 typedef struct {
-    char	*name;
+    const char	*name;
     XrmQuark	signature;
     Value	value;
 } NameValueRec, *NameValueTable;
@@ -359,8 +372,8 @@ static EventKey events[] = {
 #ifdef DEBUG
 # ifdef notdef
 {"Timer",	    NULLQUARK, _XtTimerEventType,ParseNone,	NULL},
-# endif /* notdef */
 {"EventTimer",	    NULLQUARK, _XtEventTimerEventType,ParseNone,NULL},
+# endif /* notdef */
 #endif /* DEBUG */
 
 /* Event Name,	  Quark, Event Type,	Detail Parser, Closure */
@@ -1459,10 +1472,10 @@ static String ParseRepeat(
 {
 
     /*** Parse the repetitions, for double click etc... ***/
-    if (*str != '(' || !(isdigit(str[1]) || str[1] == '+' || str[1] == ')'))
+    if (*str != '(' || !(isdigit((unsigned char)str[1]) || str[1] == '+' || str[1] == ')'))
 	return str;
     str++;
-    if (isdigit(*str)) {
+    if (isdigit((unsigned char)*str)) {
 	String start = str;
 	char repStr[7];
 	size_t len;
@@ -1516,11 +1529,10 @@ static String ParseEventSeq(
     EventSeqPtr *nextEvent = eventSeqP;
 
     *eventSeqP = NULL;
-    *actionsP = NULL;
 
     while ( *str != '\0' && !IsNewline(*str)) {
 	static Event	nullEvent =
-             {0, 0,0L, 0, 0L, 0L,_XtRegularMatch,FALSE};
+             {0, 0,NULL, 0, 0L, 0L,_XtRegularMatch,FALSE};
 	EventPtr	event;
 
 	ScanWhitespace(str);
@@ -1602,7 +1614,6 @@ static String ParseActionProc(
     if (str-start >= 199) {
 	Syntax("Action procedure name is longer than 199 chars","");
 	*error = TRUE;
-	*actionProcNameP = 0;
 	return str;
     }
     (void) memmove(procName, start, str-start);
@@ -1791,7 +1802,7 @@ static void ShowProduction(
     size_t len;
     char *eol, *production, productionbuf[500];
 
-        eol = strchr(currentProduction, '\n');
+    eol = strchr(currentProduction, '\n');
     if (eol) len = eol - currentProduction;
     else len = strlen (currentProduction);
     production = XtStackAlloc (len + 1, productionbuf);
@@ -1820,6 +1831,7 @@ static String ParseTranslationTableProduction(
     ActionPtr	*actionsP;
     String	production = str;
 
+    actionsP = NULL;
     str = ParseEventSeq(str, &eventSeq, &actionsP,error);
     if (*error == TRUE) {
 	ShowProduction(production);

@@ -44,13 +44,15 @@ ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS
 SOFTWARE.
 
 ******************************************************************/
-/* $XFree86: xc/lib/Xt/IntrinsicI.h,v 3.12 2006/01/09 14:59:21 dawes Exp $ */
 
 #ifndef _XtintrinsicI_h
 #define _XtintrinsicI_h
 
 #include "Xtos.h"
 #include "IntrinsicP.h"
+#ifdef WIN32
+#define _WILLWINSOCK_
+#endif
 #include <X11/Xos.h>
 
 #include "Object.h"
@@ -106,37 +108,6 @@ SOFTWARE.
 #define _XBCOPYFUNC _XtBcopy
 #include <X11/Xfuncs.h>
 
-/* If the alignment characteristics of your machine are right, these may be
-   faster */
-
-#ifdef UNALIGNED
-
-#define XtMemmove(dst, src, size)			    \
-    if ((char *)(dst) != (char *)(src)) {		    \
-	if (size == sizeof(int))			    \
-	    *((int *) (dst)) = *((int *) (src));	    \
-	else if (size == sizeof(char))			    \
-	    *((char *) (dst)) = *((char *) (src));	    \
-	else if (size == sizeof(short))			    \
-	    *((short *) (dst)) = *((short *) (src));	    \
-	else						    \
-	    (void) memcpy((char *) (dst), (char *) (src), (int) (size)); \
-    }
-
-#define XtBZero(dst, size)				    \
-    if (size == sizeof(int))				    \
-	*((int *) (dst)) = 0;				    \
-    else						    \
-	bzero((char *) (dst), (int) (size))
-
-#define XtMemcmp(b1, b2, size)				    \
-    (size == sizeof(int) ?				    \
-	*((int *) (b1)) != *((int *) (b2))		    \
-    :   memcmp((char *) (b1), (char *) (b2), (int) (size))  \
-    )
-
-#else
-
 #define XtMemmove(dst, src, size)	\
     if ((char *)(dst) != (char *)(src)) {		    \
 	(void) memcpy((char *) (dst), (char *) (src), (int) (size)); \
@@ -147,8 +118,6 @@ SOFTWARE.
 
 #define XtMemcmp(b1, b2, size) 		\
 	memcmp((char *) (b1), (char *) (b2), (int) (size))
-
-#endif
 
 
 /****************************************************************
@@ -189,6 +158,8 @@ SOFTWARE.
 #define ERRORDB "/usr/lib/X11/XtErrorDB"
 #endif
 
+_XFUNCPROTOBEGIN
+
 extern String XtCXtToolkitError;
 
 extern void _XtAllocError(
@@ -226,7 +197,7 @@ extern void _XtGeoTab (int);
 extern void _XtGeoTrace (
 			    Widget widget,
 			    ...
-);
+) _X_ATTRIBUTE_PRINTF(2,3);
 
 #define CALLGEOTAT(f) f
 
@@ -251,6 +222,8 @@ extern char* __XtCalloc (
 #define __XtMalloc XtMalloc
 #define __XtCalloc XtCalloc
 #endif
+
+_XFUNCPROTOEND
 
 #endif /* _XtintrinsicI_h */
 /* DON'T ADD STUFF AFTER THIS #endif */

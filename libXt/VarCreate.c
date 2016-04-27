@@ -1,27 +1,25 @@
 /*
 
-Copyright 1993 by Sun Microsystems, Inc. Mountain View, CA.
+Copyright (c) 1993, Oracle and/or its affiliates. All rights reserved.
 
-Permission to use, copy, modify, and distribute this
-software and its documentation for any purpose and without
-fee is hereby granted, provided that the above copyright
-notice appear in all copies and that both that copyright
-notice and this permission notice appear in supporting
-documentation, and that the name Sun not be used in
-advertising or publicity pertaining to distribution of the
-software without specific, written prior permission.
-Sun makes no representations about the suitability of
-this software for any purpose.  It is provided "as is"
-without express or implied warranty.
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
 
-SUN DISCLAIMS ALL WARRANTIES WITH REGARD TO  THIS  SOFTWARE,
-INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FIT-
-NESS FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL SUN BE  LI-
-ABLE  FOR  ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR
-ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE,  DATA  OR
-PROFITS,  WHETHER  IN  AN  ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION  WITH
-THE USE OR PERFORMANCE OF THIS SOFTWARE.
+The above copyright notice and this permission notice (including the next
+paragraph) shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 */
 
@@ -50,14 +48,19 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/VarCreate.c,v 3.8 2006/01/09 14:59:23 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "StringDefs.h"
 #include "Shell.h"
 #include "VarargsI.h"
 #include "CreateI.h"
 
+#if (defined(SUNSHLIB) || defined(AIXSHLIB)) && defined(SHAREDCODE)
+#define XtToolkitInitialize _XtToolkitInitialize
+#endif /* (SUNSHLIB || AIXSHLIB) && SHAREDCODE */
 
 static Widget
 _XtVaCreateWidget(
@@ -73,12 +76,12 @@ _XtVaCreateWidget(
 
     _XtVaToTypedArgList(var, count, &typed_args, &num_args);
 
-    widget = _XtCreateWidget(name, widget_class, parent, (ArgList)NULL, 
+    widget = _XtCreateWidget(name, widget_class, parent, (ArgList)NULL,
 		    (Cardinal)0, typed_args, num_args);
 
     if (typed_args != NULL) {
         XtFree((XtPointer)typed_args);
-    }    
+    }
 
     return widget;
 }
@@ -165,7 +168,7 @@ XtVaAppCreateShell(
     if (typed_args != NULL) {
 	XtFree((XtPointer)typed_args);
     }
- 
+
     va_end(var);
     UNLOCK_APP(app);
     return widget;
@@ -236,7 +239,7 @@ XtVaSetSubvalues(XtPointer base, XtResourceList resources, Cardinal num_resource
     va_list	var;
     ArgList    	args;
     Cardinal   	num_args;
-    int		total_count, typed_count;		
+    int		total_count, typed_count;
 
     va_start(var, num_resources);
     _XtCountVaList(var, &total_count, &typed_count);
@@ -253,7 +256,7 @@ XtVaSetSubvalues(XtPointer base, XtResourceList resources, Cardinal num_resource
 
     if (num_args != 0) {
         XtFree((XtPointer)args);
-    }    
+    }
 
     va_end(var);
 }
@@ -279,7 +282,7 @@ _XtVaOpenApplication(
     XtTypedArgList typed_args;
 
     XtToolkitInitialize(); /* cannot be moved into _XtAppInit */
-    
+
     dpy = _XtAppInit(&app_con, (String)application_class, options, num_options,
 		     argc_in_out, &argv_in_out, fallback_resources);
 
@@ -298,8 +301,8 @@ _XtVaOpenApplication(
 	    typed_args[count].size = 0;
         }
 	count++;
-	typed_args = (XtTypedArgList) 
-	    XtRealloc((char *) typed_args, 
+	typed_args = (XtTypedArgList)
+	    XtRealloc((char *) typed_args,
 		       (unsigned) (count + 1) * sizeof(XtTypedArg));
     }
     typed_args[count].name = NULL;
@@ -307,14 +310,14 @@ _XtVaOpenApplication(
     va_end (var_args);
 
     root =
-	XtVaAppCreateShell( NULL, application_class, 
+	XtVaAppCreateShell( NULL, application_class,
 			    widget_class, dpy,
 			    XtNscreen, (XtArgVal)DefaultScreenOfDisplay(dpy),
 			    XtNargc, (XtArgVal)saved_argc,
 			    XtNargv, (XtArgVal)argv_in_out,
 			    XtVaNestedList, (XtVarArgsList)typed_args,
 			    NULL );
-   
+
     if (app_context_return != NULL)
 	*app_context_return = app_con;
 
@@ -340,9 +343,10 @@ _XtVaAppInitialize(
 				applicationShellWidgetClass, var_args);
 }
 
+#if !((defined(SUNSHLIB) || defined(AIXSHLIB)) && defined(SHAREDCODE))
 
 /*
- * If not used as a shared library, we still need a front end to 
+ * If not used as a shared library, we still need a front end to
  * _XtVaOpenApplication and to _XtVaAppInitialize.
  */
 
@@ -360,7 +364,7 @@ XtVaOpenApplication(
 {
     va_list	var;
 
-    va_start(var, widget_class);    
+    va_start(var, widget_class);
     return _XtVaOpenApplication(app_context_return, (String)application_class,
 				options, num_options, argc_in_out, argv_in_out,
 				fallback_resources, widget_class, var);
@@ -379,11 +383,12 @@ XtVaAppInitialize(
 {
     va_list	var;
 
-    va_start(var, fallback_resources);    
+    va_start(var, fallback_resources);
     return _XtVaOpenApplication(app_context_return, (String)application_class,
 				options, num_options, argc_in_out, argv_in_out,
 				fallback_resources,
 				applicationShellWidgetClass, var);
 }
 
+#endif /* !((SUNSHLIB || AIXSHLIB) && SHAREDCODE) */
 

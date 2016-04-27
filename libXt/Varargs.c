@@ -23,8 +23,10 @@ used in advertising or otherwise to promote the sale, use or other dealings
 in this Software without prior written authorization from The Open Group.
 
 */
-/* $XFree86: xc/lib/Xt/Varargs.c,v 3.13 2006/01/09 14:59:23 dawes Exp $ */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "IntrinsicI.h"
 #include "VarargsI.h"
 #include "StringDefs.h"
@@ -232,6 +234,8 @@ TypedArgToArg(
     else {
 	if (to_val.size == sizeof(long))
 	    arg_return->value = (XtArgVal) *(long *)to_val.addr;
+	else if (to_val.size == sizeof(int))
+	    arg_return->value = (XtArgVal) *(int *)to_val.addr;
 	else if (to_val.size == sizeof(short))
 	    arg_return->value = (XtArgVal) *(short *)to_val.addr;
 	else if (to_val.size == sizeof(char))
@@ -316,7 +320,7 @@ _XtFreeArgList(
     if (args) {
 	if (typed_count)
 	    for (p = args + total_count; total_count--; ++p) {
-		if (p->value) XtFree((char *)p->value);
+		XtFree((char *)p->value);
 	    }
 	XtFree((char *)args);
     }
@@ -396,8 +400,7 @@ _XtVaToArgList(
 	}
     }
 
-    if (resources != NULL)
-	XtFree((XtPointer)resources);
+    XtFree((XtPointer)resources);
 
     *num_args_return = (Cardinal)count;
     *args_return = (ArgList)args;
@@ -499,7 +502,7 @@ _XtVaToTypedArgList(
 	    args[count].size = va_arg(var, int);
 	    ++count;
 	} else if (strcmp(attr, XtVaNestedList) == 0) {
-   	    count += NestedArgtoTypedArg(&args[count],
+	    count += NestedArgtoTypedArg(&args[count],
 			va_arg(var, XtTypedArgList));
 	} else {
 	    args[count].name = attr;
