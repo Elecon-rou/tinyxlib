@@ -1,65 +1,19 @@
-all:
-	cd libXau; make
-	cd libICE; make
-	cd libSM; make
-	cd libXext; make
-	cd libtinyX11; make
-	cd libXt; make
-	cd libXmu; make
-	cd libXv; make
-	cd libXinerama; make
-	cd libXrender; make
-	cd libXpm; make
-	cd libXtst; make
-	cd libXfont; make
-	cd libXdmcp; make
-	cd libXi; make
-	cd libXmuu; make
-	cd libXss; make
-	cd libXfixes; make
-	cd libXcursor; make
-	mkdir -p include/pkgconfig && cd include/pkgconfig && ln -sf ../../lib*/*.pc ./
-clean:
-	cd libtinyX11; make clean
-	cd libICE; make clean
-	cd libSM; make clean
-	cd libXmu; make clean
-	cd libXt; make clean
-	cd libXv; make clean
-	cd libXext; make clean
-	cd libXinerama; make clean
-	cd libXau; make clean
-	cd libXrender; make clean
-	cd libXpm; make clean
-	cd libXtst; make clean
-	cd libXfont; make clean
-	cd libXdmcp; make clean
-	cd libXi; make clean
-	cd libXmuu; make clean
-	cd libXss; make clean
-	cd libXfixes; make clean
-	cd libXcursor; make clean
-install:
-	cd libXau; make install
-	cd libtinyX11; make install
-	cd libICE; make install
-	cd libSM; make install
-	cd libXmu; make install
-	cd libXt; make install
-	cd libXv; make install
-	cd libXext; make install
-	cd libXinerama; make install
-	cd libXrender; make install
-	cd libXpm; make install
-	cd libXtst; make install
-	cd libXfont; make install
-	cd libXdmcp; make install
-	cd libXi; make install
-	cd libXmuu; make install
-	cd libXss; make install
-	cd libXfixes; make install
-	cd libXcursor; make install
-	cd include; make install
-tarball:	clean
-	./make-tarball.sh
+DIRS = libXau libICE libSM libXext libtinyX11 libXt\
+libXmu libXv libXinerama libXrender libXpm libXtst libXfont\
+libXdmcp libXi libXmuu libXss libXfixes libXcursor
 
+all: $(DIRS)
+	for dir in $^; do \
+	cd $$dir; make; cd ..;\
+	done
+
+clean: 
+	rm -f lib*/*.o
+	rm -f lib*/*.a
+	rm -f lib*/*.so
+	rm -f lib*/*.pc
+
+install: $(DIRS)
+	for dir in $^; do \
+	cd $$dir; make install; cd ..;\
+	done
