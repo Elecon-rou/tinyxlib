@@ -10,7 +10,8 @@ LDFLAGS=-Wl,--gc-sections,--sort-common,-s $(LIBS)
 # paths 
 PREFIX=/usr
 LIBDIR=$(PREFIX)/lib
-INCDIR=$(PREFIX)/include/X11
+INCDIR=$(PREFIX)/include/
+DATADIR=$(PREFIX)/share/
 
 # includes and libs 
 LIBS = -L/usr/lib
@@ -18,6 +19,6 @@ INCS = -I/usr/include -I. -I../include -I../include/X11 -I../libxtrans
 
 #If you do not have setlocale, set this:
 #CPPFLAGS+= -DX_LOCALE -DXLOCALEDIR=\"/usr/share/locale\" 
-KEYSYMDB=$(PREFIX)/share/X11/XKeysymDB
-XCMSDIR=$(PREFIX)/share/X11/Xcms.txt
+KEYSYMDB=$(DATADIR)/XKeysymDB
+XCMSDIR=$(DATADIR)/Xcms.txt
 XLOCALELIBDIR=$(LIBDIR)/X11/locale
