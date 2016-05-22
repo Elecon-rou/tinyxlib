@@ -1,3 +1,5 @@
+include ./config.mk
+
 all:
 	cd libXau; make
 	cd libICE; make
@@ -42,6 +44,10 @@ clean:
 	cd libXfixes; make clean
 	cd libXcursor; make clean
 install:
+	mkdir -p $(LIBDIR)
+	mkdir -p $(INCDIR)
+	mkdir -p $(DATADIR)
+
 	cd libXau; make install
 	cd libtinyX11; make install
 	cd libICE; make install

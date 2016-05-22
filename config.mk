@@ -10,7 +10,8 @@ LDFLAGS=-Wl,--gc-sections,--sort-common,-s $(LIBS)
 # install paths 
 PREFIX=/usr
 LIBDIR=${PREFIX}/lib
-INCDIR=${PREFIX}/include/X11
+INCDIR=${PREFIX}/include
+DATADIR=${PREFIX}/share/X11
 
 # includes and libs 
 LIBS = -L/usr/lib
