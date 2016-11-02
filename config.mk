@@ -8,7 +8,7 @@ CFLAGS=-pipe -Os -mtune=generic -Wall -fno-strength-reduce -nodefaultlibs -fno-s
 LDFLAGS=-Wl,--gc-sections,--sort-common,-s $(LIBS)
 
 # paths 
-PREFIX=/usr
+PREFIX=/home/elecon/proj/x-prefix/
 LIBDIR=$(PREFIX)/lib
 INCDIR=$(PREFIX)/include/
 DATADIR=$(PREFIX)/share/
