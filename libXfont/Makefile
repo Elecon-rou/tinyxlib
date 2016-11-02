@@ -1,11 +1,11 @@
 include	../config.mk
 
 CPPFLAGS+=-D_POSIX_C_SOURCE=2  -DFUNCPROTO=15 -DNARROWPROTO -DFONTDIRATTRIB -DFONT_ENCODINGS_DIRECTORY=\"/usr/X11R7/lib/X11/fonts/encodings/encodings.dir\" -DPCFFORMAT -DX_GZIP_FONT_COMPRESSION -DUNIXCONN -DTCPCONN -DHAS_STICKY_DIR_BIT -DFONT_t -DTRANS_CLIENT -DTRANS_SERVER -DTRANS_REOPEN -DSHAPE -DTOGCUP -DKDRIVESERVER -DGCCUSESGAS -DDDXOSINIT -DSMART_SCHEDULE -DNOFONTSERVERACCESS -DNDEBUG -DFONTCACHE \
--DXFONT_BITMAP -DXFONT_BDFFORMAT -DXFONT_FC -DXFONT_FONTFILE -DXFONT_FREETYPE=0
+-DXFONT_BITMAP -DXFONT_BDFFORMAT -DXFONT_FC -DXFONT_FONTFILE -DXFONT_FREETYPE=1
 
-CFLAGS+= -I./include -I./stubs
+CFLAGS+= -I./include -I./stubs -I/usr/include/freetype2
 
-OBJS=$(wildcard bitmap/*.c fontfile/*.c fontcache/*.c fc/*.c  util/*.c stubs/*.c)
+OBJS=$(wildcard bitmap/*.c fontfile/*.c fontcache/*.c fc/*.c  util/*.c stubs/*.c fontenc/*.c FreeType/*.c)
 
 all:	$(OBJS:.c=.o) 
 	ar cr libXfont.a $(OBJS:.c=.o) 
