@@ -10,4 +10,5 @@
 *.diff
 *.log
 *.rej
+build/
 *~
